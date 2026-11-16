@@ -1,0 +1,312 @@
+id: SPEC-DATA-001
+version: 0.1.0
+kind: data
+title: "Inventory data model: existing tables, rules, and additive changes 0012–0017"
+status: draft
+context_and_scope:
+  in_scope:
+    - "Existing tables from migrations 0001–0011 as they are in production: categories, locations, inventory_items, item_images, shopping_list, wasted_items, usage_history, barcode_mappings, recipes, meal_plans, ai_usage_log, push_subscriptions"
+    - "Existing functions kept unchanged for the old app: try_consume_ai_quota, mark_item_wasted, dashboard_summary, set_updated_at"
+    - "Per-unit price rule: inventory_items.price and wasted_items.price are per unit; value = price × quantity"
+    - "Percent-based low-stock rule: current_quantity / initial_quantity × 100 <= low_stock_threshold (default 20, critical <= 10)"
+    - "Quantity fallback: a null initial_quantity or current_quantity is read as quantity, without rewriting the row"
+    - Additive-only rule for migrations 0012 and later while the old app is live
+    - "Planned additive objects: log_item_usage + undo_item_usage (0012), inventory_snapshot + dashboard_summary_v2 (0013), item_consumption + batch run-out (0014), ensure_recipe (0015), user_preferences + inventory_items.low_stock_notified_at (0016), create_items / delete_items / clear_purchased (0017), and an additive push_subscriptions.channel column ('web-push' | 'local', architecture.md §6; its migration file is placed in step 2.3)"
+    - "Production category state after the hand-run make-categories-editable.sql (roadmap 7.0.10): seeded system categories were converted to user-owned, editable rows"
+    - "Row-level security: every row belongs to auth.uid(); new tables and functions keep that isolation"
+    - Inventory item, shopping item, meal slot and push subscription lifecycles
+  out_of_scope:
+    - Writing the migrations themselves (roadmap step 2.3)
+    - Dropping, renaming or retyping anything, including the unused dashboard_summary() and the item_images / barcode_mappings data (only after cutover step 7, by explicit decision)
+    - Household / multi-login sharing (open-questions.md, Later)
+    - "Item photos and barcode UI (D3): their tables, bucket folder and routes are kept untouched, not specified further here"
+    - Backfilling initial_quantity / current_quantity on existing rows
+    - Storage bucket changes (inventory-images stays as in 0003)
+  external_dependencies:
+    - Supabase Postgres (production major version to confirm, roadmap 7.0.8; local config.toml says 15)
+    - Supabase Auth (auth.users, auth.uid())
+    - Supabase Storage bucket inventory-images (private, 5 MiB, jpeg/png/webp; path <uid>/...)
+    - Supabase Realtime on inventory_items, shopping_list, meal_plans (RLS-filtered)
+  shared_schemas:
+    - "categories { id bigint, name text, icon text?, color text?, user_id uuid?, is_system bool default false } unique (coalesce(user_id::text,'system'), lower(name)); RLS read: is_system or own; write: own and not is_system"
+    - locations { id bigint, user_id uuid, name text, sub_location text?, created_at }
+    - inventory_items { id bigint, user_id uuid, name text, category_id bigint NOT NULL -> categories (no cascade), quantity numeric default 0, unit text, purchase_date date?, expiration_date date NOT NULL, location_id bigint? -> locations on delete set null, price numeric? (PER UNIT), notes text?, notification_enabled bool default true, notification_days_before int default 3, barcode text? (unique per user), initial_quantity numeric?, current_quantity numeric?, usage_notes text?, low_stock_threshold numeric default 20 (PERCENT), last_notified_at timestamptz?, created_at, updated_at (trigger) } + planned low_stock_notified_at timestamptz?
+    - usage_history { id bigint, item_id -> inventory_items on delete cascade, user_id, amount_used numeric, remaining_amount numeric, notes text?, recorded_at }
+    - shopping_list { id bigint, user_id, name text, quantity text? (free text), notes text?, category_id bigint?, is_purchased bool default false, created_at }
+    - wasted_items { id bigint, user_id, item_name text, category_id bigint?, quantity numeric, unit text, price numeric? (PER UNIT), wasted_date timestamptz }
+    - recipes { id bigint, user_id, name text, ingredients text (comma-separated), prep_time text?, servings int?, instructions text?, created_at, updated_at } unique (user_id, lower(name))
+    - meal_plans { id bigint, user_id, plan_date date, meal_type 'breakfast'|'lunch'|'dinner', meal_name text, recipe_id bigint? on delete set null, is_favorite bool default false, notes text?, created_at, updated_at } unique (user_id, plan_date, meal_type)
+    - push_subscriptions { id bigint, user_id, endpoint text, p256dh text, auth text, user_agent text?, created_at } unique (user_id, endpoint) + planned channel text
+    - ai_usage_log { id, user_id, request_type text, item_name?, response_days?, response_note?, cost_estimate_cents?, created_at }; view ai_usage_current_month
+    - planned user_preferences { user_id uuid pk, timezone text, notify_hour int, expiry_alerts bool, low_stock_alerts bool, theme 'system'|'light'|'dark' }
+    - TypeScript mirrors live in packages/contracts (inventory, shopping, meals, recipes, waste, locations, categories, preferences)
+state_machines:
+  - name: inventory_item
+    states:
+      - IN_STOCK
+      - LOW_STOCK
+      - USED_UP
+      - WASTED
+      - DELETED
+    initial: IN_STOCK
+    transitions:
+      - from: IN_STOCK
+        event: log_usage_to_low
+        to: LOW_STOCK
+      - from: IN_STOCK
+        event: log_usage_to_zero
+        to: USED_UP
+      - from: LOW_STOCK
+        event: log_usage_to_zero
+        to: USED_UP
+      - from: LOW_STOCK
+        event: correct_usage_up
+        to: IN_STOCK
+      - from: USED_UP
+        event: correct_usage_up
+        to: LOW_STOCK
+      - from: LOW_STOCK
+        event: restock
+        to: IN_STOCK
+      - from: USED_UP
+        event: restock
+        to: IN_STOCK
+      - from: IN_STOCK
+        event: restock
+        to: IN_STOCK
+      - from: LOW_STOCK
+        event: undo_usage
+        to: IN_STOCK
+      - from: USED_UP
+        event: undo_usage
+        to: LOW_STOCK
+      - from: IN_STOCK
+        event: mark_wasted
+        to: WASTED
+      - from: LOW_STOCK
+        event: mark_wasted
+        to: WASTED
+      - from: USED_UP
+        event: mark_wasted
+        to: WASTED
+      - from: IN_STOCK
+        event: delete
+        to: DELETED
+      - from: LOW_STOCK
+        event: delete
+        to: DELETED
+      - from: USED_UP
+        event: delete
+        to: DELETED
+    forbidden:
+      - from: WASTED
+        to: IN_STOCK
+        reason: mark_item_wasted deletes the row; waste undo happens before the server call (hold-until-close), never by resurrecting a row
+      - from: DELETED
+        to: IN_STOCK
+        reason: Delete is held until the Undo window closes; a deleted row is never restored server-side
+      - from: WASTED
+        to: DELETED
+        reason: A wasted item no longer exists in inventory_items
+  - name: shopping_item
+    states:
+      - PENDING
+      - PURCHASED
+      - REMOVED
+    initial: PENDING
+    transitions:
+      - from: PENDING
+        event: tick
+        to: PURCHASED
+      - from: PURCHASED
+        event: untick
+        to: PENDING
+      - from: PENDING
+        event: delete
+        to: REMOVED
+      - from: PURCHASED
+        event: delete
+        to: REMOVED
+      - from: PURCHASED
+        event: clear_purchased
+        to: REMOVED
+    forbidden:
+      - from: REMOVED
+        to: PENDING
+        reason: Deletes and clear-purchased are held until the Undo window closes; a removed row is never restored server-side
+  - name: meal_slot
+    states:
+      - EMPTY
+      - PLANNED
+    initial: EMPTY
+    transitions:
+      - from: EMPTY
+        event: plan
+        to: PLANNED
+      - from: PLANNED
+        event: replace
+        to: PLANNED
+      - from: PLANNED
+        event: edit
+        to: PLANNED
+      - from: PLANNED
+        event: delete
+        to: EMPTY
+    forbidden: []
+  - name: push_subscription
+    states:
+      - NONE
+      - ACTIVE
+      - STALE_KEY
+      - GONE
+    initial: NONE
+    transitions:
+      - from: NONE
+        event: subscribe
+        to: ACTIVE
+      - from: ACTIVE
+        event: vapid_key_changed
+        to: STALE_KEY
+      - from: STALE_KEY
+        event: resubscribe_on_start
+        to: ACTIVE
+      - from: ACTIVE
+        event: push_service_404_or_410
+        to: GONE
+      - from: STALE_KEY
+        event: push_service_404_or_410
+        to: GONE
+      - from: ACTIVE
+        event: sign_out_this_device
+        to: NONE
+      - from: GONE
+        event: subscribe
+        to: ACTIVE
+    forbidden:
+      - from: STALE_KEY
+        to: STALE_KEY
+        reason: A subscription whose applicationServerKey differs from the current VAPID key must be replaced on app start, never kept (step 0.8 root cause)
+negative_constraints:
+  - id: NC-DATA-ADDITIVE-ONLY
+    message: Migrations 0012+ MUST NOT drop, rename, or alter the type of any table, column, function or policy, tighten a constraint on existing data, or change an existing function's behaviour, while the old app is live
+    severity: critical
+  - id: NC-DATA-NO-EDIT-OLD-MIGRATIONS
+    message: Migrations 0001–0011 MUST NOT be edited; they are byte-identical to the old repo
+    severity: critical
+  - id: NC-DATA-RLS
+    message: No new table may be created without RLS enabled and owner-only policies on auth.uid() = user_id; new functions MUST be security invoker (the cron's service-role path is the only exception)
+    severity: critical
+  - id: NC-DATA-NO-SEEDED-CATEGORIES
+    message: Specs, code and tests MUST NOT assume seeded system categories exist in production, nor their ids, names or is_system flag; production categories were converted to user-owned rows by make-categories-editable.sql (7.0.10)
+    severity: high
+  - id: NC-DATA-PRICE-PER-UNIT
+    message: price MUST NOT be stored or summed as a total; it is per unit and every value is price × a quantity
+    severity: high
+  - id: NC-DATA-ONE-LOW-STOCK-RULE
+    message: Low stock MUST NOT be computed as an absolute amount (the old dashboard_summary bug); only as percent of the full amount
+    severity: high
+  - id: NC-DATA-NO-REWRITE-NULL-QTY
+    message: Rows with null initial_quantity or current_quantity MUST NOT be rewritten just to fill them; read them as quantity
+    severity: medium
+  - id: NC-DATA-HIDDEN-UNTOUCHED
+    message: item_images, barcode_mappings, inventory_items.barcode and storage objects MUST NOT be modified or deleted by the new app (D3)
+    severity: high
+  - id: NC-DATA-NO-PROD-WRITE-WITHOUT-ASK
+    message: No production SQL write, db push or data fix may run without the user's explicit go-ahead (D18)
+    severity: critical
+acceptance_criteria:
+  - id: AC-DATA-01
+    given: migrations 0012 and later
+    when: scripts/check-additive-migrations.mjs scans them
+    then: it fails on any drop, rename, alter ... type, or create or replace of a function defined in 0001–0011, and passes otherwise
+    invariant: true
+  - id: AC-DATA-02
+    given: the old app's API test-suite and a local Supabase with 0001–0017 applied
+    when: the old routes run against it
+    then: every old route behaves as before (board loads, usage, add item, shopping tick, dashboard_summary unchanged)
+    invariant: true
+  - id: AC-DATA-03
+    given: an item bought as 10 eggs for a total of 4.00
+    when: it is saved
+    then: price is stored as 0.40, an edit shows 4.00, and stock value and waste value use 0.40 × the relevant quantity
+    invariant: true
+  - id: AC-DATA-04
+    given: an item with initial_quantity 1, current_quantity 0.15 and low_stock_threshold 20
+    when: low stock is evaluated in packages/domain and in dashboard_summary_v2
+    then: both say low stock (15% <= 20%), and an item with current 5 of initial 100 g is low while the same absolute amount of a 5 g item is not
+    invariant: true
+  - id: AC-DATA-05
+    given: an old row with initial_quantity and current_quantity null and quantity 2
+    when: it is read by the new app or by inventory_snapshot
+    then: it is shown as 2 of 2 (100%) and the stored row is unchanged
+    invariant: true
+  - id: AC-DATA-06
+    given: two users A and B on local Supabase
+    when: A reads or writes through any table or any 0012+ function
+    then: A never sees or changes B's rows (RLS isolation holds for user_preferences, usage RPCs, bulk RPCs and snapshots)
+    invariant: true
+  - id: AC-DATA-07
+    given: a database where every category is user-owned and none has is_system = true (production after 7.0.10)
+    when: the contract and integration tests run
+    then: they pass, because each test creates the categories it needs instead of relying on seeded ids or names
+    invariant: true
+  - id: AC-DATA-08
+    given: an item at current 0.6 of 1
+    when: log_item_usage(item, 0.1, note) runs
+    then: one usage_history row (amount_used 0.5, remaining 0.1, note) and the new current_quantity are written in one transaction, and crossed_low_stock is true
+    invariant: false
+  - id: AC-DATA-09
+    given: a usage_history row created by log_item_usage
+    when: undo_item_usage(usage_id) runs
+    then: that row is deleted and current_quantity returns to its previous value
+    invariant: false
+  - id: AC-DATA-10
+    given: an item in any non-deleted state
+    when: it is restocked with a new full amount, optional expiry and optional total price
+    then: quantity = initial_quantity = current_quantity = the new amount, price = total / amount when given, low_stock_notified_at is cleared, and no second item is created
+    invariant: false
+  - id: AC-DATA-11
+    given: a meal_plans slot that is already filled
+    when: a second insert for the same user, date and meal type is attempted
+    then: it is rejected by the unique constraint and the API answers 409 with the existing id
+    invariant: false
+  - id: AC-DATA-12
+    given: a typed meal name that differs only in case from an existing recipe
+    when: ensure_recipe(name) runs
+    then: no duplicate recipe is created and no error is raised
+    invariant: false
+  - id: AC-DATA-13
+    given: a location that has items
+    when: the location is deleted
+    then: the items keep existing with location_id null (on delete set null) and are shown under No location
+    invariant: false
+  - id: AC-DATA-14
+    given: a category that is still referenced by inventory items
+    when: deleting it is attempted
+    then: the FK rejects it and the API returns a readable error instead of a 500
+    invariant: false
+  - id: AC-DATA-15
+    given: a pending shopping item
+    when: it is ticked, unticked, deleted or cleared as purchased
+    then: only the shopping_item transitions in this spec occur, and clear_purchased removes only purchased rows of the caller in one statement
+    invariant: false
+  - id: AC-DATA-16
+    given: a push_subscriptions row whose endpoint returns 404 or 410
+    when: the new cron sends to it
+    then: the row is deleted and the failure is recorded; other users' rows are untouched
+    invariant: false
+  - id: AC-DATA-17
+    given: create_items(jsonb) with N valid items, or delete_items(ids) with N ids
+    when: it runs
+    then: all N rows are created or deleted in one transaction, or none are on error
+    invariant: false
+depends_on: []
+constitution_rules:
+  - AR-ADDITIVE-ONLY
+  - AR-SAME-SEMANTICS
+  - AR-NO-SEED-ASSUMPTIONS
+  - AR-HIDDEN-NOT-DROPPED
+  - CS-PER-UNIT-PRICE
+  - CS-PERCENT-LOW-STOCK
+  - CS-SQL-RPC
+  - NC-SQL-CONCAT

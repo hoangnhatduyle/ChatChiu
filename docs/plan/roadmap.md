@@ -27,10 +27,29 @@ Status 2026-11-16: every step is built and committed. Checks that wait on the us
 | Step | Files | Artifact | Verified by |
 |---|---|---|---|
 | 1.1 Constitution overrides | `.claude/constitution/architecture.md`, `.claude/constitution/coding-standards.md` (React / hooks / data-hook rules: screens never call the API directly; undo pattern, additive-only DB rule while the old app is live) | Project law | Harness `get_constitution` returns the merged rules |
-| 1.2 Data spec | `.claude/specifications/data.inventory.yaml` (from `templates/spec.data.yaml`): tables, the per-unit price rule, the %-based low-stock rule, the additive-only rule | Validated spec | Harness `validate_spec` passes |
-| 1.3 API spec | `.claude/specifications/api.yaml`: every route (old + new), request/response schemas pointing at `packages/contracts` | Validated spec | `validate_spec` |
-| 1.4 Feature specs, one per section of feature-inventory.md | `.claude/specifications/feature.kitchen-board.yaml`, `feature.item-panel.yaml`, `feature.inventory.yaml`, `feature.item-form.yaml`, `feature.receipt-scan.yaml`, `feature.shopping.yaml`, `feature.meals.yaml`, `feature.stats.yaml`, `feature.settings.yaml`, `feature.notifications.yaml`, `feature.auth.yaml`, `feature.app-shell.yaml`. Each `F-xx-nn` becomes an acceptance criterion; undo, rollback and offline states are listed in its state machine. | 12 validated specs | `validate_spec` on each; `trace_artifact` links each spec to its feature-inventory rows |
+| 1.2 Data spec | `.claude/specifications/SPEC-DATA-001.yaml` (data.inventory; from `templates/spec.data.yaml`): tables, the per-unit price rule, the %-based low-stock rule, the additive-only rule | Validated spec | Harness `validate_spec` passes |
+| 1.3 API spec | `.claude/specifications/SPEC-API-001.yaml` (api): every route (old + new), request/response schemas pointing at `packages/contracts` | Validated spec | `validate_spec` |
+| 1.4 Feature specs, one per section of feature-inventory.md | `.claude/specifications/SPEC-<AREA>-001.yaml`, one per section (see the name map below). Each `F-xx-nn` becomes an acceptance criterion; undo, rollback and offline states are listed in its state machine. | 12 validated specs | `validate_spec` on each; `trace_artifact` links each spec to its feature-inventory rows |
 | 1.5 Risk | — | Risk record per spec (auth, notifications, migrations ≥ high) | Harness `assess_risk` entries in `audit_report` |
+
+**Spec file names.** The harness only accepts ids of the form `SPEC-<AREA>-<NNN>`, and `create_spec` writes `<id>.yaml` (decided 2026-11-16, Phase 1). The names used elsewhere in this plan map to files as follows; the area code is the feature-inventory prefix.
+
+| Plan name | Spec file | Feature-inventory rows |
+|---|---|---|
+| `data.inventory.yaml` | `SPEC-DATA-001.yaml` | data rules |
+| `api.yaml` | `SPEC-API-001.yaml` | every route |
+| `feature.auth.yaml` | `SPEC-AU-001.yaml` | F-AU-01…06 |
+| `feature.kitchen-board.yaml` | `SPEC-KB-001.yaml` | F-KB-01…16 |
+| `feature.item-panel.yaml` | `SPEC-QP-001.yaml` | F-QP-01…10 |
+| `feature.inventory.yaml` | `SPEC-IN-001.yaml` | F-IN-01…14 |
+| `feature.item-form.yaml` | `SPEC-IF-001.yaml` | F-IF-01…16 |
+| `feature.receipt-scan.yaml` | `SPEC-RS-001.yaml` | F-RS-01…10 |
+| `feature.shopping.yaml` | `SPEC-SL-001.yaml` | F-SL-01…08 |
+| `feature.meals.yaml` | `SPEC-MP-001.yaml` | F-MP-01…12 |
+| `feature.stats.yaml` | `SPEC-ST-001.yaml` | F-ST-01…08 |
+| `feature.settings.yaml` | `SPEC-SE-001.yaml` | F-SE-01…07 |
+| `feature.notifications.yaml` | `SPEC-NT-001.yaml` | F-NT-01…04 |
+| `feature.app-shell.yaml` | `SPEC-AP-001.yaml` | F-AP-01…05 |
 
 ## Phase 2: database and API
 
@@ -111,7 +130,7 @@ Every feature step is done only when:
 | 7.0.7 | 0.7 | Optional live check of F-MP-05 on the old app: plan a meal with a new typed name and see whether it appears under Recipes | — | F-MP-05 row notes the live result | 5.6 |
 | 7.0.8 | 0.2 | Confirm the production Postgres major version and set `supabase/config.toml` `[db] major_version` to match (currently 15) | `supabase/config.toml` | Matches the dashboard's version | 2.3 |
 | 7.0.9 | 0.8 | Give this machine's Supabase CLI access to the app's project (the current login can't see it), then `supabase link` (local files only) | `supabase/.temp/` (gitignored) | `supabase projects list` shows the project | Cutover step 1 (backup) and step 2 (`db push`) |
-| 7.0.10 | 0.2 | Account for the hand-run `make-categories-editable.sql` from the old repo (production category data differs from the migration seed) | `.claude/specifications/data.inventory.yaml` | Data spec notes it; contract tests don't assume seeded system categories | 1.2 |
+| 7.0.10 | 0.2 | Account for the hand-run `make-categories-editable.sql` from the old repo (production category data differs from the migration seed). **Spec half done in 1.2**: `SPEC-DATA-001` NC-DATA-NO-SEEDED-CATEGORIES + AC-DATA-07, and constitution rules AR-NO-SEED-ASSUMPTIONS / CS-NO-SEEDED-CATEGORIES. Left: the tests themselves. | `SPEC-DATA-001.yaml`; `api/__tests__/*`, `packages/contracts` tests | Contract and integration tests pass on a DB with no `is_system` categories | 2.1 |
 
 Later phases append their own leftovers to this table the same way.
 
