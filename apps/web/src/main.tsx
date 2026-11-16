@@ -1,10 +1,25 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
+// Dev-only spike page (roadmap 0.6). The flag is replaced at build time, so production builds
+// without VITE_ENABLE_DIAGNOSTICS=true drop this import entirely. Real routing arrives in step 3.3.
+const DiagnosticsPage =
+  import.meta.env.VITE_ENABLE_DIAGNOSTICS === 'true'
+    ? lazy(() => import('./features/diagnostics/DiagnosticsPage.tsx'))
+    : null
+
+const showDiagnostics = DiagnosticsPage !== null && window.location.pathname === '/diagnostics'
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {showDiagnostics && DiagnosticsPage ? (
+      <Suspense fallback={null}>
+        <DiagnosticsPage />
+      </Suspense>
+    ) : (
+      <App />
+    )}
   </StrictMode>,
 )

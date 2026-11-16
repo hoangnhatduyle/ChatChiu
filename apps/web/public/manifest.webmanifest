@@ -1,0 +1,13 @@
+{
+  "name": "Chắt Chiu",
+  "short_name": "Chắt Chiu",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "background_color": "#fafafa",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
