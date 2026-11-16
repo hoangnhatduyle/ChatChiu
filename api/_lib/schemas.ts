@@ -22,7 +22,13 @@ export const inventoryItemCreate = z.object({
 });
 export type InventoryItemCreate = z.infer<typeof inventoryItemCreate>;
 
-export const inventoryItemUpdate = inventoryItemCreate.partial();
+// Zod 4 applies .default() inside optional fields, so a plain .partial() would inject
+// notificationEnabled/notificationDaysBefore on every PATCH. Override them without defaults
+// to keep the zod 3 behaviour: fields absent from the body stay absent.
+export const inventoryItemUpdate = inventoryItemCreate.partial().extend({
+  notificationEnabled: z.boolean().optional(),
+  notificationDaysBefore: z.coerce.number().int().min(0).max(365).optional(),
+});
 export type InventoryItemUpdate = z.infer<typeof inventoryItemUpdate>;
 
 // ----- shopping list --------------------------------------------------------
@@ -70,7 +76,10 @@ export const mealPlanCreate = z.object({
   notes: optionalText(500),
 });
 
-export const mealPlanUpdate = mealPlanCreate.partial();
+// No default on isFavorite for updates (see inventoryItemUpdate).
+export const mealPlanUpdate = mealPlanCreate.partial().extend({
+  isFavorite: z.boolean().optional(),
+});
 
 // ----- recipes --------------------------------------------------------------
 
