@@ -2,7 +2,7 @@ id: SPEC-AP-001
 version: 0.1.0
 kind: product
 title: App shell, offline and sync (feature.app-shell)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Installable PWA with instant cached reads and an offline write queue (F-AP-01)

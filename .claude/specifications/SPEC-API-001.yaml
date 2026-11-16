@@ -2,7 +2,7 @@ id: SPEC-API-001
 version: 0.1.0
 kind: api
 title: Chắt Chiu HTTP API v2 (superset of the old API)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - "Envelope: every route returns { data } with status 200 on success and { error: { code, message, details? } } on failure (codes BAD_REQUEST 400, UNAUTHORIZED 401, FORBIDDEN 403, NOT_FOUND 404, METHOD_NOT_ALLOWED 405, CONFLICT 409, PAYLOAD_TOO_LARGE 413, UNSUPPORTED_MEDIA_TYPE 415, RATE_LIMITED 429, QUOTA_EXCEEDED 429, INTERNAL 500); details only outside production"

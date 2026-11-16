@@ -2,7 +2,7 @@ id: SPEC-DATA-001
 version: 0.1.0
 kind: data
 title: "Inventory data model: existing tables, rules, and additive changes 0012–0017"
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - "Existing tables from migrations 0001–0011 as they are in production: categories, locations, inventory_items, item_images, shopping_list, wasted_items, usage_history, barcode_mappings, recipes, meal_plans, ai_usage_log, push_subscriptions"

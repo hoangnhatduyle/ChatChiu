@@ -2,7 +2,7 @@ id: SPEC-IN-001
 version: 0.1.0
 kind: product
 title: Inventory list (feature.inventory)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Search by name and notes (F-IN-01)

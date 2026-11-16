@@ -2,7 +2,7 @@ id: SPEC-RS-001
 version: 0.1.0
 kind: product
 title: Receipt scan (feature.receipt-scan)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Camera or gallery capture with on-device compression (F-RS-01)

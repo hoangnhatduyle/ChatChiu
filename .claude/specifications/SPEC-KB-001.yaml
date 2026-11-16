@@ -2,7 +2,7 @@ id: SPEC-KB-001
 version: 0.1.0
 kind: product
 title: Kitchen board (feature.kitchen-board)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - One column per location plus a No location column (F-KB-01)

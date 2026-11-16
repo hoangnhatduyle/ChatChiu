@@ -2,7 +2,7 @@ id: SPEC-QP-001
 version: 0.1.0
 kind: product
 title: Quick-action panel (feature.item-panel)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Side panel on the tablet, bottom sheet on the phone (ResponsivePanel), opened from the board, the inventory list and search

@@ -2,7 +2,7 @@ id: SPEC-AU-001
 version: 0.1.0
 kind: product
 title: Sign-in and account (feature.auth)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Email and password sign-in with a persisted session (F-AU-01)

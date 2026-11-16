@@ -2,7 +2,7 @@ id: SPEC-NT-001
 version: 0.1.0
 kind: product
 title: Notifications on every device (feature.notifications)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Daily expiry reminder, grouped, at most once a day, tap opens the inventory (F-NT-01)

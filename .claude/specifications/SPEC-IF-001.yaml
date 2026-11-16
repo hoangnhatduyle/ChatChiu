@@ -2,7 +2,7 @@ id: SPEC-IF-001
 version: 0.1.0
 kind: product
 title: Item form, add and edit (feature.item-form)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Name with autocomplete (F-IF-01)

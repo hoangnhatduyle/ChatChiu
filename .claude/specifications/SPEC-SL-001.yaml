@@ -2,7 +2,7 @@ id: SPEC-SL-001
 version: 0.1.0
 kind: product
 title: Shopping list (feature.shopping)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Always-visible quick add with name, free-text quantity and notes (F-SL-01)

@@ -2,7 +2,7 @@ id: SPEC-SE-001
 version: 0.1.0
 kind: product
 title: Settings (feature.settings)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Locations add, edit, delete with an affected-items count (F-SE-01)

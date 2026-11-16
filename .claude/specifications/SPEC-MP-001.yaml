@@ -2,7 +2,7 @@ id: SPEC-MP-001
 version: 0.1.0
 kind: product
 title: Meal plan and recipe library (feature.meals)
-status: draft
+status: active
 context_and_scope:
   in_scope:
     - Weekly calendar 7 days × breakfast/lunch/dinner with prev/next/Today (F-MP-01)
