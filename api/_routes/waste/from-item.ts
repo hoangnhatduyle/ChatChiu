@@ -1,21 +1,14 @@
-import { z } from 'zod';
 import { authedHandler, assertMethod } from '../../_lib/handler.js';
 import { ApiError } from '../../_lib/errors.js';
 import { parseBody } from '../../_lib/validation.js';
 import { toCamel } from '../../_lib/mappers.js';
-import { positiveNumber } from '../../_lib/validation.js';
+import { wasteFromItem as schema } from '../../_lib/schemas.js';
 
 // POST /api/waste/from-item
 // Body: { itemId, quantity?, unit? }
 // Atomically (a) inserts a wasted_items row from the inventory item and
 // (b) deletes the inventory item. See supabase/migrations/0004_waste_function.sql.
 // Fixes audit finding H16.
-
-const schema = z.object({
-  itemId: z.coerce.number().int().positive(),
-  quantity: positiveNumber.optional().nullable(),
-  unit: z.string().trim().max(30).optional().nullable(),
-});
 
 export default authedHandler(async ({ client }, req) => {
   assertMethod(req, ['POST']);

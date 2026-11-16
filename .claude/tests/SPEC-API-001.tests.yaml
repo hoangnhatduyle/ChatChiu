@@ -1,0 +1,178 @@
+spec_id: SPEC-API-001
+generated_at: 2026-11-16T23:21:21.099Z
+cases:
+  - id: T-SPEC-API-001-AC-AC_API_01
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-01
+    assertion: "given any route, when it succeeds or fails, then the body is { data } with 200, or { error: { code, message } } with the mapped status; details is absent when NODE_ENV=production"
+    invariant: true
+  - id: T-SPEC-API-001-AC-AC_API_02
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-02
+    assertion: given the old app's request shapes for every old route (api/__tests__/old-routes.test.ts), when replayed against API v2 on local Supabase, then each response still parses with the old app's types (only added fields)
+    invariant: true
+  - id: T-SPEC-API-001-AC-AC_API_03
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-03
+    assertion: given each update schema in packages/contracts, when it parses an empty object, then the result is {} (no injected notificationEnabled, notificationDaysBefore or isFavorite)
+    invariant: true
+  - id: T-SPEC-API-001-AC-AC_API_04
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-04
+    assertion: given a request without a bearer token or with an expired one, when it calls any route except health and the send job, then it gets 401 UNAUTHORIZED
+    invariant: true
+  - id: T-SPEC-API-001-AC-AC_API_05
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-05
+    assertion: given users A and B, when A calls any route with B's ids, then A gets 404 or an empty result and B's data is unchanged
+    invariant: true
+  - id: T-SPEC-API-001-AC-AC_API_06
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-06
+    assertion: given a signed-in user with items, locations and categories, when GET /api/bootstrap is called, then one response carries items, locations, categories and summary, and summary.totalValue = Σ price × current quantity with percent-based low stock
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_07
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-07
+    assertion: "given an item at 0.6 of 1, when POST /api/inventory/:id/usage { amountUsed: 0.5, currentQuantity: 0.1 }, then the history row and current_quantity are written atomically and the response has crossedLowStock true; POST /usage-undo with that usageId restores 0.6 and removes the row"
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_08
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-08
+    assertion: "given an item, when POST /api/inventory/:id/restock { quantity: 2, totalPrice: 5 }, then quantity = initialQuantity = currentQuantity = 2, price = 2.5 per unit, lowStockNotifiedAt is null, and the item id is unchanged"
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_09
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-09
+    assertion: given N valid items from a receipt, when POST /api/inventory/bulk, then all N are created in one transaction and returned; one invalid item rejects the whole request with 400 and nothing is created
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_10
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-10
+    assertion: given selected item ids, when DELETE /api/inventory/bulk { ids }, then the caller's matching items are deleted in one statement and the count is returned
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_11
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-11
+    assertion: "given three purchased items A, B, C, two pending items, and a fourth item D ticked purchased after the tap, when POST /api/shopping-list/clear-purchased { ids: [A, B, C] }, then { deleted: 3 }; D and the two pending items remain; an id in the list that is no longer purchased, or belongs to another user, is not deleted"
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_12
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-12
+    assertion: given a filled meal slot, when POST /api/meal-plans for the same date and type, then 409 CONFLICT with error.existingId set to the existing plan id (also in production) so the UI can offer Replace
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_13
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-13
+    assertion: given a new typed meal name, when POST /api/meal-plans succeeds, then a recipe with that name exists afterwards (case-insensitive) and no error is swallowed
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_14
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-14
+    assertion: given waste entries with categories, when GET /api/waste, then each entry includes its category name instead of Unknown
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_15
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-15
+    assertion: given recipes and items expiring within 3 days, when GET /api/recipes/suggestions, then recipes whose ingredient words match those item names are returned ranked by match count, with no OpenAI call
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_16
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-16
+    assertion: given usage history over the last 30 days, when GET /api/stats/overview, then low-stock rows carry average daily usage and a predicted run-out date, and most-wasted lists the top 5 by count and by value
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_17
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-17
+    assertion: given no user_preferences row, when GET /api/preferences, then defaults are returned (the ?tz= timezone when valid, else UTC; notify hour 9, both alerts on, theme system) and no row is written; PATCH with one field changes only that field
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_18
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-18
+    assertion: given a user with notify hour 9 in her timezone and an item due within its days_before, when the send job runs hourly, then she gets exactly one grouped reminder in the run where her local hour first reaches 9, and none in later runs that local day
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_19
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-19
+    assertion: given an item that crossed its low-stock threshold and low_stock_notified_at is null, when the send job runs, then one low-stock push is sent and low_stock_notified_at is set; no further one until a restock clears it
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_20
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-20
+    assertion: given a subscription the push service answers 404 or 410, when the send job sends to it, then the subscription is deleted and the failure is recorded as a push_failures row (status code and message)
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_21
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-21
+    assertion: given the AI quota for this month is used up, when POST /api/ai/expiration-suggest or /api/ai/receipt-scan, then 429 QUOTA_EXCEEDED without an OpenAI call
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_22
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-22
+    assertion: given a receipt imagePath outside the caller's folder, over 5 MiB, or not JPEG/PNG/WebP, when POST /api/ai/receipt-scan, then 403, 413 or 415 respectively
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_23
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-23
+    assertion: given a call to the send job without the CRON_SECRET bearer, when it arrives, then 401 and nothing is sent
+    invariant: false
+  - id: T-SPEC-API-001-AC-AC_API_24
+    kind: acceptance
+    traces_to: SPEC-API-001#AC-API-24
+    assertion: given a database with no is_system categories, when the API integration tests run, then they pass using categories they create themselves
+    invariant: false
+  - id: T-SPEC-API-001-FORBID-usage_entry_UNDONE_LOGGED
+    kind: forbidden-transition
+    traces_to: SPEC-API-001#usage_entry:UNDONE->LOGGED
+    assertion: "[usage_entry] transition UNDONE -> LOGGED MUST be rejected (An undone usage row is deleted; logging again creates a new entry with a new id)"
+    invariant: true
+  - id: T-SPEC-API-001-FORBID-ai_quota_month_EXHAUSTED_EXHAUSTED
+    kind: forbidden-transition
+    traces_to: SPEC-API-001#ai_quota_month:EXHAUSTED->EXHAUSTED
+    assertion: "[ai_quota_month] transition EXHAUSTED -> EXHAUSTED MUST be rejected (No OpenAI call may be made while the quota is exhausted; the API answers QUOTA_EXCEEDED before calling OpenAI)"
+    invariant: true
+  - id: T-SPEC-API-001-FORBID-scheduled_send_SENT_TODAY_DUE
+    kind: forbidden-transition
+    traces_to: SPEC-API-001#scheduled_send:SENT_TODAY->DUE
+    assertion: "[scheduled_send] transition SENT_TODAY -> DUE MUST be rejected (At most one expiry reminder per user per local day)"
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_ENVELOPE
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-ENVELOPE
+    assertion: "No route may return a success body other than { data } or an error body other than { error: { code, message, details?, existingId? } }; the old frontend reads this shape"
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_NO_BREAK_OLD
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-NO-BREAK-OLD
+    assertion: An existing route MUST NOT remove, rename or retype a request or response field the old app uses; changes are additive
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_UPDATE_NO_DEFAULTS
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-UPDATE-NO-DEFAULTS
+    assertion: PATCH schemas MUST NOT contain .default(); an empty PATCH body must parse to {} (zod 4, commit b095809)
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_SERVICE_ROLE
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-SERVICE-ROLE
+    assertion: The service-role key MUST NOT be used outside the scheduled send job; user routes use the caller's JWT so RLS applies
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_NO_LEAK
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-NO-LEAK
+    assertion: Production error responses MUST NOT include stack traces, SQL errors or upstream messages
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_AI_QUOTA_FIRST
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-AI-QUOTA-FIRST
+    assertion: No OpenAI request may be sent before try_consume_ai_quota succeeds
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_SEND_AUTH
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-SEND-AUTH
+    assertion: The scheduled send route MUST reject calls without the CRON_SECRET bearer
+    invariant: true
+  - id: T-SPEC-API-001-NC-NC_API_NO_SEED_IDS
+    kind: negative-constraint
+    traces_to: SPEC-API-001#NC-API-NO-SEED-IDS
+    assertion: No route may hard-code a category or location id (old receipt flow used id 1)
+    invariant: true

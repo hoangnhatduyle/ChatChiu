@@ -1,4 +1,4 @@
-import { z, type ZodSchema } from 'zod';
+import type { ZodSchema } from 'zod';
 import type { VercelRequest } from '@vercel/node';
 import { ApiError } from './errors.js';
 
@@ -21,18 +21,12 @@ export function parseQuery<T>(req: VercelRequest, schema: ZodSchema<T>): T {
   return result.data;
 }
 
-// ----- shared field constraints --------------------------------------------
-
-export const idSchema = z.coerce.number().int().positive();
-
-export const dateString = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
-
-export const positiveNumber = z.coerce.number().nonnegative();
-
-export const optionalText = (max = 500) =>
-  z.string().trim().max(max).optional().nullable();
-
-export const requiredText = (max = 200) =>
-  z.string().trim().min(1).max(max);
+// Shared field constraints moved to packages/contracts (step 2.1); re-exported
+// here so existing route imports keep working.
+export {
+  dateString,
+  idSchema,
+  optionalText,
+  positiveNumber,
+  requiredText,
+} from '@chatchiu/contracts';

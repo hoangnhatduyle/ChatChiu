@@ -1,14 +1,8 @@
-import { z } from 'zod';
 import { authedHandler, assertMethod } from '../../_lib/handler.js';
 import { ApiError } from '../../_lib/errors.js';
-import { parseBody, parseQuery, dateString } from '../../_lib/validation.js';
-import { mealPlanCreate } from '../../_lib/schemas.js';
+import { parseBody, parseQuery } from '../../_lib/validation.js';
+import { mealPlanCreate, mealPlanListQuery as listQuery } from '../../_lib/schemas.js';
 import { toCamel, toCamelList, toSnake } from '../../_lib/mappers.js';
-
-const listQuery = z.object({
-  from: dateString.optional(),
-  to: dateString.optional(),
-});
 
 export default authedHandler(async ({ user, client }, req) => {
   const method = assertMethod(req, ['GET', 'POST']);

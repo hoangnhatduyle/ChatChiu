@@ -7,18 +7,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 // production we never return internal information (stack traces, DB errors,
 // upstream API messages) to the client. Audit findings M5 / M6 / M7 / M8.
 
-export type ApiErrorCode =
-  | 'BAD_REQUEST'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
-  | 'CONFLICT'
-  | 'PAYLOAD_TOO_LARGE'
-  | 'UNSUPPORTED_MEDIA_TYPE'
-  | 'RATE_LIMITED'
-  | 'QUOTA_EXCEEDED'
-  | 'METHOD_NOT_ALLOWED'
-  | 'INTERNAL';
+import type { ApiErrorCode } from '@chatchiu/contracts';
+
+export type { ApiErrorCode };
 
 const STATUS_FOR: Record<ApiErrorCode, number> = {
   BAD_REQUEST: 400,

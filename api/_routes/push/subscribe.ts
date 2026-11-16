@@ -1,17 +1,8 @@
-import { z } from 'zod';
 import { authedHandler, assertMethod } from '../../_lib/handler.js';
 import { ApiError } from '../../_lib/errors.js';
 import { parseBody } from '../../_lib/validation.js';
 import { env } from '../../_lib/env.js';
-
-const subscribeSchema = z.object({
-  endpoint: z.string().url().max(2000),
-  expirationTime: z.number().nullable().optional(),
-  keys: z.object({
-    p256dh: z.string().min(1).max(500),
-    auth: z.string().min(1).max(500),
-  }),
-});
+import { pushSubscribe as subscribeSchema } from '../../_lib/schemas.js';
 
 function assertVapidConfigured(): void {
   if (!env.vapidPublicKey || !env.vapidPrivateKey) {

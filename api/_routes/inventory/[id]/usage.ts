@@ -1,15 +1,8 @@
-import { z } from 'zod';
 import { authedHandler, assertMethod } from '../../../_lib/handler.js';
 import { ApiError } from '../../../_lib/errors.js';
 import { parseBody } from '../../../_lib/validation.js';
 import { toCamel, toCamelList, toSnake } from '../../../_lib/mappers.js';
-import { positiveNumber, optionalText } from '../../../_lib/validation.js';
-
-const schema = z.object({
-  amountUsed: positiveNumber,
-  currentQuantity: positiveNumber,
-  notes: optionalText(500),
-});
+import { usageLog as schema } from '../../../_lib/schemas.js';
 
 export default authedHandler(async ({ user, client }, req) => {
   const method = assertMethod(req, ['GET', 'POST']);
