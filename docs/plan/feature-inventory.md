@@ -183,10 +183,37 @@ The secondary "everything" view: a table on the tablet, cards on the phone.
 
 | ID | Meant to do | Today | New app |
 |---|---|---|---|
-| F-NT-01 | Daily expiry reminder: items expiring within each item's "days before" (default 3), at most once a day, grouped ("3 items expiring soon"), tap → inventory | ❌ **Never received on the iPhone** (Home Screen app, notifications on; reported 2026-11-16) and ❌ **on the Fire tablet**. Cause for the iPhone is unknown until step 0.8. | Works on **every device she uses**; see architecture.md, Notifications |
+| F-NT-01 | Daily expiry reminder: items expiring within each item's "days before" (default 3), at most once a day, grouped ("3 items expiring soon"), tap → inventory | ❌ **Never received on the iPhone** (Home Screen app, notifications on; reported 2026-11-16) and ❌ **on the Fire tablet**. iPhone cause: see *Step 0.8 push diagnosis* below (leading cause: VAPID key rotated on 2026-08-06, so a subscription made earlier no longer matches; confirmation pending the DB check). | Works on **every device she uses**; see architecture.md, Notifications |
 | F-NT-02 | Cron runs at 13:00 UTC and calculates "today" in **UTC** | ⚠️ The day can be off by one around midnight local time | Calculated in her timezone (Settings), sent at a time she picks |
 | F-NT-03 | (D9) Low-stock alert when an item crosses its threshold | ❌ stub | "Butter is running low (15%)", at most once per item until it's restocked |
 | F-NT-04 | Test notification | ✅ | Same, per device, with a status readout ("This device: notifications on ✓") |
+
+### Step 0.8 push diagnosis (read-only, 2026-11-16)
+
+Each link in the old app's chain, checked against production without changing anything:
+
+| # | Link | Finding |
+|---|---|---|
+| 1 | Cron registered and scheduled | ✅ `vercel crons list`: `/api/cron/check-expirations` at `0 13 * * *`. Its run history is **not visible**: Vercel Hobby keeps runtime logs for about an hour. |
+| 2 | Env vars on the old project (names only) | ✅ `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (Production only, created 2026-08-06), `VAPID_SUBJECT`, `CRON_SECRET` all set. `NG_APP_VAPID_PUBLIC_KEY` is not set, but nothing reads it: the client key is **hard-coded** in `src/environments/environment.prod.ts`. |
+| 3 | Client and server key pair | ⚠️ The hard-coded client key was **rotated on 2026-08-06** (`d94899c`: `BDLsPLj…` → `BPslm83…`), the same day the server VAPID vars were created. The live bundle ships `BPslm83…`. `PushService.subscribe()` reuses an existing browser subscription (`getSubscription()`) **without checking its key**, so a subscription made before the rotation stays tied to the old key. Apple then rejects every push signed with the new private key. |
+| 4 | Failures are invisible | ⚠️ `sendPushToMany` swallows rejections (`console.warn` only, logs gone within an hour), never deletes dead subscriptions (404/410), and `last_notified_at` is written **only when a push is accepted**. Nothing ever surfaced the failure. |
+| 5 | Service worker | ✅ `/sw-push.js` is served (200, `Service-Worker-Allowed: /sw-push/`) and always calls `showNotification`, as iOS requires. |
+| 6 | Subscriptions and due items in the DB | ⏳ The Supabase CLI on this machine is signed in to a different account, so the user runs [`phase0/push-diagnosis.sql`](phase0/push-diagnosis.sql) (SELECT only) in the dashboard. |
+| 7 | `POST /api/push/test` from her Home Screen app | ⏳ Settings → "Send test notification" on the iPhone. `{sent: 1}` without a banner points at the device; the error "Could not deliver test notification" means the push service rejected it (key mismatch or a dead subscription). |
+
+**How to read the DB results** (query rows A–H):
+
+- **No iPhone row in A:** the subscribe call never saved (for example it was made before the server VAPID vars existed and got "not configured"). Root cause = **subscription missing**.
+- **iPhone row created before 2026-08-06 20:05 UTC and D = 0:** root cause = **VAPID key mismatch** (link 3), confirmed by the test button failing.
+- **iPhone row created after the rotation, D > 0, E recent:** Apple accepted pushes, so the problem is on the device (notification settings or Focus for the Home Screen app).
+- **F/G/H = 0:** nothing was ever due for a subscribed user, so no push was ever attempted.
+
+Carried into step 5.8 regardless of the result:
+
+- The VAPID public key comes from `VITE_VAPID_PUBLIC_KEY`, not source code.
+- On every app start the client compares the subscription's `applicationServerKey` with the current key and re-subscribes when they differ.
+- The cron deletes subscriptions on 404/410 and records per-send failures in a way we can read later.
 
 ## 12. App-wide
 
