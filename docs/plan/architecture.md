@@ -91,7 +91,7 @@ New migrations in `supabase/migrations/`:
 | `0013_inventory_snapshot.sql` | `inventory_snapshot()` for `/api/bootstrap`; `dashboard_summary_v2()` with the **%-based** low-stock rule and **price × current** stock value | F-ST-05, F-ST-06 (the old `dashboard_summary()` is left untouched for the old app) |
 | `0014_consumption_stats.sql` | `item_consumption(item_id)` and a per-user batch version: average daily use over the last 30 days → predicted run-out date | F-KB-10, F-ST-06 |
 | `0015_ensure_recipe.sql` | `ensure_recipe(name)` → `insert … on conflict (user_id, lower(name)) do nothing` | F-MP-05 |
-| `0016_notification_prefs.sql` | `user_preferences` table (timezone, notify hour, expiry alerts on, low-stock alerts on, theme); `inventory_items.low_stock_notified_at` | F-NT-02, F-NT-03 |
+| `0016_notification_prefs.sql` | `user_preferences` table (timezone, notify hour, expiry alerts on, low-stock alerts on, theme, `last_expiry_reminder_on`); `inventory_items.low_stock_notified_at`; `push_subscriptions.channel` (§6); `push_failures` table (send failures, owner-readable) (decided 2026-11-16, Phase 2) | F-NT-01…03 |
 | `0017_bulk_ops.sql` | `create_items(jsonb)`, `delete_items(bigint[])`, `clear_purchased(bigint[])` (only the ids purchased when she tapped; decided 2026-11-16) | F-RS-09, F-IN-10, F-SL-04 |
 
 New or changed API routes under `api/_routes/`:
@@ -109,7 +109,8 @@ New or changed API routes under `api/_routes/`:
   - `inventory/[id]/usage.ts` → uses the RPC
   - `waste/index.ts` → joins the category name
   - `meal-plans/index.ts` → `ensure_recipe` RPC; 409 returns the existing id so the UI can offer Replace
-  - `cron/check-expirations.ts` → user timezone, low-stock pass, writes `low_stock_notified_at`
+  - `cron/check-expirations.ts` → user timezone (UTC when she has no preferences row), at most one expiry run per local day (`last_expiry_reminder_on`), low-stock pass, writes `low_stock_notified_at`, deletes 404/410 subscriptions and records failures in `push_failures`
+  - `categories/[id].ts` → deleting a category still used by items answers 409 CONFLICT instead of 500 (AC-DATA-14; added 2026-11-16, Phase 2)
 
 Response envelope: keep the old app's shape, since the old frontend depends on it: success is `{ data: … }` and errors are `{ error: { code, message, details? } }` (`api/_lib/errors.ts`). New routes use the same wrapper (decided 2026-11-16, Phase 1).
 

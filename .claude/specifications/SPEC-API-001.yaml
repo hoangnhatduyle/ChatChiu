@@ -13,15 +13,16 @@ context_and_scope:
     - "OLD changed — GET|POST /api/inventory/:id/usage: POST uses log_item_usage (atomic) and adds crossedLowStock + the updated item to the response; same request body { amountUsed, currentQuantity, notes? }  [contracts: inventory]"
     - "OLD unchanged — GET|POST /api/locations; PATCH|DELETE /api/locations/:id  [contracts: locations]"
     - "OLD unchanged — GET|POST /api/categories; PATCH|DELETE /api/categories/:id (409 on duplicate name, 404 when not editable)  [contracts: categories]"
+    - "OLD changed — DELETE /api/categories/:id: a category still used by items answers 409 CONFLICT with a readable message instead of 500 (AC-DATA-14; added to architecture.md §3.4 on 2026-11-16)"
     - "OLD unchanged — GET|POST /api/shopping-list; PATCH|DELETE /api/shopping-list/:id  [contracts: shopping — shoppingItemCreate, shoppingItemUpdate]"
     - "OLD changed — GET|POST /api/meal-plans (GET ?from&to; POST calls ensure_recipe and a 409 carries the existing plan id as error.existingId, an additive field present in production too, because details is stripped there); PATCH|DELETE /api/meal-plans/:id (favourite propagates to sibling plans)  [contracts: meals — mealPlanCreate, mealPlanUpdate]"
     - "OLD unchanged — GET|POST /api/recipes; PATCH|DELETE /api/recipes/:id  [contracts: recipes]"
     - "OLD changed — GET|POST /api/waste: GET joins the category name; POST /api/waste/from-item (mark_item_wasted); DELETE /api/waste/:id  [contracts: waste — wasteCreate]"
     - OLD unchanged — GET /api/statistics/dashboard (old dashboard_summary, kept for the old app)
     - "OLD unchanged — POST /api/ai/expiration-suggest; POST /api/ai/receipt-scan (monthly AI quota consumed in SQL before OpenAI; image ownership, size <= 5 MiB and MIME sniffing)  [contracts: ai — expirationSuggestRequest, receiptScanRequest]"
-    - OLD unchanged — POST /api/uploads/sign; GET /api/uploads/read  [signUploadRequest; module chosen in step 2.1]
-    - OLD unchanged — POST|DELETE /api/push/subscribe; POST /api/push/test  [module chosen in step 2.1]
-    - "OLD changed — scheduled send job /api/cron/check-expirations (CRON_SECRET bearer): user timezone and notify hour, low-stock pass writing low_stock_notified_at, deletes subscriptions on 404/410, records per-send failures; triggered by a Vercel Schedule (architecture.md §6)"
+    - "OLD unchanged — POST /api/uploads/sign; GET /api/uploads/read  [contracts: ai — signUploadRequest (uploads only feed receipt scanning; chosen in step 2.1)]"
+    - "OLD unchanged — POST|DELETE /api/push/subscribe; POST /api/push/test  [contracts: preferences — pushSubscribe (chosen in step 2.1)]"
+    - "OLD changed — scheduled send job /api/cron/check-expirations (CRON_SECRET bearer): user timezone and notify hour, low-stock pass writing low_stock_notified_at, deletes subscriptions on 404/410, records per-send failures in push_failures; at most one expiry run per user per local day via user_preferences.last_expiry_reminder_on; a user with no user_preferences row is treated as timezone UTC, notify hour 9; triggered by a Vercel Schedule (architecture.md §6)"
     - OLD hidden by D3, kept unchanged — GET|POST /api/barcode-mappings; GET /api/barcode-mappings/:barcode; GET|POST /api/inventory/:id/images; GET /api/inventory/by-barcode/:barcode/images; DELETE /api/inventory/images/:imageId
     - "NEW — GET /api/bootstrap -> { items, locations, categories, summary } from inventory_snapshot() + dashboard_summary_v2() in one round trip  [contracts: inventory, locations, categories, stats]"
     - "NEW — POST /api/inventory/bulk (create many via create_items) and DELETE /api/inventory/bulk (delete many via delete_items)  [contracts: inventory]"
@@ -30,7 +31,7 @@ context_and_scope:
     - "NEW — POST /api/shopping-list/clear-purchased { ids } -> { deleted } (only the ids purchased when she tapped)  [contracts: shopping]"
     - "NEW — GET /api/recipes/suggestions -> recipes ranked by matches against items expiring within 3 days  [contracts: recipes]"
     - "NEW — GET /api/stats/overview?range=week|month|year|all&categoryId? -> stock value, counts, by category/location, recently added, waste totals, waste by month/category, most wasted (count and value), low stock with rate and run-out  [contracts: stats]"
-    - "NEW — GET|PATCH /api/preferences { timezone, notifyHour, expiryAlerts, lowStockAlerts, theme }  [contracts: preferences]"
+    - "NEW — GET|PATCH /api/preferences { timezone, notifyHour, expiryAlerts, lowStockAlerts, theme }; GET takes an optional ?tz=<IANA zone> used only for the default when no row exists (nothing is written)  [contracts: preferences]"
     - Request validation with zod 4 schemas from packages/contracts; update schemas carry no defaults
   out_of_scope:
     - Changing the payload shape of any old route inside { data } beyond adding fields
@@ -132,7 +133,7 @@ acceptance_criteria:
     then: "the body is { data } with 200, or { error: { code, message } } with the mapped status; details is absent when NODE_ENV=production"
     invariant: true
   - id: AC-API-02
-    given: the old app's request fixtures for every old route
+    given: the old app's request shapes for every old route (api/__tests__/old-routes.test.ts)
     when: replayed against API v2 on local Supabase
     then: each response still parses with the old app's types (only added fields)
     invariant: true
@@ -209,7 +210,7 @@ acceptance_criteria:
   - id: AC-API-17
     given: no user_preferences row
     when: GET /api/preferences
-    then: defaults are returned (device-supplied timezone, notify hour 9, both alerts on, theme system); PATCH with one field changes only that field
+    then: defaults are returned (the ?tz= timezone when valid, else UTC; notify hour 9, both alerts on, theme system) and no row is written; PATCH with one field changes only that field
     invariant: false
   - id: AC-API-18
     given: a user with notify hour 9 in her timezone and an item due within its days_before
@@ -224,7 +225,7 @@ acceptance_criteria:
   - id: AC-API-20
     given: a subscription the push service answers 404 or 410
     when: the send job sends to it
-    then: the subscription is deleted and the failure is recorded in a readable place
+    then: the subscription is deleted and the failure is recorded as a push_failures row (status code and message)
     invariant: false
   - id: AC-API-21
     given: the AI quota for this month is used up

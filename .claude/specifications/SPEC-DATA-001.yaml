@@ -11,7 +11,7 @@ context_and_scope:
     - "Percent-based low-stock rule: current_quantity / initial_quantity × 100 <= low_stock_threshold (default 20, critical <= 10)"
     - "Quantity fallback: a null initial_quantity or current_quantity is read as quantity, without rewriting the row"
     - Additive-only rule for migrations 0012 and later while the old app is live
-    - "Planned additive objects: log_item_usage + undo_item_usage (0012), inventory_snapshot + dashboard_summary_v2 (0013), item_consumption + batch run-out (0014), ensure_recipe (0015), user_preferences + inventory_items.low_stock_notified_at (0016), create_items / delete_items / clear_purchased(ids bigint[]) (0017), and an additive push_subscriptions.channel column ('web-push' | 'local', architecture.md §6; its migration file is placed in step 2.3)"
+    - "Planned additive objects: log_item_usage + undo_item_usage (0012), inventory_snapshot + dashboard_summary_v2 (0013), item_consumption + batch run-out (0014), ensure_recipe (0015), user_preferences + inventory_items.low_stock_notified_at + push_subscriptions.channel + push_failures (0016), create_items / delete_items / clear_purchased(ids bigint[]) (0017), with push_subscriptions.channel ('web-push' | 'local', architecture.md §6) placed in 0016 (decided 2026-11-16, Phase 2)"
     - "Production category state after the hand-run make-categories-editable.sql (roadmap 7.0.10): seeded system categories were converted to user-owned, editable rows"
     - "Row-level security: every row belongs to auth.uid(); new tables and functions keep that isolation"
     - Inventory item, shopping item, meal slot and push subscription lifecycles
@@ -23,7 +23,7 @@ context_and_scope:
     - Backfilling initial_quantity / current_quantity on existing rows
     - Storage bucket changes (inventory-images stays as in 0003)
   external_dependencies:
-    - Supabase Postgres (production major version to confirm, roadmap 7.0.8; local config.toml says 15)
+    - Supabase Postgres 17 (production 17.6, confirmed 2026-11-16, roadmap 7.0.8; local config.toml major_version = 17)
     - Supabase Auth (auth.users, auth.uid())
     - Supabase Storage bucket inventory-images (private, 5 MiB, jpeg/png/webp; path <uid>/...)
     - Supabase Realtime on inventory_items, shopping_list, meal_plans (RLS-filtered)
@@ -38,7 +38,8 @@ context_and_scope:
     - meal_plans { id bigint, user_id, plan_date date, meal_type 'breakfast'|'lunch'|'dinner', meal_name text, recipe_id bigint? on delete set null, is_favorite bool default false, notes text?, created_at, updated_at } unique (user_id, plan_date, meal_type)
     - push_subscriptions { id bigint, user_id, endpoint text, p256dh text, auth text, user_agent text?, created_at } unique (user_id, endpoint) + planned channel text
     - ai_usage_log { id, user_id, request_type text, item_name?, response_days?, response_note?, cost_estimate_cents?, created_at }; view ai_usage_current_month
-    - planned user_preferences { user_id uuid pk, timezone text, notify_hour int, expiry_alerts bool, low_stock_alerts bool, theme 'system'|'light'|'dark' }
+    - "planned user_preferences { user_id uuid pk, timezone text, notify_hour int, expiry_alerts bool, low_stock_alerts bool, theme 'system'|'light'|'dark', last_expiry_reminder_on date? (the user's local date of the last expiry reminder run; at most one per local day, decided 2026-11-16) }"
+    - "planned push_failures { id bigint, user_id uuid, endpoint text, status_code int?, message text, created_at } — written by the send job (service role), RLS owner-select only (decided 2026-11-16)"
     - TypeScript mirrors live in packages/contracts (inventory, shopping, meals, recipes, waste, locations, categories, preferences)
 state_machines:
   - name: inventory_item
@@ -221,8 +222,8 @@ acceptance_criteria:
     then: it fails on any drop, rename, alter ... type, or create or replace of a function defined in 0001–0011, and passes otherwise
     invariant: true
   - id: AC-DATA-02
-    given: the old app's API test-suite and a local Supabase with 0001–0017 applied
-    when: the old routes run against it
+    given: the old-route regression suite api/__tests__/old-routes.test.ts (the old app has no API tests; the suite replays the old app's request shapes for every old route, decided 2026-11-16) and a local Supabase with 0001–0017 applied
+    when: it runs
     then: every old route behaves as before (board loads, usage, add item, shopping tick, dashboard_summary unchanged)
     invariant: true
   - id: AC-DATA-03
