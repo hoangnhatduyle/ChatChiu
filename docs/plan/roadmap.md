@@ -9,6 +9,8 @@ spec → risk → RED tests → baseline → code → review → quality evaluat
 
 ## Phase 0: foundation and spikes
 
+Status 2026-11-16: every step is built and committed. Checks that wait on the user, her devices or approvals are deferred to [7.0](#70-deferred-configuration-and-checks) (rows 7.0.1–7.0.10).
+
 | Step | Files | Artifact | Verified by |
 |---|---|---|---|
 | 0.1 Workspace scaffold | `package.json` (workspaces), `apps/web/` (Vite `react-ts` template, React Compiler, Tailwind v4, ESLint + Prettier, Vitest + Testing Library), `packages/contracts/package.json`, `packages/domain/package.json`, `tsconfig.base.json`, `.editorconfig`, `.gitignore`, `.nvmrc` (Node 24 to match the old `engines`) | Empty app that builds | `npm run build` and `npm test` pass in CI |
@@ -93,5 +95,26 @@ Every feature step is done only when:
 | 6.5 Security | — | `security-reviewer` agent pass; CSP check; RLS two-user tests |
 
 ## Phase 7: parallel run and cutover
+
+### 7.0 Deferred configuration and checks
+
+**Rule:** a configuration task or check that a phase can't finish (because it waits on the user, a device, an approval or an account) doesn't block that phase. It gets a row here, tagged with its source step, and the phase moves on. Every row must be done before cutover step 2 in [migration-cutover.md](migration-cutover.md). The **Needed by** column shows the earliest step that depends on a row; when that step comes up, do the row first.
+
+| # | From | Task | Files / place | Verified by | Needed by |
+|---|---|---|---|---|---|
+| 7.0.1 | 0.8 | Confirm the root cause of D17: run [`phase0/push-diagnosis.sql`](phase0/push-diagnosis.sql) (SELECT only) in the production Supabase SQL editor, and press "Send test notification" in the old app's Settings on her iPhone | `docs/plan/feature-inventory.md` (F-NT-01, *Step 0.8 push diagnosis*) | Root cause recorded with harness `record_decision`; F-NT-01 updated | 5.8 |
+| 7.0.2 | 0.6 | Run `/diagnostics` on her Fire Max 11 (Silk) and on her iPhone (opened from the Home Screen): local notification, push now, push in 20 s with the app closed | https://chatchiu-zeta.vercel.app/diagnostics | Reports + "banner appeared?" recorded with `record_decision`; outcome A/B decides step 5.9 | 5.9 |
+| 7.0.3 | 0.6 | Remove the diagnostics spike after 7.0.2: delete `api/diagnostics.ts`, `api/__tests__/diagnostics.test.ts`, `apps/web/src/features/diagnostics/`, `apps/web/public/sw-diagnostics.js`, the gate in `apps/web/src/main.tsx` and `App.tsx`, and the `api/diagnostics.ts` entry in `vercel.json`; remove the Vercel env vars `DIAGNOSTICS_ENABLED`, `DIAG_VAPID_PUBLIC_KEY`, `DIAG_VAPID_PRIVATE_KEY`, `DIAG_VAPID_SUBJECT`; redeploy without `VITE_ENABLE_DIAGNOSTICS` | listed files; Vercel project `chatchiu` | `/diagnostics` and `/api/diagnostics` return the shell / 404 | 5.8 |
+| 7.0.4 | 0.4 | Add the API's env vars to the new Vercel project `chatchiu`: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY` (+ optional `AI_QUOTA_*`, `VAPID_*`). The CLI can't copy them from the old project, so set them in the dashboard. | Vercel dashboard | `GET /api/health` returns 200 on the new URL | 4.1 (first deploy that calls the API) |
+| 7.0.5 | 0.4 | Set the new project's Node.js version to 24.x (it shows 26.x; `package.json` engines pins 24.x) | Vercel project settings | Build log shows Node 24 | Cutover |
+| 7.0.6 | 0.5 | Create the GitHub repository, add it as `origin` and push (needs approval) | `.github/workflows/ci.yml` | A PR shows every CI job passing | 2.3 (migrations should run through CI) |
+| 7.0.7 | 0.7 | Optional live check of F-MP-05 on the old app: plan a meal with a new typed name and see whether it appears under Recipes | — | F-MP-05 row notes the live result | 5.6 |
+| 7.0.8 | 0.2 | Confirm the production Postgres major version and set `supabase/config.toml` `[db] major_version` to match (currently 15) | `supabase/config.toml` | Matches the dashboard's version | 2.3 |
+| 7.0.9 | 0.8 | Give this machine's Supabase CLI access to the app's project (the current login can't see it), then `supabase link` (local files only) | `supabase/.temp/` (gitignored) | `supabase projects list` shows the project | Cutover step 1 (backup) and step 2 (`db push`) |
+| 7.0.10 | 0.2 | Account for the hand-run `make-categories-editable.sql` from the old repo (production category data differs from the migration seed) | `.claude/specifications/data.inventory.yaml` | Data spec notes it; contract tests don't assume seeded system categories | 1.2 |
+
+Later phases append their own leftovers to this table the same way.
+
+### 7.1 onward: parallel run and cutover
 
 See [migration-cutover.md](migration-cutover.md).
