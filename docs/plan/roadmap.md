@@ -24,6 +24,8 @@ Status 2026-11-16: every step is built and committed. Checks that wait on the us
 
 ## Phase 1: specs (harness: Constitution → Spec)
 
+Status 2026-11-16: steps 1.1–1.5 are done. 14 specs validated (all still `draft`, waiting for the user's review before `active`). Risk (step 1.5): **high** (human checkpoint + security review) for SPEC-DATA, SPEC-API, SPEC-AU, SPEC-NT, SPEC-RS; **medium** for SPEC-KB, SPEC-QP, SPEC-IN, SPEC-SL, SPEC-SE, SPEC-AP; **low** for SPEC-IF, SPEC-MP, SPEC-ST. New deferred row: 7.0.11 (Vercel Schedules, needed by 5.8).
+
 | Step | Files | Artifact | Verified by |
 |---|---|---|---|
 | 1.1 Constitution overrides | `.claude/constitution/architecture.md`, `.claude/constitution/coding-standards.md` (React / hooks / data-hook rules: screens never call the API directly; undo pattern, additive-only DB rule while the old app is live) | Project law | Harness `get_constitution` returns the merged rules |
