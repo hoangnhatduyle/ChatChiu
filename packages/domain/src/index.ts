@@ -1,3 +1,11 @@
-// Pure, framework-free domain logic (expiry, quantities, low stock, run-out, recipe matching).
-// Populated in roadmap step 2.2.
-export {}
+// Pure, framework-free domain logic (AR-ONE-DEFINITION): no React, no I/O.
+export * from './dates.js'
+export * from './quantity.js'
+export * from './price.js'
+export * from './low-stock.js'
+export * from './run-out.js'
+export * from './expiry.js'
+export * from './units.js'
+export * from './recipe-match.js'
+export * from './filter.js'
+export * from './meal-summary.js'
