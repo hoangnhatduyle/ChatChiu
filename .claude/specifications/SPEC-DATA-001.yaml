@@ -11,7 +11,7 @@ context_and_scope:
     - "Percent-based low-stock rule: current_quantity / initial_quantity × 100 <= low_stock_threshold (default 20, critical <= 10)"
     - "Quantity fallback: a null initial_quantity or current_quantity is read as quantity, without rewriting the row"
     - Additive-only rule for migrations 0012 and later while the old app is live
-    - "Planned additive objects: log_item_usage + undo_item_usage (0012), inventory_snapshot + dashboard_summary_v2 (0013), item_consumption + batch run-out (0014), ensure_recipe (0015), user_preferences + inventory_items.low_stock_notified_at (0016), create_items / delete_items / clear_purchased (0017), and an additive push_subscriptions.channel column ('web-push' | 'local', architecture.md §6; its migration file is placed in step 2.3)"
+    - "Planned additive objects: log_item_usage + undo_item_usage (0012), inventory_snapshot + dashboard_summary_v2 (0013), item_consumption + batch run-out (0014), ensure_recipe (0015), user_preferences + inventory_items.low_stock_notified_at (0016), create_items / delete_items / clear_purchased(ids bigint[]) (0017), and an additive push_subscriptions.channel column ('web-push' | 'local', architecture.md §6; its migration file is placed in step 2.3)"
     - "Production category state after the hand-run make-categories-editable.sql (roadmap 7.0.10): seeded system categories were converted to user-owned, editable rows"
     - "Row-level security: every row belongs to auth.uid(); new tables and functions keep that isolation"
     - Inventory item, shopping item, meal slot and push subscription lifecycles
@@ -288,7 +288,7 @@ acceptance_criteria:
   - id: AC-DATA-15
     given: a pending shopping item
     when: it is ticked, unticked, deleted or cleared as purchased
-    then: only the shopping_item transitions in this spec occur, and clear_purchased removes only purchased rows of the caller in one statement
+    then: only the shopping_item transitions in this spec occur, and clear_purchased(ids) deletes, in one statement, only the caller's rows whose id is in ids AND is_purchased is still true (a row unticked meanwhile is kept; a row ticked after the tap is not in ids)
     invariant: false
   - id: AC-DATA-16
     given: a push_subscriptions row whose endpoint returns 404 or 410

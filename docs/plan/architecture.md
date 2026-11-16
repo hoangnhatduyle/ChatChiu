@@ -92,7 +92,7 @@ New migrations in `supabase/migrations/`:
 | `0014_consumption_stats.sql` | `item_consumption(item_id)` and a per-user batch version: average daily use over the last 30 days → predicted run-out date | F-KB-10, F-ST-06 |
 | `0015_ensure_recipe.sql` | `ensure_recipe(name)` → `insert … on conflict (user_id, lower(name)) do nothing` | F-MP-05 |
 | `0016_notification_prefs.sql` | `user_preferences` table (timezone, notify hour, expiry alerts on, low-stock alerts on, theme); `inventory_items.low_stock_notified_at` | F-NT-02, F-NT-03 |
-| `0017_bulk_ops.sql` | `create_items(jsonb)`, `delete_items(bigint[])`, `clear_purchased()` | F-RS-09, F-IN-10, F-SL-04 |
+| `0017_bulk_ops.sql` | `create_items(jsonb)`, `delete_items(bigint[])`, `clear_purchased(bigint[])` (only the ids purchased when she tapped; decided 2026-11-16) | F-RS-09, F-IN-10, F-SL-04 |
 
 New or changed API routes under `api/_routes/`:
 

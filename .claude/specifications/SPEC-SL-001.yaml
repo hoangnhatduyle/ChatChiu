@@ -61,7 +61,7 @@ negative_constraints:
     message: Ticking MUST NOT reload the whole list; the row updates instantly and saves in the background
     severity: medium
   - id: NC-SL-ONE-CLEAR
-    message: Clear purchased MUST NOT send one delete per item
+    message: Clear purchased MUST NOT send one delete per item, and MUST NOT delete any item that wasn't purchased at the moment she tapped
     severity: medium
   - id: NC-SL-NO-DUPLICATES
     message: Items sent from the inventory MUST NOT duplicate an unpurchased row with the same name
@@ -85,7 +85,7 @@ acceptance_criteria:
   - id: F-SL-04
     given: 3 purchased rows
     when: she taps Clear purchased
-    then: all 3 disappear with one Undo toast, and one POST /api/shopping-list/clear-purchased is sent after the window
+    then: all 3 disappear with one Undo toast, and after the window one POST /api/shopping-list/clear-purchased is sent with exactly those 3 ids; an item ticked during the window stays on the list
     invariant: false
   - id: F-SL-05
     given: purchased and pending rows in two categories

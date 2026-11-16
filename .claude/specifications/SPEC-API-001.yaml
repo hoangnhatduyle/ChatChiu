@@ -27,7 +27,7 @@ context_and_scope:
     - "NEW — POST /api/inventory/bulk (create many via create_items) and DELETE /api/inventory/bulk (delete many via delete_items)  [contracts: inventory]"
     - "NEW — POST /api/inventory/:id/restock { quantity, expirationDate?, totalPrice? } -> updated item  [contracts: inventory]"
     - "NEW — POST /api/inventory/:id/usage-undo { usageId } -> restored item (undo_item_usage)  [contracts: inventory]"
-    - "NEW — POST /api/shopping-list/clear-purchased -> { deleted }  [contracts: shopping]"
+    - "NEW — POST /api/shopping-list/clear-purchased { ids } -> { deleted } (only the ids purchased when she tapped)  [contracts: shopping]"
     - "NEW — GET /api/recipes/suggestions -> recipes ranked by matches against items expiring within 3 days  [contracts: recipes]"
     - "NEW — GET /api/stats/overview?range=week|month|year|all&categoryId? -> stock value, counts, by category/location, recently added, waste totals, waste by month/category, most wasted (count and value), low stock with rate and run-out  [contracts: stats]"
     - "NEW — GET|PATCH /api/preferences { timezone, notifyHour, expiryAlerts, lowStockAlerts, theme }  [contracts: preferences]"
@@ -177,9 +177,9 @@ acceptance_criteria:
     then: the caller's matching items are deleted in one statement and the count is returned
     invariant: false
   - id: AC-API-11
-    given: three purchased and two pending shopping items
-    when: POST /api/shopping-list/clear-purchased
-    then: "{ deleted: 3 } and the two pending items remain"
+    given: three purchased items A, B, C, two pending items, and a fourth item D ticked purchased after the tap
+    when: "POST /api/shopping-list/clear-purchased { ids: [A, B, C] }"
+    then: "{ deleted: 3 }; D and the two pending items remain; an id in the list that is no longer purchased, or belongs to another user, is not deleted"
     invariant: false
   - id: AC-API-12
     given: a filled meal slot
