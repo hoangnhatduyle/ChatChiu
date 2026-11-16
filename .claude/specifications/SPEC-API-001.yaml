@@ -1,0 +1,259 @@
+id: SPEC-API-001
+version: 0.1.0
+kind: api
+title: Chắt Chiu HTTP API v2 (superset of the old API)
+status: draft
+context_and_scope:
+  in_scope:
+    - "Envelope: every route returns { data } with status 200 on success and { error: { code, message, details? } } on failure (codes BAD_REQUEST 400, UNAUTHORIZED 401, FORBIDDEN 403, NOT_FOUND 404, METHOD_NOT_ALLOWED 405, CONFLICT 409, PAYLOAD_TOO_LARGE 413, UNSUPPORTED_MEDIA_TYPE 415, RATE_LIMITED 429, QUOTA_EXCEEDED 429, INTERNAL 500); details only outside production"
+    - "Routing: one function api/handler.ts, /api/(.*) rewritten to it, static segments beat params; unknown path returns NOT_FOUND"
+    - "Auth: every route except health and the scheduled send job requires a Supabase bearer JWT; the API uses a client bound to that JWT so RLS applies"
+    - OLD unchanged — GET /api/health (public) -> { status, time }
+    - "OLD unchanged — GET|POST /api/inventory; GET|PATCH|DELETE /api/inventory/:id  [contracts: inventory — inventoryItemCreate, inventoryItemUpdate]"
+    - "OLD changed — GET|POST /api/inventory/:id/usage: POST uses log_item_usage (atomic) and adds crossedLowStock + the updated item to the response; same request body { amountUsed, currentQuantity, notes? }  [contracts: inventory]"
+    - "OLD unchanged — GET|POST /api/locations; PATCH|DELETE /api/locations/:id  [contracts: locations]"
+    - "OLD unchanged — GET|POST /api/categories; PATCH|DELETE /api/categories/:id (409 on duplicate name, 404 when not editable)  [contracts: categories]"
+    - "OLD unchanged — GET|POST /api/shopping-list; PATCH|DELETE /api/shopping-list/:id  [contracts: shopping — shoppingItemCreate, shoppingItemUpdate]"
+    - "OLD changed — GET|POST /api/meal-plans (GET ?from&to; POST calls ensure_recipe and a 409 carries the existing plan id as error.existingId, an additive field present in production too, because details is stripped there); PATCH|DELETE /api/meal-plans/:id (favourite propagates to sibling plans)  [contracts: meals — mealPlanCreate, mealPlanUpdate]"
+    - "OLD unchanged — GET|POST /api/recipes; PATCH|DELETE /api/recipes/:id  [contracts: recipes]"
+    - "OLD changed — GET|POST /api/waste: GET joins the category name; POST /api/waste/from-item (mark_item_wasted); DELETE /api/waste/:id  [contracts: waste — wasteCreate]"
+    - OLD unchanged — GET /api/statistics/dashboard (old dashboard_summary, kept for the old app)
+    - "OLD unchanged — POST /api/ai/expiration-suggest; POST /api/ai/receipt-scan (monthly AI quota consumed in SQL before OpenAI; image ownership, size <= 5 MiB and MIME sniffing)  [contracts: ai — expirationSuggestRequest, receiptScanRequest]"
+    - OLD unchanged — POST /api/uploads/sign; GET /api/uploads/read  [signUploadRequest; module chosen in step 2.1]
+    - OLD unchanged — POST|DELETE /api/push/subscribe; POST /api/push/test  [module chosen in step 2.1]
+    - "OLD changed — scheduled send job /api/cron/check-expirations (CRON_SECRET bearer): user timezone and notify hour, low-stock pass writing low_stock_notified_at, deletes subscriptions on 404/410, records per-send failures; triggered by a Vercel Schedule (architecture.md §6)"
+    - OLD hidden by D3, kept unchanged — GET|POST /api/barcode-mappings; GET /api/barcode-mappings/:barcode; GET|POST /api/inventory/:id/images; GET /api/inventory/by-barcode/:barcode/images; DELETE /api/inventory/images/:imageId
+    - "NEW — GET /api/bootstrap -> { items, locations, categories, summary } from inventory_snapshot() + dashboard_summary_v2() in one round trip  [contracts: inventory, locations, categories, stats]"
+    - "NEW — POST /api/inventory/bulk (create many via create_items) and DELETE /api/inventory/bulk (delete many via delete_items)  [contracts: inventory]"
+    - "NEW — POST /api/inventory/:id/restock { quantity, expirationDate?, totalPrice? } -> updated item  [contracts: inventory]"
+    - "NEW — POST /api/inventory/:id/usage-undo { usageId } -> restored item (undo_item_usage)  [contracts: inventory]"
+    - "NEW — POST /api/shopping-list/clear-purchased -> { deleted }  [contracts: shopping]"
+    - "NEW — GET /api/recipes/suggestions -> recipes ranked by matches against items expiring within 3 days  [contracts: recipes]"
+    - "NEW — GET /api/stats/overview?range=week|month|year|all&categoryId? -> stock value, counts, by category/location, recently added, waste totals, waste by month/category, most wasted (count and value), low stock with rate and run-out  [contracts: stats]"
+    - "NEW — GET|PATCH /api/preferences { timezone, notifyHour, expiryAlerts, lowStockAlerts, theme }  [contracts: preferences]"
+    - Request validation with zod 4 schemas from packages/contracts; update schemas carry no defaults
+  out_of_scope:
+    - Changing the payload shape of any old route inside { data } beyond adding fields
+    - A /v2 prefix or a second envelope
+    - Barcode and image UI flows (D3); their routes stay as they are
+    - Household / multi-account sharing
+    - The Fire's local-notification registration route shape (decided in step 5.9, only if outcome B)
+    - Removing api/diagnostics.ts (roadmap 7.0.3)
+    - "Pagination: lists are per-user and small; the client virtualises (F-IN-06)"
+  external_dependencies:
+    - Supabase (PostgREST + RPC, Auth JWT verification, Storage signed URLs)
+    - OpenAI API (expiry suggestion, receipt scan) behind the SQL quota
+    - Web Push via VAPID (web-push library; Apple and FCM push services)
+    - Vercel Functions (single router) and Vercel Schedules for the send job
+  shared_schemas:
+    - "Envelope: Success<T> = { data: T }; Failure = { error: { code: ApiErrorCode, message: string, details?: unknown } }"
+    - "packages/contracts/src/inventory.ts: inventoryItemCreate, inventoryItemUpdate (no defaults), usageLog, usageUndo, restock, bulkCreate, bulkDelete, InventoryItem"
+    - packages/contracts/src/{locations,categories,shopping,meals,recipes,waste,ai,stats,preferences}.ts
+    - "Field casing: JSON is camelCase; DB is snake_case (api/_lib/mappers.ts)"
+state_machines:
+  - name: usage_entry
+    states:
+      - LOGGED
+      - UNDONE
+    initial: LOGGED
+    transitions:
+      - from: LOGGED
+        event: usage_undo
+        to: UNDONE
+    forbidden:
+      - from: UNDONE
+        to: LOGGED
+        reason: An undone usage row is deleted; logging again creates a new entry with a new id
+  - name: ai_quota_month
+    states:
+      - AVAILABLE
+      - EXHAUSTED
+    initial: AVAILABLE
+    transitions:
+      - from: AVAILABLE
+        event: consume_last
+        to: EXHAUSTED
+      - from: EXHAUSTED
+        event: month_rollover
+        to: AVAILABLE
+    forbidden:
+      - from: EXHAUSTED
+        to: EXHAUSTED
+        reason: No OpenAI call may be made while the quota is exhausted; the API answers QUOTA_EXCEEDED before calling OpenAI
+  - name: scheduled_send
+    states:
+      - WAITING
+      - DUE
+      - SENT_TODAY
+    initial: WAITING
+    transitions:
+      - from: WAITING
+        event: local_notify_hour_reached
+        to: DUE
+      - from: DUE
+        event: push_accepted_or_nothing_due
+        to: SENT_TODAY
+      - from: SENT_TODAY
+        event: local_midnight
+        to: WAITING
+    forbidden:
+      - from: SENT_TODAY
+        to: DUE
+        reason: At most one expiry reminder per user per local day
+negative_constraints:
+  - id: NC-API-ENVELOPE
+    message: "No route may return a success body other than { data } or an error body other than { error: { code, message, details?, existingId? } }; the old frontend reads this shape"
+    severity: high
+  - id: NC-API-NO-BREAK-OLD
+    message: An existing route MUST NOT remove, rename or retype a request or response field the old app uses; changes are additive
+    severity: critical
+  - id: NC-API-UPDATE-NO-DEFAULTS
+    message: PATCH schemas MUST NOT contain .default(); an empty PATCH body must parse to {} (zod 4, commit b095809)
+    severity: high
+  - id: NC-API-SERVICE-ROLE
+    message: The service-role key MUST NOT be used outside the scheduled send job; user routes use the caller's JWT so RLS applies
+    severity: critical
+  - id: NC-API-NO-LEAK
+    message: Production error responses MUST NOT include stack traces, SQL errors or upstream messages
+    severity: high
+  - id: NC-API-AI-QUOTA-FIRST
+    message: No OpenAI request may be sent before try_consume_ai_quota succeeds
+    severity: high
+  - id: NC-API-SEND-AUTH
+    message: The scheduled send route MUST reject calls without the CRON_SECRET bearer
+    severity: critical
+  - id: NC-API-NO-SEED-IDS
+    message: No route may hard-code a category or location id (old receipt flow used id 1)
+    severity: high
+acceptance_criteria:
+  - id: AC-API-01
+    given: any route
+    when: it succeeds or fails
+    then: "the body is { data } with 200, or { error: { code, message } } with the mapped status; details is absent when NODE_ENV=production"
+    invariant: true
+  - id: AC-API-02
+    given: the old app's request fixtures for every old route
+    when: replayed against API v2 on local Supabase
+    then: each response still parses with the old app's types (only added fields)
+    invariant: true
+  - id: AC-API-03
+    given: each update schema in packages/contracts
+    when: it parses an empty object
+    then: the result is {} (no injected notificationEnabled, notificationDaysBefore or isFavorite)
+    invariant: true
+  - id: AC-API-04
+    given: a request without a bearer token or with an expired one
+    when: it calls any route except health and the send job
+    then: it gets 401 UNAUTHORIZED
+    invariant: true
+  - id: AC-API-05
+    given: users A and B
+    when: A calls any route with B's ids
+    then: A gets 404 or an empty result and B's data is unchanged
+    invariant: true
+  - id: AC-API-06
+    given: a signed-in user with items, locations and categories
+    when: GET /api/bootstrap is called
+    then: one response carries items, locations, categories and summary, and summary.totalValue = Σ price × current quantity with percent-based low stock
+    invariant: false
+  - id: AC-API-07
+    given: an item at 0.6 of 1
+    when: "POST /api/inventory/:id/usage { amountUsed: 0.5, currentQuantity: 0.1 }"
+    then: the history row and current_quantity are written atomically and the response has crossedLowStock true; POST /usage-undo with that usageId restores 0.6 and removes the row
+    invariant: false
+  - id: AC-API-08
+    given: an item
+    when: "POST /api/inventory/:id/restock { quantity: 2, totalPrice: 5 }"
+    then: quantity = initialQuantity = currentQuantity = 2, price = 2.5 per unit, lowStockNotifiedAt is null, and the item id is unchanged
+    invariant: false
+  - id: AC-API-09
+    given: N valid items from a receipt
+    when: POST /api/inventory/bulk
+    then: all N are created in one transaction and returned; one invalid item rejects the whole request with 400 and nothing is created
+    invariant: false
+  - id: AC-API-10
+    given: selected item ids
+    when: DELETE /api/inventory/bulk { ids }
+    then: the caller's matching items are deleted in one statement and the count is returned
+    invariant: false
+  - id: AC-API-11
+    given: three purchased and two pending shopping items
+    when: POST /api/shopping-list/clear-purchased
+    then: "{ deleted: 3 } and the two pending items remain"
+    invariant: false
+  - id: AC-API-12
+    given: a filled meal slot
+    when: POST /api/meal-plans for the same date and type
+    then: 409 CONFLICT with error.existingId set to the existing plan id (also in production) so the UI can offer Replace
+    invariant: false
+  - id: AC-API-13
+    given: a new typed meal name
+    when: POST /api/meal-plans succeeds
+    then: a recipe with that name exists afterwards (case-insensitive) and no error is swallowed
+    invariant: false
+  - id: AC-API-14
+    given: waste entries with categories
+    when: GET /api/waste
+    then: each entry includes its category name instead of Unknown
+    invariant: false
+  - id: AC-API-15
+    given: recipes and items expiring within 3 days
+    when: GET /api/recipes/suggestions
+    then: recipes whose ingredient words match those item names are returned ranked by match count, with no OpenAI call
+    invariant: false
+  - id: AC-API-16
+    given: usage history over the last 30 days
+    when: GET /api/stats/overview
+    then: low-stock rows carry average daily usage and a predicted run-out date, and most-wasted lists the top 5 by count and by value
+    invariant: false
+  - id: AC-API-17
+    given: no user_preferences row
+    when: GET /api/preferences
+    then: defaults are returned (device-supplied timezone, notify hour 9, both alerts on, theme system); PATCH with one field changes only that field
+    invariant: false
+  - id: AC-API-18
+    given: a user with notify hour 9 in her timezone and an item due within its days_before
+    when: the send job runs hourly
+    then: she gets exactly one grouped reminder in the run where her local hour first reaches 9, and none in later runs that local day
+    invariant: false
+  - id: AC-API-19
+    given: an item that crossed its low-stock threshold and low_stock_notified_at is null
+    when: the send job runs
+    then: one low-stock push is sent and low_stock_notified_at is set; no further one until a restock clears it
+    invariant: false
+  - id: AC-API-20
+    given: a subscription the push service answers 404 or 410
+    when: the send job sends to it
+    then: the subscription is deleted and the failure is recorded in a readable place
+    invariant: false
+  - id: AC-API-21
+    given: the AI quota for this month is used up
+    when: POST /api/ai/expiration-suggest or /api/ai/receipt-scan
+    then: 429 QUOTA_EXCEEDED without an OpenAI call
+    invariant: false
+  - id: AC-API-22
+    given: a receipt imagePath outside the caller's folder, over 5 MiB, or not JPEG/PNG/WebP
+    when: POST /api/ai/receipt-scan
+    then: 403, 413 or 415 respectively
+    invariant: false
+  - id: AC-API-23
+    given: a call to the send job without the CRON_SECRET bearer
+    when: it arrives
+    then: 401 and nothing is sent
+    invariant: false
+  - id: AC-API-24
+    given: a database with no is_system categories
+    when: the API integration tests run
+    then: they pass using categories they create themselves
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+constitution_rules:
+  - AR-SINGLE-ROUTER
+  - AR-CONTRACTS
+  - AR-ADDITIVE-ONLY
+  - AR-NO-SEED-ASSUMPTIONS
+  - CS-ZOD4-NO-UPDATE-DEFAULTS
+  - CS-CONTRACT-TYPES
+  - NC-SECRETS
+  - NC-SQL-CONCAT

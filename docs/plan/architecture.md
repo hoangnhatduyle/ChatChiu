@@ -111,7 +111,7 @@ New or changed API routes under `api/_routes/`:
   - `meal-plans/index.ts` → `ensure_recipe` RPC; 409 returns the existing id so the UI can offer Replace
   - `cron/check-expirations.ts` → user timezone, low-stock pass, writes `low_stock_notified_at`
 
-Response envelope: keep the old app's error shape (`{ code, message }`), since the old frontend depends on it. New routes return plain data on 2xx.
+Response envelope: keep the old app's shape, since the old frontend depends on it: success is `{ data: … }` and errors are `{ error: { code, message, details? } }` (`api/_lib/errors.ts`). New routes use the same wrapper (decided 2026-11-16, Phase 1).
 
 ## 4. Design system
 
@@ -173,7 +173,8 @@ Response envelope: keep the old app's error shape (`{ code, message }`), since t
      - Low-stock alerts fire immediately on the device where usage was logged. Changes made on the phone reach the tablet at its next sync.
 3. **Her iPhone: web push**, which works only when the app is **added to the Home Screen** from Safari (iOS 16.4+); push is not available in a normal Safari tab. Settings detects a plain tab and shows the "Share → Add to Home Screen" steps. The cron sends both expiry and low-stock pushes. The new URL means a fresh subscription. The old iPhone setup **never delivered** (D17), so before reusing anything, Phase 0 step 0.8 finds out why.
 4. **No duplicates.** Each device registers its channel (`web-push` or `local`) in `push_subscriptions` (an additive `channel` column). The cron only pushes to `web-push` devices; the Fire handles itself.
-5. **Settings → Notifications** shows this device's status, a test button, her timezone and notify hour, and the expiry/low-stock toggles.
+5. **When the server sends.** Vercel Hobby crons run once a day, in UTC, at any minute within the hour, so they can't honour a picked notify hour. The send job is triggered instead by a **Vercel Schedule** (Hobby: as often as every 15 min, IANA timezone): it runs hourly and pushes to each user whose local notify hour has arrived and who hasn't had today's reminder (decided 2026-11-16, Phase 1). Availability is checked in roadmap 7.0.11; if Schedules aren't available, the fallback is one daily cron at a fixed hour derived from her timezone, with the time shown read-only in Settings.
+6. **Settings → Notifications** shows this device's status, a test button, her timezone and notify hour, and the expiry/low-stock toggles.
 
 **Fallback if sideloading is unacceptable:** a daily email digest through Supabase/Resend, plus an in-app "Today" banner. This is listed in open-questions.md.
 

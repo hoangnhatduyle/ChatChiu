@@ -131,6 +131,7 @@ Every feature step is done only when:
 | 7.0.8 | 0.2 | Confirm the production Postgres major version and set `supabase/config.toml` `[db] major_version` to match (currently 15) | `supabase/config.toml` | Matches the dashboard's version | 2.3 |
 | 7.0.9 | 0.8 | Give this machine's Supabase CLI access to the app's project (the current login can't see it), then `supabase link` (local files only) | `supabase/.temp/` (gitignored) | `supabase projects list` shows the project | Cutover step 1 (backup) and step 2 (`db push`) |
 | 7.0.10 | 0.2 | Account for the hand-run `make-categories-editable.sql` from the old repo (production category data differs from the migration seed). **Spec half done in 1.2**: `SPEC-DATA-001` NC-DATA-NO-SEEDED-CATEGORIES + AC-DATA-07, and constitution rules AR-NO-SEED-ASSUMPTIONS / CS-NO-SEEDED-CATEGORIES. Left: the tests themselves. | `SPEC-DATA-001.yaml`; `api/__tests__/*`, `packages/contracts` tests | Contract and integration tests pass on a DB with no `is_system` categories | 2.1 |
+| 7.0.11 | 1.3 | Check that Vercel Schedules are available to the `chatchiu` project on Hobby (hourly, IANA timezone, how the target route is authenticated). If not, use the fallback in architecture.md §6 (one daily cron at a fixed hour) and update `SPEC-NT-001` and `SPEC-API-001` | Vercel dashboard / CLI (read-only) | Decision recorded with `record_decision`; specs updated if the fallback is used | 5.8 |
 
 Later phases append their own leftovers to this table the same way.
 

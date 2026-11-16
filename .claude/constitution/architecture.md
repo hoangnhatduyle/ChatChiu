@@ -48,9 +48,11 @@
 
 ## API envelope (overrides the global "consistent API envelope")
 
-- Errors keep the old app's shape `{ code, message, details? }` with the old status codes,
-  because the old frontend reads it during the parallel run.
-- Existing routes keep their response shapes. New routes return plain data on 2xx.
+- Every route, old and new, goes through `withErrorHandler` (`api/_lib/errors.ts`): success
+  is `{ data: … }` with status 200, errors are `{ error: { code, message, details? } }` with the
+  old codes and status numbers (`details` only outside production). The old frontend reads
+  this shape during the parallel run, and one shape keeps one parsing path in `core/api-client`.
+- Existing routes keep their payload shapes inside `data`.
 - A changed route may add fields but must not remove or retype one the old app reads.
 
 ## Sync, undo and notifications
@@ -62,6 +64,7 @@
   `docs/plan/architecture.md` §3.3 (commit-now-and-reverse, or hold-until-the-toast-closes
   with a `keepalive` flush on `pagehide`). Nothing that is undoable asks for confirmation.
 - **AR-ONE-SENDER.** Only one deployment sends scheduled notifications at a time
-  (migration-cutover.md step 4). The new app's cron stays out of `vercel.json` until then.
+  (migration-cutover.md step 4). The new app's send job (a Vercel Schedule, or the fallback
+  cron) stays disabled until then.
 - **AR-NO-PROD-WRITES-WITHOUT-ASK (D18).** Deploying to the live project, `supabase db push`,
   production SQL writes and env-var changes need the user's explicit go-ahead each time.
