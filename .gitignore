@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+coverage/
+
+# Env files: only .env.example is committed
+.env
+.env.*
+!.env.example
+
+# Vercel / Supabase local state
+.vercel/
+supabase/.branches/
+supabase/.temp/
+
+# Playwright
+playwright-report/
+test-results/
+.playwright-mcp/
+
+# Editors / OS
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
