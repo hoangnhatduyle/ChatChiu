@@ -10,7 +10,7 @@ The **Today** column comes from reading the code, not from running the app. Stat
 - ❌ it is a placeholder that does nothing, or the code is broken;
 - 🙈 hidden in the new app by decision D3.
 
-Statuses marked *(suspected)* still need a quick manual check on the live app (roadmap Phase 0).
+Statuses marked *(suspected)* still need a quick manual check on the live app (roadmap Phase 0). Step 0.7 (2026-11-16): the only suspected row, F-MP-05, was confirmed by reproducing it against the same schema; a live check is optional (see the row).
 
 Each ID (`F-xx-nn`) becomes an acceptance criterion in the matching spec under `.claude/specifications/`.
 
@@ -145,7 +145,7 @@ The secondary "everything" view: a table on the tablet, cards on the phone.
 | F-MP-02 | Monthly calendar; tapping a day jumps to that week | ✅ | Same |
 | F-MP-03 | Add a meal to a slot: date, type, name (autocomplete from the library), notes | ✅ | Same |
 | F-MP-04 | **One meal per slot** (database rule); adding to a filled slot returns "already planned" | ⚠️ The UI shows lists per cell, but the DB allows only one, so the error is confusing | One meal per slot. A filled slot offers **Replace**. |
-| F-MP-05 | Free-text meal names are added to the recipe library automatically | ❌ *(suspected)* Server upsert uses `onConflict: 'user_id,name'`, but the only unique index is on `lower(name)`, so it fails silently | Fixed with an `ensure_recipe()` RPC (insert … on conflict do nothing) |
+| F-MP-05 | Free-text meal names are added to the recipe library automatically | ❌ **Confirmed 2026-11-16** against local Supabase with the identical migrations: Postgres rejects `ON CONFLICT (user_id, name)` with *"there is no unique or exclusion constraint matching the ON CONFLICT specification"* (the only unique index is `(user_id, lower(name))`). supabase-js returns that as an error value, which `.then(() => undefined)` discards, so nothing is logged. | Fixed with an `ensure_recipe()` RPC (insert … on conflict do nothing) |
 | F-MP-06 | Edit and delete a meal (delete has a `confirm()`) | ✅ | Edit; delete with Undo |
 | F-MP-07 | Favourite (belongs to the meal, not the slot; new plans of a favourited meal inherit it) | ✅ | Same |
 | F-MP-08 | Drag a meal to another slot = **copy** (with confirm) | ⚠️ Fails with an unhandled error if the target slot is filled | Copy on drop; a filled target asks Replace or Cancel |
