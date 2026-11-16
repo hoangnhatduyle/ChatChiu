@@ -1,0 +1,106 @@
+id: SPEC-AP-001
+version: 0.1.0
+kind: product
+title: App shell, offline and sync (feature.app-shell)
+status: draft
+context_and_scope:
+  in_scope:
+    - Installable PWA with instant cached reads and an offline write queue (F-AP-01)
+    - Nav rail on the tablet, bottom bar on the phone (F-AP-02)
+    - One toast system with Undo and Retry plus inline form errors (F-AP-03)
+    - Updates shown before the server confirms, with rollback, no full-list reloads (F-AP-04)
+    - English UI, Vietnamese brand name, fonts with Vietnamese diacritics (F-AP-05)
+    - "Files: shell/{AppShell, NavRail, BottomNav, UpdatePrompt}.tsx, routes.tsx, core/{toast.tsx, undo.ts, realtime.ts}, data/query-client.ts"
+  out_of_scope:
+    - Vietnamese UI translation (Later)
+    - Global error dialog (replaced by toasts and inline errors)
+  external_dependencies:
+    - vite-plugin-pwa, TanStack Query persist (IndexedDB), Supabase Realtime, @fontsource/inter-tight, @fontsource/ibm-plex-mono
+  shared_schemas:
+    - Mutation queue entries persisted with the query cache
+state_machines:
+  - name: connectivity_and_queue
+    states:
+      - ONLINE_IDLE
+      - ONLINE_SYNCING
+      - OFFLINE_QUEUED
+      - SYNC_FAILED
+    initial: ONLINE_IDLE
+    transitions:
+      - from: ONLINE_IDLE
+        event: write
+        to: ONLINE_SYNCING
+      - from: ONLINE_SYNCING
+        event: done
+        to: ONLINE_IDLE
+      - from: ONLINE_IDLE
+        event: go_offline_and_write
+        to: OFFLINE_QUEUED
+      - from: ONLINE_SYNCING
+        event: go_offline
+        to: OFFLINE_QUEUED
+      - from: OFFLINE_QUEUED
+        event: back_online
+        to: ONLINE_SYNCING
+      - from: ONLINE_SYNCING
+        event: permanent_error
+        to: SYNC_FAILED
+      - from: SYNC_FAILED
+        event: retry
+        to: ONLINE_SYNCING
+      - from: SYNC_FAILED
+        event: discard_with_rollback
+        to: ONLINE_IDLE
+    forbidden:
+      - from: OFFLINE_QUEUED
+        to: ONLINE_IDLE
+        reason: Queued changes are never dropped silently; they are synced or rolled back with a message
+negative_constraints:
+  - id: NC-AP-NO-SPINNER-WITH-CACHE
+    message: A full-page spinner MUST NOT show when cached data exists; skeletons only on a truly empty first visit
+    severity: medium
+  - id: NC-AP-NO-LOST-WRITES
+    message: A write made offline MUST NOT be lost across a reload or app restart
+    severity: critical
+  - id: NC-AP-NO-LAYOUT-SHIFT
+    message: Skeletons MUST match the final layout (CLS < 0.1)
+    severity: medium
+  - id: NC-AP-BUDGET
+    message: Initial JS (shell + board) MUST NOT exceed 150 KB gzipped; each lazy route 120 KB
+    severity: medium
+acceptance_criteria:
+  - id: F-AP-01
+    given: the app was used before and the device is offline
+    when: she opens it and drags a usage bar
+    then: the board shows instantly from the cache, the change shows with a "1 change waiting to sync" badge, survives a reload, and is saved when back online
+    invariant: false
+  - id: F-AP-02
+    given: widths 390, 768 and 1280
+    when: the shell renders
+    then: 390 shows the bottom bar Kitchen · Stock · Shopping · Meals · More; 768 and 1280 show the 84 px nav rail; every destination (board, inventory, meals, shopping, waste & stats, settings) is reachable
+    invariant: false
+  - id: F-AP-03
+    given: a success, a failure and an undoable action
+    when: they happen
+    then: one toast system shows them (Undo, Retry, action buttons), and form errors are inline
+    invariant: false
+  - id: F-AP-04
+    given: any write
+    when: it is made
+    then: the UI updates before the server answers, rolls back with "Couldn't save · Retry" on failure, and no whole list is re-fetched
+    invariant: false
+  - id: F-AP-05
+    given: the UI
+    when: it renders
+    then: text is English, the brand reads "Chắt Chiu" with correct diacritics in the self-hosted fonts
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+  - SPEC-AU-001
+constitution_rules:
+  - AR-WRITE-PATTERN
+  - AR-UNDO-KINDS
+  - CS-STATE-HOMES
+  - CS-TOKENS
+  - CS-ACCESSIBLE-UI

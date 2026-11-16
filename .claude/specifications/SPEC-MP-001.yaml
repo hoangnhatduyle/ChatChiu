@@ -1,0 +1,149 @@
+id: SPEC-MP-001
+version: 0.1.0
+kind: product
+title: Meal plan and recipe library (feature.meals)
+status: draft
+context_and_scope:
+  in_scope:
+    - Weekly calendar 7 days × breakfast/lunch/dinner with prev/next/Today (F-MP-01)
+    - Monthly calendar that jumps to a week (F-MP-02)
+    - Add a meal to a slot with library autocomplete (F-MP-03)
+    - One meal per slot with Replace (F-MP-04)
+    - Typed meal names added to the recipe library (F-MP-05)
+    - Edit, and delete with Undo (F-MP-06)
+    - Favourite belongs to the meal and is inherited (F-MP-07)
+    - Drag to copy with Replace or Cancel on a filled slot (F-MP-08)
+    - "Recipe library: list, search, add, edit, delete (F-MP-09)"
+    - Summary numbers (F-MP-10)
+    - Recipe manager folded into Meal plan → Recipes (F-MP-11)
+    - Recipe suggestions from items expiring within 3 days (F-MP-12)
+    - "Files: features/meals/{MealsPage, WeekGrid, MonthGrid, MealDialog, RecipeLibrary, RecipeForm, MealSummary, RecipeSuggestions}.tsx; packages/domain/src/meal-summary.ts, recipe-match.ts"
+  out_of_scope:
+    - AI-generated recipes or any paid API call for suggestions
+    - A standalone /recipe-manager route (folded in)
+    - Several meals per slot (the DB allows one)
+  external_dependencies:
+    - GET|POST /api/meal-plans, PATCH|DELETE /api/meal-plans/:id, recipes routes, GET /api/recipes/suggestions
+    - "@dnd-kit"
+    - Supabase Realtime (meal_plans)
+  shared_schemas:
+    - mealPlanCreate / mealPlanUpdate (no isFavorite default on update); recipeCreate / recipeUpdate
+state_machines:
+  - name: meal_slot_ui
+    states:
+      - EMPTY
+      - PLANNED
+      - CONFLICT_PROMPT
+      - HIDDEN_FOR_UNDO
+    initial: EMPTY
+    transitions:
+      - from: EMPTY
+        event: add_or_drop_copy
+        to: PLANNED
+      - from: PLANNED
+        event: add_or_drop_copy
+        to: CONFLICT_PROMPT
+      - from: CONFLICT_PROMPT
+        event: replace
+        to: PLANNED
+      - from: CONFLICT_PROMPT
+        event: cancel
+        to: PLANNED
+      - from: PLANNED
+        event: edit
+        to: PLANNED
+      - from: PLANNED
+        event: delete
+        to: HIDDEN_FOR_UNDO
+      - from: HIDDEN_FOR_UNDO
+        event: undo
+        to: PLANNED
+      - from: HIDDEN_FOR_UNDO
+        event: window_closed
+        to: EMPTY
+    forbidden:
+      - from: CONFLICT_PROMPT
+        to: EMPTY
+        reason: Resolving a conflict never empties the slot
+negative_constraints:
+  - id: NC-MP-NO-SWALLOWED-ERRORS
+    message: Saving a typed meal name to the library MUST NOT discard errors (the old .then(() => undefined) bug)
+    severity: high
+  - id: NC-MP-NO-UNHANDLED-409
+    message: A filled target slot MUST NOT surface an unhandled error; it asks Replace or Cancel
+    severity: high
+  - id: NC-MP-NO-PAID-SUGGESTIONS
+    message: Recipe suggestions MUST NOT call OpenAI or any paid API
+    severity: medium
+  - id: NC-MP-NO-CONFIRM-DELETE
+    message: Deleting a meal MUST NOT use confirm(); it uses Undo
+    severity: medium
+acceptance_criteria:
+  - id: F-MP-01
+    given: the meal plan on the tablet
+    when: it opens
+    then: the whole week (7 days × breakfast, lunch, dinner) is visible, with prev/next week and Today
+    invariant: false
+  - id: F-MP-02
+    given: the monthly view
+    when: she taps a day
+    then: the weekly view opens on that day's week
+    invariant: false
+  - id: F-MP-03
+    given: an empty slot
+    when: she adds a meal with date, type, name (autocompleted from the library) and notes
+    then: it appears in the slot immediately and is saved
+    invariant: false
+  - id: F-MP-04
+    given: a filled slot
+    when: she adds another meal there
+    then: she is offered Replace (using the 409's existingId) or Cancel; only one meal per slot ever shows
+    invariant: false
+  - id: F-MP-05
+    given: a meal named "Pho bo" not in the library
+    when: it is planned
+    then: '"Pho bo" appears under Recipes (ensure_recipe), and a case-variant does not create a duplicate'
+    invariant: false
+  - id: F-MP-06
+    given: a planned meal
+    when: she edits it or deletes it
+    then: edits save; delete hides it with Undo and sends after the window
+    invariant: false
+  - id: F-MP-07
+    given: a favourited meal
+    when: the same meal is planned again or favourited elsewhere
+    then: the new plan inherits the favourite and toggling it updates all plans of that meal
+    invariant: false
+  - id: F-MP-08
+    given: a meal dragged to another slot
+    when: she drops it
+    then: it is copied (the original stays); a filled target asks Replace or Cancel
+    invariant: false
+  - id: F-MP-09
+    given: the Recipes tab
+    when: she searches by name or ingredient, adds, edits or deletes a recipe (name, comma-separated ingredients, prep time, servings, instructions)
+    then: the library reflects it
+    invariant: false
+  - id: F-MP-10
+    given: planned meals across months
+    when: she opens Summary
+    then: it shows total meals, this week, streak, completion %, by type, top 5 meals, favourites, recent 10 and the monthly breakdown with the same numbers as the old getSummary(); tapping a meal opens its edit
+    invariant: false
+  - id: F-MP-11
+    given: the nav
+    when: she wants the recipe library
+    then: it is under Meal plan → Recipes; there is no separate recipe-manager page
+    invariant: false
+  - id: F-MP-12
+    given: 'recipes "Omelette: eggs, milk, cheese" and "Toast: bread, butter" and items Eggs and Milk expiring within 3 days'
+    when: suggestions load
+    then: Omelette is suggested first (2 matches) and Toast is not, without any AI call; suggestions show at the top of Meal plan and in the quick panel
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+constitution_rules:
+  - AR-NO-DIRECT-API
+  - AR-ONE-DEFINITION
+  - AR-UNDO-KINDS
+  - CS-ZOD4-NO-UPDATE-DEFAULTS

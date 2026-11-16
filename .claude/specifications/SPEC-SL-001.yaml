@@ -1,0 +1,118 @@
+id: SPEC-SL-001
+version: 0.1.0
+kind: product
+title: Shopping list (feature.shopping)
+status: draft
+context_and_scope:
+  in_scope:
+    - Always-visible quick add with name, free-text quantity and notes (F-SL-01)
+    - Instant tick and untick purchased (F-SL-02)
+    - Delete with Undo (F-SL-03)
+    - Clear all purchased in one bulk request with Undo (F-SL-04)
+    - Show/hide purchased, group by category, purchased sink to the bottom (F-SL-05)
+    - Share as text, clipboard fallback (F-SL-06)
+    - Items arriving from inventory, de-duplicated (F-SL-07)
+    - Pending and purchased counts (F-SL-08)
+    - "Files: features/shopping/{ShoppingPage, ShoppingRow}.tsx"
+  out_of_scope:
+    - "Add to kitchen when ticking purchased (open-questions Q8 default: no; listed under Later)"
+  external_dependencies:
+    - GET|POST /api/shopping-list, PATCH|DELETE /api/shopping-list/:id, POST /api/shopping-list/clear-purchased
+    - Web Share API with clipboard fallback
+    - Supabase Realtime (shopping_list)
+  shared_schemas:
+    - shoppingItemCreate { name, quantity?, notes?, categoryId? }, shoppingItemUpdate (+ isPurchased)
+state_machines:
+  - name: shopping_row
+    states:
+      - PENDING
+      - PURCHASED
+      - HIDDEN_FOR_UNDO
+      - REMOVED
+    initial: PENDING
+    transitions:
+      - from: PENDING
+        event: tick
+        to: PURCHASED
+      - from: PURCHASED
+        event: untick
+        to: PENDING
+      - from: PENDING
+        event: delete
+        to: HIDDEN_FOR_UNDO
+      - from: PURCHASED
+        event: delete_or_clear
+        to: HIDDEN_FOR_UNDO
+      - from: HIDDEN_FOR_UNDO
+        event: undo_to_pending
+        to: PENDING
+      - from: HIDDEN_FOR_UNDO
+        event: undo_to_purchased
+        to: PURCHASED
+      - from: HIDDEN_FOR_UNDO
+        event: window_closed
+        to: REMOVED
+    forbidden:
+      - from: REMOVED
+        to: PENDING
+        reason: After the Undo window the row is deleted server-side and not restored
+negative_constraints:
+  - id: NC-SL-NO-RELOAD
+    message: Ticking MUST NOT reload the whole list; the row updates instantly and saves in the background
+    severity: medium
+  - id: NC-SL-ONE-CLEAR
+    message: Clear purchased MUST NOT send one delete per item
+    severity: medium
+  - id: NC-SL-NO-DUPLICATES
+    message: Items sent from the inventory MUST NOT duplicate an unpurchased row with the same name
+    severity: high
+acceptance_criteria:
+  - id: F-SL-01
+    given: the quick add field
+    when: she adds "Eggs" with quantity "10" and a note
+    then: it appears at once; an empty name is blocked inline
+    invariant: false
+  - id: F-SL-02
+    given: a pending row
+    when: she ticks it
+    then: it shows purchased immediately and the PATCH is sent in the background without reloading the list; a failure rolls it back with Retry
+    invariant: false
+  - id: F-SL-03
+    given: a row
+    when: she deletes it
+    then: it disappears with Undo, and the DELETE is sent after the window
+    invariant: false
+  - id: F-SL-04
+    given: 3 purchased rows
+    when: she taps Clear purchased
+    then: all 3 disappear with one Undo toast, and one POST /api/shopping-list/clear-purchased is sent after the window
+    invariant: false
+  - id: F-SL-05
+    given: purchased and pending rows in two categories
+    when: she toggles show purchased and group by category
+    then: purchased rows hide or show and sink to the bottom of each group
+    invariant: false
+  - id: F-SL-06
+    given: Eggs (10) and Milk pending
+    when: she taps Share
+    then: the text "Shopping List:\n- Eggs (10)\n- Milk" goes to the share sheet, or is copied with a toast when sharing is unavailable
+    invariant: false
+  - id: F-SL-07
+    given: an item sent from the quick-action panel
+    when: it arrives
+    then: it carries its category and note, and is not duplicated (F-QP-04)
+    invariant: false
+  - id: F-SL-08
+    given: 2 pending and 3 purchased
+    when: the page renders
+    then: counts read 2 pending and 3 purchased
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+  - SPEC-QP-001
+constitution_rules:
+  - AR-NO-DIRECT-API
+  - AR-WRITE-PATTERN
+  - AR-UNDO-KINDS
+  - CS-UNDO-NOT-CONFIRM

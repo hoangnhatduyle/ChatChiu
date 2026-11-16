@@ -1,0 +1,127 @@
+id: SPEC-SE-001
+version: 0.1.0
+kind: product
+title: Settings (feature.settings)
+status: draft
+context_and_scope:
+  in_scope:
+    - Locations add, edit, delete with an affected-items count (F-SE-01)
+    - "Categories: own ones editable, system ones read-only when any exist (F-SE-02)"
+    - Notifications section (F-SE-03, detailed in SPEC-NT-001)
+    - CSV export of the inventory (F-SE-04)
+    - New version Reload toast and Reset app cache (F-SE-05)
+    - Theme System / Light / Dark (F-SE-06, D5)
+    - Sign out (F-SE-07)
+    - "Files: features/settings/{SettingsPage, LocationsSection, CategoriesSection, NotificationsSection, AppearanceSection, DataSection}.tsx"
+  out_of_scope:
+    - Account management beyond sign out (shared login, D11)
+    - Language switch (English UI only)
+  external_dependencies:
+    - locations and categories routes, GET|PATCH /api/preferences
+    - vite-plugin-pwa update events
+  shared_schemas:
+    - "preferences { theme: system|light|dark }"
+    - CSV columns as the old export
+state_machines:
+  - name: theme
+    states:
+      - SYSTEM
+      - LIGHT
+      - DARK
+    initial: SYSTEM
+    transitions:
+      - from: SYSTEM
+        event: pick_light
+        to: LIGHT
+      - from: SYSTEM
+        event: pick_dark
+        to: DARK
+      - from: LIGHT
+        event: pick_dark
+        to: DARK
+      - from: LIGHT
+        event: pick_system
+        to: SYSTEM
+      - from: DARK
+        event: pick_light
+        to: LIGHT
+      - from: DARK
+        event: pick_system
+        to: SYSTEM
+    forbidden: []
+  - name: location_delete
+    states:
+      - LISTED
+      - HIDDEN_FOR_UNDO
+      - DELETED
+    initial: LISTED
+    transitions:
+      - from: LISTED
+        event: delete
+        to: HIDDEN_FOR_UNDO
+      - from: HIDDEN_FOR_UNDO
+        event: undo
+        to: LISTED
+      - from: HIDDEN_FOR_UNDO
+        event: window_closed
+        to: DELETED
+    forbidden:
+      - from: DELETED
+        to: LISTED
+        reason: A deleted location is not restored; its items stay under No location
+negative_constraints:
+  - id: NC-SE-NO-ORPHAN-SURPRISE
+    message: Deleting a location MUST NOT make items disappear; its items move to No location and the count is shown first
+    severity: high
+  - id: NC-SE-NO-SYSTEM-ASSUMPTION
+    message: The categories section MUST NOT assume system categories exist (production has none after 7.0.10)
+    severity: high
+  - id: NC-SE-NO-SYSTEM-EDIT
+    message: A category with is_system = true MUST NOT be editable or deletable from the UI
+    severity: medium
+acceptance_criteria:
+  - id: F-SE-01
+    given: location Fridge with 7 items
+    when: she deletes it
+    then: she sees that 7 items will move to No location, the delete has Undo, and afterwards the 7 items are on the board under No location
+    invariant: false
+  - id: F-SE-02
+    given: her own categories and possibly some is_system ones
+    when: she adds, edits (name, icon, colour) or deletes her own
+    then: the changes save; is_system rows show read-only; with zero system categories the section still works; deleting a category still used by items shows a readable error
+    invariant: false
+  - id: F-SE-03
+    given: the Notifications section
+    when: it renders
+    then: it behaves as SPEC-NT-001 (status, enable/disable on this device, test, timezone, notify hour, toggles)
+    invariant: false
+  - id: F-SE-04
+    given: items in the inventory
+    when: she taps Export CSV
+    then: a CSV with the same columns as the old export downloads
+    invariant: false
+  - id: F-SE-05
+    given: a new deployment
+    when: the service worker finds it
+    then: a "New version — Reload" toast appears; Reset app cache clears caches after a confirm (irreversible)
+    invariant: false
+  - id: F-SE-06
+    given: the Appearance section
+    when: she picks System, Light or Dark
+    then: the theme applies at once (Fresh Ledger / Night Kitchen), System follows the device, and the choice persists
+    invariant: false
+  - id: F-SE-07
+    given: Settings
+    when: she taps Sign out
+    then: it behaves as F-AU-06
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+  - SPEC-NT-001
+  - SPEC-AU-001
+constitution_rules:
+  - AR-NO-SEED-ASSUMPTIONS
+  - AR-UNDO-KINDS
+  - CS-TOKENS
+  - CS-UNDO-NOT-CONFIRM

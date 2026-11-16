@@ -1,0 +1,172 @@
+id: SPEC-IF-001
+version: 0.1.0
+kind: product
+title: Item form, add and edit (feature.item-form)
+status: draft
+context_and_scope:
+  in_scope:
+    - Name with autocomplete (F-IF-01)
+    - Category picker with inline add (F-IF-02)
+    - Location picker with inline add and pre-fill from a board column (F-IF-03)
+    - Quantity and unit list (F-IF-04)
+    - Purchase date default today (F-IF-05)
+    - Expiry by date, by N days/weeks/months/years, or quick chips (F-IF-06); not before purchase date (F-IF-07)
+    - AI expiry suggestion with quota (F-IF-08)
+    - Total price stored per unit (F-IF-09)
+    - Notes (F-IF-10); expiry notifications toggle and editable days-before (F-IF-11)
+    - Edit shows Full amount and Left now (F-IF-12)
+    - Low-stock threshold under More options (F-IF-15)
+    - Save shows the item immediately with a toast (F-IF-16)
+    - Photo and barcode stay hidden (F-IF-13, F-IF-14, D3)
+    - "Files: features/item-form/{ItemFormPage, CategoryPicker, LocationPicker, ExpiryField}.tsx; ports OLD item-form.ts lines 280–476"
+  out_of_scope:
+    - Photo capture and the primary image (D3; existing photos untouched)
+    - Barcode scan and learned barcode mappings (D3; barcode_mappings untouched)
+  external_dependencies:
+    - POST /api/inventory, PATCH /api/inventory/:id, POST /api/categories, POST /api/locations, POST /api/ai/expiration-suggest
+  shared_schemas:
+    - packages/contracts inventoryItemCreate / inventoryItemUpdate; packages/domain expiry.ts (month = 30 d, year = 365 d), units.ts (piece, kg, g, lb, oz, L, ml, gallon, cup, box, can, bottle, bag, pack)
+state_machines:
+  - name: item_form
+    states:
+      - EDITING
+      - INVALID
+      - SAVING
+      - SAVED
+      - QUEUED_OFFLINE
+      - SAVE_FAILED
+    initial: EDITING
+    transitions:
+      - from: EDITING
+        event: submit_invalid
+        to: INVALID
+      - from: INVALID
+        event: fix_fields
+        to: EDITING
+      - from: EDITING
+        event: submit_valid
+        to: SAVING
+      - from: SAVING
+        event: server_ok
+        to: SAVED
+      - from: SAVING
+        event: offline
+        to: QUEUED_OFFLINE
+      - from: SAVING
+        event: server_error
+        to: SAVE_FAILED
+      - from: SAVE_FAILED
+        event: retry
+        to: SAVING
+      - from: QUEUED_OFFLINE
+        event: synced
+        to: SAVED
+    forbidden:
+      - from: INVALID
+        to: SAVING
+        reason: An invalid form (missing name/category/location, quantity <= 0, expiry before purchase) is never sent
+negative_constraints:
+  - id: NC-IF-PER-UNIT
+    message: The price field MUST NOT be stored as the total; store total / quantity and show price × quantity on edit
+    severity: high
+  - id: NC-IF-NO-SNACKBAR-VALIDATION
+    message: Validation errors MUST NOT appear only as a toast; they are inline at the field
+    severity: medium
+  - id: NC-IF-NO-PHOTO-BARCODE
+    message: Photo and barcode controls MUST NOT be rendered (D3)
+    severity: high
+  - id: NC-IF-NO-SILENT-QTY
+    message: Editing MUST NOT change one of full amount / left now silently when the other is edited
+    severity: high
+acceptance_criteria:
+  - id: F-IF-01
+    given: existing items named Milk and Mint
+    when: she types "Mi" in Name
+    then: both are suggested; an empty name blocks save inline
+    invariant: false
+  - id: F-IF-02
+    given: the category picker (sheet on phone, popover on tablet)
+    when: she adds "Spices" inline
+    then: it is created and selected; the picker works when there are no system categories (7.0.10)
+    invariant: false
+  - id: F-IF-03
+    given: she tapped + on the Pantry column
+    when: the form opens
+    then: Location is pre-filled with Pantry; she can add a new location inline
+    invariant: false
+  - id: F-IF-04
+    given: quantity 0 or a unit outside the list
+    when: she saves
+    then: it is blocked inline; quantity > 0 with a listed unit is accepted
+    invariant: false
+  - id: F-IF-05
+    given: a new item
+    when: the form opens
+    then: purchase date is today
+    invariant: false
+  - id: F-IF-06
+    given: purchase date 2026-01-01
+    when: she picks "in 1 month" or the 1y chip
+    then: expiry becomes 2026-01-31 or 2027-01-01 (month = 30 d, year = 365 d); chips 3d · 1w · 2w · 1m · 3m · 6m · 1y exist
+    invariant: false
+  - id: F-IF-07
+    given: expiry before the purchase date
+    when: she saves
+    then: an inline error on the expiry field blocks it
+    invariant: false
+  - id: F-IF-08
+    given: AI quota left
+    when: she asks for a suggestion
+    then: 'the expiry fills with an inline "Suggested: 7 days — keep refrigerated" and an Undo link; QUOTA_EXCEEDED shows a friendly message'
+    invariant: false
+  - id: F-IF-09
+    given: quantity 10 and total price 4.00
+    when: she saves and reopens in edit
+    then: price is stored as 0.40 and the field shows 4.00
+    invariant: false
+  - id: F-IF-10
+    given: notes text
+    when: she saves
+    then: notes are stored and shown on edit
+    invariant: false
+  - id: F-IF-11
+    given: the notifications toggle and More options
+    when: she turns it off or sets days-before to 5
+    then: notification_enabled / notification_days_before are saved; the default is on with 3
+    invariant: false
+  - id: F-IF-12
+    given: an item with full 1 L and 0.4 L left
+    when: she edits
+    then: the form shows Full amount 1 L and Left now 0.4 L as separate fields, and changing one never changes the other
+    invariant: false
+  - id: F-IF-13
+    given: the form
+    when: it renders
+    then: no photo control exists (D3) and existing item_images rows and storage objects are untouched
+    invariant: true
+  - id: F-IF-14
+    given: the form
+    when: it renders
+    then: no barcode control exists (D3) and barcode_mappings is untouched
+    invariant: true
+  - id: F-IF-15
+    given: More options
+    when: she sets the low-stock threshold to 30
+    then: low_stock_threshold = 30 (percent) is saved; default 20
+    invariant: false
+  - id: F-IF-16
+    given: she saves from the board
+    when: the save is applied
+    then: she returns to the board where the item already appears (no reload) with a toast
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+  - SPEC-SE-001
+constitution_rules:
+  - AR-NO-DIRECT-API
+  - AR-HIDDEN-NOT-DROPPED
+  - CS-PER-UNIT-PRICE
+  - CS-DAY-MATHS
+  - CS-ZOD4-NO-UPDATE-DEFAULTS
+  - AR-NO-SEED-ASSUMPTIONS

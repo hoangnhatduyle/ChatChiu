@@ -1,0 +1,108 @@
+id: SPEC-ST-001
+version: 0.1.0
+kind: product
+title: Waste and Stats (feature.stats)
+status: draft
+context_and_scope:
+  in_scope:
+    - Waste log list with delete and Undo (F-ST-01)
+    - Time-range and category filters with real category names (F-ST-02)
+    - "Totals: items wasted and value lost (F-ST-03)"
+    - Waste by month and by category charts (F-ST-04)
+    - "Overview: total items, expiring within 7 days, expired, stock value, by category, by location, recently added, waste 30 days (F-ST-05)"
+    - Low stock list with usage rate and run-out (F-ST-06)
+    - Most wasted items by count and by value (F-ST-07)
+    - Old quick-actions card dropped (F-ST-08)
+    - Money shown in $ (open-questions Q6 default); recently added and by category/location kept (Q9 default)
+    - "Files: features/stats/{StatsPage, Overview, WasteLog}.tsx, features/stats/charts/*.tsx (dataviz rules, both themes)"
+  out_of_scope:
+    - Currency conversion or locale currency other than $
+    - Exporting stats (CSV export is inventory-only, SPEC-SE-001)
+  external_dependencies:
+    - GET /api/stats/overview, GET|DELETE /api/waste
+  shared_schemas:
+    - packages/contracts stats.ts (overview), waste.ts; packages/domain low-stock.ts, run-out.ts
+state_machines:
+  - name: waste_entry_delete
+    states:
+      - LISTED
+      - HIDDEN_FOR_UNDO
+      - DELETED
+    initial: LISTED
+    transitions:
+      - from: LISTED
+        event: delete
+        to: HIDDEN_FOR_UNDO
+      - from: HIDDEN_FOR_UNDO
+        event: undo
+        to: LISTED
+      - from: HIDDEN_FOR_UNDO
+        event: window_closed
+        to: DELETED
+    forbidden:
+      - from: DELETED
+        to: LISTED
+        reason: Once sent, a deleted waste entry is not restored
+negative_constraints:
+  - id: NC-ST-NO-RAW-PRICE-SUM
+    message: Stock value and waste value MUST NOT sum the per-unit price; they are price × quantity
+    severity: high
+  - id: NC-ST-NO-ABSOLUTE-LOW
+    message: Low stock MUST NOT use an absolute amount; one percent-based rule everywhere
+    severity: high
+  - id: NC-ST-NO-UNKNOWN-CATEGORY
+    message: A waste entry with a valid category MUST NOT show "Unknown"
+    severity: medium
+  - id: NC-ST-NO-COLOUR-ONLY-CHARTS
+    message: Charts MUST NOT rely on colour alone and must use tokens valid in both themes
+    severity: medium
+acceptance_criteria:
+  - id: F-ST-01
+    given: waste entries
+    when: the log renders and she deletes one
+    then: each shows name, qty, unit, value and date; the deleted one hides with Undo
+    invariant: false
+  - id: F-ST-02
+    given: entries in Dairy and Meat over 2 months
+    when: she filters by month and by Dairy
+    then: only matching entries show, each with its real category name
+    invariant: false
+  - id: F-ST-03
+    given: "2 wasted items: 6 × 0.40 and 1 × 3.00"
+    when: totals render
+    then: items wasted = 2 and value lost = $5.40
+    invariant: false
+  - id: F-ST-04
+    given: waste over several months and categories
+    when: the page renders
+    then: two small charts show waste by month and by category, readable in light and dark
+    invariant: false
+  - id: F-ST-05
+    given: 10 eggs at 0.40 with 6 left
+    when: the overview renders
+    then: stock value counts $2.40 for them (price × current), alongside total items, expiring ≤ 7 d, expired, by category, by location, recently added and waste over 30 days
+    invariant: false
+  - id: F-ST-06
+    given: items at or below their percent threshold with 30 days of usage history
+    when: the low stock list renders
+    then: each shows % left, average daily use over the last 30 days and the predicted run-out date
+    invariant: false
+  - id: F-ST-07
+    given: a waste history
+    when: the page renders
+    then: Most wasted lists the top 5 by count and the top 5 by value
+    invariant: false
+  - id: F-ST-08
+    given: the stats page
+    when: it renders
+    then: there is no quick-actions card (the nav covers it)
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+constitution_rules:
+  - AR-ONE-DEFINITION
+  - CS-PER-UNIT-PRICE
+  - CS-PERCENT-LOW-STOCK
+  - CS-TOKENS
+  - AR-UNDO-KINDS

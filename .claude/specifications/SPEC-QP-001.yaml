@@ -1,0 +1,189 @@
+id: SPEC-QP-001
+version: 0.1.0
+kind: product
+title: Quick-action panel (feature.item-panel)
+status: draft
+context_and_scope:
+  in_scope:
+    - Side panel on the tablet, bottom sheet on the phone (ResponsivePanel), opened from the board, the inventory list and search
+    - Up-or-down slider with Undo (F-QP-01)
+    - Quick used buttons (F-QP-02) and exact used/left amount with a note (F-QP-03)
+    - Add to shopping list with de-duplication (F-QP-04)
+    - Move to waste with hold-until-close Undo (F-QP-05)
+    - Restock of the same item (F-QP-06, D13)
+    - Move to another location with Undo (F-QP-07)
+    - Run-out prediction and last 5 usage entries (F-QP-08)
+    - Recipes that use this when expiring within 3 days (F-QP-09)
+    - Edit all details and Delete with Undo (F-QP-10)
+    - "Files: features/item-panel/{ItemPanel, RestockForm, UsageHistory}.tsx"
+  out_of_scope:
+    - The old refill dialog's add/replace modes (one simple restock mode, D13)
+    - Item photo display (D3)
+    - "Logging Remove anywhere (open-questions Q10 default: Remove just deletes; Move to waste is the logging action)"
+  external_dependencies:
+    - POST /api/inventory/:id/usage, /usage-undo, /restock; PATCH|DELETE /api/inventory/:id; POST /api/waste/from-item; POST /api/shopping-list; GET /api/inventory/:id/usage; GET /api/recipes/suggestions; POST /api/ai/expiration-suggest
+  shared_schemas:
+    - "packages/domain: quantity.ts, run-out.ts, recipe-match.ts; core/undo.ts (commit-now vs hold-until-close)"
+state_machines:
+  - name: commit_now_action
+    states:
+      - IDLE
+      - APPLIED_LOCALLY
+      - SAVED
+      - REVERSING
+      - REVERSED
+      - ROLLED_BACK
+      - QUEUED_OFFLINE
+    initial: IDLE
+    transitions:
+      - from: IDLE
+        event: act
+        to: APPLIED_LOCALLY
+      - from: APPLIED_LOCALLY
+        event: server_ok
+        to: SAVED
+      - from: APPLIED_LOCALLY
+        event: server_error
+        to: ROLLED_BACK
+      - from: APPLIED_LOCALLY
+        event: offline
+        to: QUEUED_OFFLINE
+      - from: QUEUED_OFFLINE
+        event: synced
+        to: SAVED
+      - from: SAVED
+        event: undo
+        to: REVERSING
+      - from: REVERSING
+        event: reverse_ok
+        to: REVERSED
+      - from: SAVED
+        event: toast_closed
+        to: IDLE
+      - from: REVERSED
+        event: settled
+        to: IDLE
+      - from: ROLLED_BACK
+        event: retry
+        to: APPLIED_LOCALLY
+    forbidden:
+      - from: IDLE
+        to: SAVED
+        reason: The UI always updates first (AR-WRITE-PATTERN)
+  - name: hold_until_close_action
+    states:
+      - IDLE
+      - HIDDEN_LOCALLY
+      - UNDONE
+      - SENDING
+      - DONE
+      - ROLLED_BACK
+    initial: IDLE
+    transitions:
+      - from: IDLE
+        event: act
+        to: HIDDEN_LOCALLY
+      - from: HIDDEN_LOCALLY
+        event: undo
+        to: UNDONE
+      - from: HIDDEN_LOCALLY
+        event: toast_closed_after_5s
+        to: SENDING
+      - from: HIDDEN_LOCALLY
+        event: pagehide_keepalive
+        to: SENDING
+      - from: SENDING
+        event: server_ok
+        to: DONE
+      - from: SENDING
+        event: server_error
+        to: ROLLED_BACK
+      - from: UNDONE
+        event: settled
+        to: IDLE
+    forbidden:
+      - from: UNDONE
+        to: SENDING
+        reason: An undone waste/delete must never reach the server
+      - from: DONE
+        to: UNDONE
+        reason: After the window closes the server row is gone; there is nothing to undo
+negative_constraints:
+  - id: NC-QP-NO-DUPLICATE-SHOPPING
+    message: Add to shopping list MUST NOT create a second unpurchased row with the same name (case- and space-insensitive)
+    severity: high
+  - id: NC-QP-NO-SECOND-ITEM
+    message: Restock MUST NOT create a new inventory item; it refills the same row
+    severity: high
+  - id: NC-QP-NO-EARLY-SEND
+    message: Move to waste and Delete MUST NOT call the server before the 5 s Undo window closes (or pagehide)
+    severity: high
+  - id: NC-QP-NO-LOST-ACTION
+    message: A held action MUST NOT be lost when the app is hidden or closed during the Undo window; it is flushed with fetch keepalive
+    severity: critical
+  - id: NC-QP-NO-CONFIRM
+    message: No browser confirm() for waste, delete or move (CS-UNDO-NOT-CONFIRM)
+    severity: medium
+acceptance_criteria:
+  - id: F-QP-01
+    given: the panel open on an item at 40%
+    when: she drags the big slider up to 70% and releases
+    then: it saves on release (up and down both allowed), with an Undo toast that restores 40%
+    invariant: false
+  - id: F-QP-02
+    given: an item at 60% of its full amount
+    when: she taps Used 10% · Used 25% · Used half · Used it all
+    then: the item goes to 50%, 35%, 10% or 0% respectively (points of the full amount, clamped at 0), each saved with Undo
+    invariant: false
+  - id: F-QP-03
+    given: an item of 500 g with 300 g left
+    when: she enters Used 100 g or Left 150 g with an optional note
+    then: current becomes 200 g or 150 g, and the note is stored in usage_history.notes
+    invariant: false
+  - id: F-QP-04
+    given: an item Butter, 250 g full, 15% left, category Dairy
+    when: she taps Add to shopping list
+    then: a row "Butter" with quantity "250 g", note "Low stock (15% left)" and the item's category is added; if an unpurchased "butter" is already listed, nothing is added and she sees "Already on your list"
+    invariant: false
+  - id: F-QP-05
+    given: an item with per-unit price 0.40 and 6 units left
+    when: she taps Move to waste
+    then: the item disappears at once, a toast shows the value 2.40 with Undo, and mark_item_wasted runs only after the 5 s window (or immediately on pagehide via keepalive)
+    invariant: false
+  - id: F-QP-06
+    given: an item with full amount 1 L at 10%
+    when: she opens Restock, keeps the pre-filled 1 L, optionally sets a new expiry (AI suggestion available) and a total price, and confirms
+    then: the same item becomes 1 of 1 L (100%), price is stored per unit, and no second item exists; Undo restores the previous values
+    invariant: false
+  - id: F-QP-07
+    given: an item in Fridge
+    when: she picks Pantry under Stored in
+    then: it moves column immediately and saves, with Undo
+    invariant: false
+  - id: F-QP-08
+    given: an item with usage history
+    when: the panel opens
+    then: it shows "~N days left at your pace" from item_consumption and the last 5 usage entries, newest first, read-only
+    invariant: false
+  - id: F-QP-09
+    given: an item expiring within 3 days that matches recipe ingredients
+    when: the panel opens
+    then: a Recipes that use this list shows the matching recipes from SPEC-MP-001 F-MP-12
+    invariant: false
+  - id: F-QP-10
+    given: the panel
+    when: she taps Edit all details or Delete
+    then: Edit opens the item form in edit mode; Delete hides the item with a hold-until-close Undo
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+  - SPEC-MP-001
+  - SPEC-AP-001
+constitution_rules:
+  - AR-NO-DIRECT-API
+  - AR-WRITE-PATTERN
+  - AR-UNDO-KINDS
+  - CS-UNDO-NOT-CONFIRM
+  - CS-PER-UNIT-PRICE
+  - CS-DATA-HOOKS

@@ -1,0 +1,150 @@
+id: SPEC-RS-001
+version: 0.1.0
+kind: product
+title: Receipt scan (feature.receipt-scan)
+status: draft
+context_and_scope:
+  in_scope:
+    - Camera or gallery capture with on-device compression (F-RS-01)
+    - Upload to <uid>/receipts/<uuid>.jpg through a signed URL (F-RS-02)
+    - AI reading with monthly quota and friendly errors (F-RS-03)
+    - Receipt date as purchase date (F-RS-04)
+    - Expiry from the AI shelf-life hint, then the category default; AI unit when in our list (F-RS-05)
+    - Default location from the last-used location, else she must pick (F-RS-06)
+    - Review one by one on the phone and as a table on the tablet (F-RS-07) with all fields editable (F-RS-08)
+    - Add selected items in one bulk request (F-RS-09)
+    - Done screen with View on board (F-RS-10)
+    - "Files: features/receipt-scan/{ReceiptScanPage, CaptureStep, ReviewWizard, ReviewTable}.tsx, imageCompress.ts, each <= 400 lines"
+  out_of_scope:
+    - Item photos taken during review (D3)
+    - Barcode reading from receipts (D3)
+    - Changing the AI prompt or model beyond reading the existing hints
+  external_dependencies:
+    - POST /api/uploads/sign, POST /api/ai/receipt-scan, POST /api/inventory/bulk, POST /api/ai/expiration-suggest
+    - OpenAI vision via the API
+  shared_schemas:
+    - receiptScanRequest { imagePath }; AI line { name, quantity, unit, linePrice, categoryHint, shelfLifeDaysHint }
+    - "Category defaults by name hint (case-insensitive): dairy 14d, produce 7d, meat 3d, seafood 2d, frozen 90d, pantry 365d (the full old table is ported); a hint that matches none of her categories uses no category default"
+state_machines:
+  - name: receipt_flow
+    states:
+      - CAPTURE
+      - COMPRESSING
+      - UPLOADING
+      - READING
+      - REVIEW
+      - ADDING
+      - DONE
+      - ERROR
+    initial: CAPTURE
+    transitions:
+      - from: CAPTURE
+        event: photo_chosen
+        to: COMPRESSING
+      - from: COMPRESSING
+        event: compressed
+        to: UPLOADING
+      - from: UPLOADING
+        event: uploaded
+        to: READING
+      - from: READING
+        event: items_read
+        to: REVIEW
+      - from: READING
+        event: quota_busy_or_bad_image
+        to: ERROR
+      - from: UPLOADING
+        event: upload_failed
+        to: ERROR
+      - from: ERROR
+        event: retry_or_new_photo
+        to: CAPTURE
+      - from: REVIEW
+        event: add_selected
+        to: ADDING
+      - from: ADDING
+        event: bulk_ok
+        to: DONE
+      - from: ADDING
+        event: bulk_error
+        to: REVIEW
+    forbidden:
+      - from: REVIEW
+        to: DONE
+        reason: Items are only reported as added after the bulk request succeeds
+      - from: CAPTURE
+        to: READING
+        reason: The AI only reads an image that was uploaded to the caller's own folder
+negative_constraints:
+  - id: NC-RS-NO-HARDCODED-LOCATION
+    message: The flow MUST NOT fall back to a hard-coded location or category id (old fallback id 1)
+    severity: high
+  - id: NC-RS-NO-PER-ITEM-REQUESTS
+    message: Adding MUST NOT send one request per item; it sends one POST /api/inventory/bulk
+    severity: medium
+  - id: NC-RS-NO-PARTIAL-SILENT
+    message: A failed bulk add MUST NOT leave some items created without telling her; the bulk is all-or-nothing
+    severity: high
+  - id: NC-RS-NO-RAW-UPLOAD
+    message: Large photos MUST NOT be uploaded uncompressed; the API limit is 5 MiB
+    severity: medium
+acceptance_criteria:
+  - id: F-RS-01
+    given: a 12 MB camera photo
+    when: she takes or picks it
+    then: it is compressed on the device to under 5 MiB before upload
+    invariant: false
+  - id: F-RS-02
+    given: a compressed image
+    when: it uploads
+    then: it goes to <uid>/receipts/<uuid>.jpg in the private bucket via a signed URL
+    invariant: false
+  - id: F-RS-03
+    given: an uploaded receipt
+    when: the AI reads it
+    then: items come back with name, qty, unit, line price, category hint and shelf-life hint; quota exhausted, busy and bad-image cases each show a friendly message
+    invariant: false
+  - id: F-RS-04
+    given: a receipt dated 2026-11-10
+    when: review opens
+    then: every item's purchase date is 2026-11-10
+    invariant: false
+  - id: F-RS-05
+    given: an item with AI unit "kg" and shelf-life hint 10 days, and another with no hint in category Dairy and unit "bunch"
+    when: review opens
+    then: the first uses kg and expiry = purchase + 10 d; the second uses the Dairy default 14 d and unit piece (bunch is not in our list)
+    invariant: false
+  - id: F-RS-06
+    given: her last-used location is Fridge, or she has never picked one
+    when: review opens
+    then: items default to Fridge, or have no location and adding is blocked until she picks one
+    invariant: false
+  - id: F-RS-07
+    given: phone width or tablet width
+    when: review opens
+    then: the phone shows one item at a time with skip/include, the tablet shows the table; both modes are available
+    invariant: false
+  - id: F-RS-08
+    given: review
+    when: she edits name, qty, unit, total price, category, location, purchase date, expiry (date or N units), notes, notify flag, or asks AI for one item's expiry
+    then: each field updates that item only; total price is stored per unit on add
+    invariant: false
+  - id: F-RS-09
+    given: 8 selected items
+    when: she taps Add
+    then: one POST /api/inventory/bulk creates all 8 with a progress indicator, and they appear on the board immediately
+    invariant: false
+  - id: F-RS-10
+    given: a successful add
+    when: the done screen shows
+    then: it reads "8 items added" with View on board
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+  - SPEC-IF-001
+constitution_rules:
+  - AR-NO-DIRECT-API
+  - AR-NO-SEED-ASSUMPTIONS
+  - CS-PER-UNIT-PRICE
+  - NC-SECRETS

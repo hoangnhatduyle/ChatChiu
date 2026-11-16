@@ -1,0 +1,166 @@
+id: SPEC-IN-001
+version: 0.1.0
+kind: product
+title: Inventory list (feature.inventory)
+status: draft
+context_and_scope:
+  in_scope:
+    - Search by name and notes (F-IN-01)
+    - Filters by category, location and status kept in the URL (F-IN-02, F-IN-14)
+    - Sort (F-IN-03) and group (F-IN-04)
+    - Card vs table view switching at 1024 px with a remembered override (F-IN-05)
+    - Virtual scrolling instead of pages (F-IN-06)
+    - Expired / expiring counters as quick filters (F-IN-07)
+    - Usage drag on cards with Undo (F-IN-08)
+    - Row tap opens the quick-action panel (F-IN-09)
+    - Select mode with bulk delete and Undo (F-IN-10)
+    - Waste value = per-unit price × remaining (F-IN-11)
+    - Scan receipt button (F-IN-13)
+    - Barcode scan and image view stay hidden (F-IN-12, F-IN-09 image, D3)
+    - "Files: features/inventory/{InventoryPage, InventoryTable, InventoryCards, InventoryFilters}.tsx; packages/domain/src/filter.ts (ported applyFilters)"
+  out_of_scope:
+    - Barcode scanning to search and barcode text search (D3, hidden; barcode data untouched)
+    - View image (D3, hidden; item_images untouched)
+    - Page-number pagination (replaced by virtual scrolling)
+  external_dependencies:
+    - "@tanstack/react-virtual"
+    - DELETE /api/inventory/bulk
+  shared_schemas:
+    - "URL search params: q, category, location, status (all|expired|expiring|fresh), sort (expiry|name|quantity|recent), group (none|category|location), view (auto|cards|table)"
+state_machines:
+  - name: bulk_delete
+    states:
+      - BROWSING
+      - SELECTING
+      - HIDDEN_LOCALLY
+      - UNDONE
+      - SENT
+      - ROLLED_BACK
+    initial: BROWSING
+    transitions:
+      - from: BROWSING
+        event: enter_select_mode
+        to: SELECTING
+      - from: SELECTING
+        event: cancel
+        to: BROWSING
+      - from: SELECTING
+        event: delete_selected
+        to: HIDDEN_LOCALLY
+      - from: HIDDEN_LOCALLY
+        event: undo
+        to: UNDONE
+      - from: HIDDEN_LOCALLY
+        event: window_closed_or_pagehide
+        to: SENT
+      - from: SENT
+        event: server_error
+        to: ROLLED_BACK
+      - from: UNDONE
+        event: settled
+        to: BROWSING
+      - from: SENT
+        event: server_ok
+        to: BROWSING
+      - from: ROLLED_BACK
+        event: dismiss
+        to: BROWSING
+    forbidden:
+      - from: UNDONE
+        to: SENT
+        reason: An undone bulk delete must never reach the server
+negative_constraints:
+  - id: NC-IN-ONE-REQUEST
+    message: Bulk delete MUST NOT send one request per item; it sends one DELETE /api/inventory/bulk
+    severity: medium
+  - id: NC-IN-NO-BARCODE-UI
+    message: No barcode scan button or image viewer may be rendered (D3), and the new app MUST NOT modify barcode or image data
+    severity: high
+  - id: NC-IN-NO-LOST-FILTERS
+    message: Back navigation and refresh MUST NOT lose the active filters
+    severity: medium
+  - id: NC-IN-ONE-FILTER-IMPL
+    message: Filtering logic MUST NOT be duplicated in components; it lives in packages/domain/src/filter.ts
+    severity: medium
+acceptance_criteria:
+  - id: F-IN-01
+    given: items with "oat" in the name of one and in the notes of another, and one whose barcode contains "oat"
+    when: she searches "oat"
+    then: the first two match and the barcode-only one does not
+    invariant: false
+  - id: F-IN-02
+    given: filters category Dairy, location Fridge, status expiring
+    when: she applies them
+    then: only matching items show and the URL holds the filters, so Back and refresh keep them; status expiring means within 3 days
+    invariant: false
+  - id: F-IN-03
+    given: the sort control
+    when: she picks expiry, name, quantity or recently added
+    then: the list orders accordingly (ported applyFilters semantics)
+    invariant: false
+  - id: F-IN-04
+    given: the group control
+    when: she picks none, category or location
+    then: items are grouped with headers accordingly
+    invariant: false
+  - id: F-IN-05
+    given: widths 1023 px and 1024 px
+    when: the page renders with no override
+    then: cards below 1024 px and the table from 1024 px; a manual override is remembered on this device
+    invariant: false
+  - id: F-IN-06
+    given: 300 items
+    when: she scrolls
+    then: rows are virtualised and there are no page controls
+    invariant: false
+  - id: F-IN-07
+    given: 2 expired and 3 expiring items
+    when: the page renders
+    then: counters show 2 and 3, and tapping one applies that status filter
+    invariant: false
+  - id: F-IN-08
+    given: a card's usage bar
+    when: she drags it down and releases
+    then: it behaves as F-KB-04 (save on release, Undo, no confirm)
+    invariant: false
+  - id: F-IN-09
+    given: a row or card
+    when: she taps it
+    then: the quick-action panel opens (Edit, usage, restock, waste, delete live there); no View image action exists (D3)
+    invariant: false
+  - id: F-IN-10
+    given: select mode with 4 items selected
+    when: she taps Delete selected
+    then: the 4 disappear with an Undo toast, and one DELETE /api/inventory/bulk is sent after the window; select all / none work
+    invariant: false
+  - id: F-IN-11
+    given: an item with per-unit price 0.40 and 6 left
+    when: she moves it to waste
+    then: the waste toast and log show value 2.40
+    invariant: false
+  - id: F-IN-12
+    given: the inventory page
+    when: it renders
+    then: no barcode scan control is present (hidden by D3) and barcode_mappings / inventory_items.barcode are never written by the new app
+    invariant: true
+  - id: F-IN-13
+    given: the inventory page
+    when: she taps Scan receipt
+    then: the receipt scan flow (SPEC-RS-001) opens
+    invariant: false
+  - id: F-IN-14
+    given: filters set on a previous visit
+    when: she opens the inventory page from the nav without URL params
+    then: the last-used filters are restored into the URL
+    invariant: false
+depends_on:
+  - SPEC-DATA-001
+  - SPEC-API-001
+  - SPEC-QP-001
+  - SPEC-KB-001
+constitution_rules:
+  - AR-NO-DIRECT-API
+  - AR-ONE-DEFINITION
+  - AR-HIDDEN-NOT-DROPPED
+  - CS-STATE-HOMES
+  - AR-UNDO-KINDS
