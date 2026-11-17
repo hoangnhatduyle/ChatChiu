@@ -1,11 +1,10 @@
 // SPEC-AU-001 F-AU-05 against the real route table (routes.tsx) in the production topology:
 // AuthProvider above the router. Login, register and reset-password sit outside the guard; the
 // shell and its not-found page sit inside it.
-import { render, screen } from '@testing-library/react'
-import { createMemoryRouter, RouterProvider } from 'react-router'
+import { screen } from '@testing-library/react'
 import { vi } from 'vitest'
 import { AuthProvider } from './core/auth'
-import { routes } from './routes'
+import { renderRoutesAt } from './test/render-routes'
 
 const fake = vi.hoisted(() => ({ signedIn: true }))
 vi.mock('./core/supabase.client', async () => {
@@ -24,20 +23,14 @@ vi.mock('./core/supabase.client', async () => {
 
 function renderAt(path: string, signedIn: boolean) {
   fake.signedIn = signedIn
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
-  render(
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>,
-  )
-  return router
+  return renderRoutesAt(path, (children) => <AuthProvider>{children}</AuthProvider>)
 }
 
 describe('routes.tsx and the guard', () => {
   it('F-AU-05: signed out, a shell page redirects to the sign-in placeholder, without the shell', async () => {
-    const router = renderAt('/stock', false)
+    const view = renderAt('/stock', false)
     expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/login')
+    expect(view.location()).toBe('/login')
     expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull()
   })
 
@@ -46,9 +39,9 @@ describe('routes.tsx and the guard', () => {
     ['/reset-password', 'Reset password'],
     ['/login', 'Sign in'],
   ])('F-AU-05: signed out, %s opens without a redirect', async (path, title) => {
-    const router = renderAt(path, false)
+    const view = renderAt(path, false)
     expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe(path)
+    expect(view.location()).toBe(path)
   })
 
   it('F-AU-05: signed in, an unknown path shows Not found inside the shell', async () => {

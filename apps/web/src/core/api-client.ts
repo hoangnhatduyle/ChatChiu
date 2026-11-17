@@ -11,10 +11,12 @@ import {
   authUnavailableError,
   fromResponse,
   isAbort,
+  isGatewayStatus,
   networkError,
   snippet,
   timeoutError,
 } from './errors'
+import { getConnectivity } from './connectivity'
 import { hasControlCharacter } from './path-safety'
 
 /** A request that has not finished by now is given up on, so it cannot block the write queue behind it. */
@@ -22,6 +24,7 @@ export const REQUEST_TIMEOUT_MS = 20_000
 /** Browsers refuse a keepalive request with a body over 64 KiB (the fetch spec's limit), as a TypeError. */
 export const KEEPALIVE_BODY_LIMIT_BYTES = 60 * 1024
 const API_PREFIX = '/api/'
+const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{1,100}$/
 const HTTP_UNAUTHORIZED = 401
 const MS_PER_SECOND = 1000
 
@@ -33,6 +36,11 @@ export type RequestOptions = {
   /** Lets the request finish after the page is hidden (the undo flush on pagehide, step 4.5). */
   keepalive?: boolean
   timeoutMs?: number
+  /**
+   * Sent as `Idempotency-Key`. A write that may be replayed (the offline queue) uses one key for every
+   * attempt, so the server can recognise the repeat. 1 to 100 of A-Z a-z 0-9 _ -.
+   */
+  idempotencyKey?: string
 }
 
 export type ApiClientDeps = {
@@ -41,6 +49,8 @@ export type ApiClientDeps = {
   fetch?: typeof fetch
   getToken?: () => Promise<string | null>
   onUnauthorized?: (failedToken: string) => Promise<RefreshOutcome>
+  /** Told whether the server could be reached: true after any answer, false after a network failure. */
+  onReachability?: (reachable: boolean) => void
   timeoutMs?: number
 }
 
@@ -152,6 +162,14 @@ export function createApiClient(deps: ApiClientDeps = {}): ApiClient {
   const doFetch = deps.fetch ?? ((...args: Parameters<typeof fetch>) => fetch(...args))
   const getToken = deps.getToken ?? getAccessToken
   const onUnauthorized = deps.onUnauthorized ?? handleUnauthorized
+  /** A listener's bug must never break a request. */
+  const report = (reachable: boolean) => {
+    try {
+      deps.onReachability?.(reachable)
+    } catch {
+      // ignored on purpose: reachability is advisory
+    }
+  }
 
   /** The token for the next request. Signed out is a 401; an unreadable session is a transient failure. */
   async function readToken(): Promise<string> {
@@ -187,6 +205,9 @@ export function createApiClient(deps: ApiClientDeps = {}): ApiClient {
       headers: {
         Authorization: `Bearer ${token}`,
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(options.idempotencyKey !== undefined
+          ? { 'Idempotency-Key': options.idempotencyKey }
+          : {}),
       },
       body,
       keepalive: options.keepalive,
@@ -212,6 +233,9 @@ export function createApiClient(deps: ApiClientDeps = {}): ApiClient {
         hint = `${response.headers.get('Content-Type') ?? 'no content type'}: ${snippet(text)}`
       }
     }
+    // Reachable only if it was our API that answered: JSON, and not a gateway error. A captive-portal
+    // page or a 502 says nothing good about the connection.
+    if (parsed !== undefined && !isGatewayStatus(response.status)) report(true)
     return { status: response.status, ok: response.ok, body: parsed, hint, retryAfterMs }
   }
 
@@ -232,9 +256,15 @@ export function createApiClient(deps: ApiClientDeps = {}): ApiClient {
   /** Turns anything thrown while a request was in flight into the error the caller sees. */
   function classify(error: unknown, timedOut: boolean): unknown {
     if (error instanceof ApiClientError) return error
-    if (timedOut) return timeoutError(error)
+    if (timedOut) {
+      report(false) // Wi-Fi with no internet often hangs rather than failing
+      return timeoutError(error)
+    }
     if (isAbort(error)) return error // a caller's cancel is not a failure
-    if (error instanceof TypeError) return networkError(error) // fetch's "network error" (and a cut body)
+    if (error instanceof TypeError) {
+      report(false)
+      return networkError(error) // fetch's "network error" (and a cut body)
+    }
     return new ApiClientError({
       status: 0,
       code: 'UNKNOWN',
@@ -250,6 +280,12 @@ export function createApiClient(deps: ApiClientDeps = {}): ApiClient {
     options: RequestOptions = {},
   ): Promise<T> {
     if (!isOwnPath(path)) throw new Error(`API paths must be under /api/: ${path.slice(0, 40)}`)
+    if (
+      options.idempotencyKey !== undefined &&
+      !IDEMPOTENCY_KEY_PATTERN.test(options.idempotencyKey)
+    ) {
+      throw new Error('The idempotency key must be 1 to 100 letters, digits, "_" or "-".')
+    }
     const body = encodeBody(payload)
     if (options.keepalive && body !== undefined) {
       if (new TextEncoder().encode(body).length > KEEPALIVE_BODY_LIMIT_BYTES) {
@@ -293,7 +329,14 @@ let defaultClient: ApiClient | undefined
 
 /** Built on first use, so importing this module reads no environment. */
 function appClient(): ApiClient {
-  defaultClient ??= createApiClient({ baseUrl: import.meta.env.VITE_API_BASE_URL })
+  defaultClient ??= createApiClient({
+    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    onReachability: (reachable) => {
+      const connectivity = getConnectivity()
+      if (reachable) connectivity.reportReachable()
+      else connectivity.reportFailure()
+    },
+  })
   return defaultClient
 }
 

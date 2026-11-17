@@ -238,6 +238,11 @@ export function isAbort(error: unknown): boolean {
   )
 }
 
+/** A gateway or proxy answer (502, 503, 504): something in front of the API, not the API itself. */
+export function isGatewayStatus(status: number): boolean {
+  return TRANSIENT_GATEWAY_STATUSES.includes(status)
+}
+
 export function isOffline(error: unknown): boolean {
   return error instanceof ApiClientError && error.kind === 'offline'
 }

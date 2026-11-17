@@ -506,3 +506,123 @@ describe('request hygiene', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
+
+describe('idempotency key (step 4.3: a queued write is replayed with the same key)', () => {
+  it('F-AP-01: sends the key as an Idempotency-Key header', async () => {
+    const { api, fetchMock } = setup()
+    fetchMock.mockResolvedValue(json(200, { data: null }))
+    await api.post('/api/inventory', {}, { idempotencyKey: 'a1b2c3d4-0000-4000-8000-000000000001' })
+    expect(headerOf(fetchMock.mock.calls[0]?.[1], 'Idempotency-Key')).toBe(
+      'a1b2c3d4-0000-4000-8000-000000000001',
+    )
+  })
+
+  it('F-AP-01: sends no such header when none is given', async () => {
+    const { api, fetchMock } = setup()
+    fetchMock.mockResolvedValue(json(200, { data: null }))
+    await api.post('/api/inventory', {})
+    expect(headerOf(fetchMock.mock.calls[0]?.[1], 'Idempotency-Key')).toBeNull()
+  })
+
+  it('F-AU-04: the retry after a 401 keeps the same key', async () => {
+    const { api, fetchMock, onUnauthorized } = setup()
+    onUnauthorized.mockResolvedValue('refreshed')
+    fetchMock
+      .mockResolvedValueOnce(json(401, { error: { code: 'UNAUTHORIZED', message: 'x' } }))
+      .mockResolvedValueOnce(json(200, { data: 1 }))
+    await api.post('/api/inventory', {}, { idempotencyKey: 'key-1' })
+    expect(headerOf(fetchMock.mock.calls[1]?.[1], 'Idempotency-Key')).toBe('key-1')
+  })
+
+  it.each(['', ' ', 'a b', 'x'.repeat(101), 'bad/key', 'é'])(
+    'refuses the key %j before any request',
+    async (key) => {
+      const { api, fetchMock } = setup()
+      await expect(api.post('/api/x', {}, { idempotencyKey: key })).rejects.toThrow(
+        /idempotency key/i,
+      )
+      expect(fetchMock).not.toHaveBeenCalled()
+    },
+  )
+})
+
+describe('reachability reports (step 4.3)', () => {
+  it('F-AP-01: an answer from our API, whatever its status, is reported reachable', async () => {
+    const onReachability = vi.fn()
+    const { api, fetchMock } = setup({ onReachability })
+    for (const status of [200, 401, 404, 429, 500]) {
+      fetchMock.mockResolvedValueOnce(
+        status === 200
+          ? json(200, { data: 1 })
+          : json(status, { error: { code: 'INTERNAL', message: 'x' } }),
+      )
+      await api.get('/api/x').catch(() => undefined)
+    }
+    expect(onReachability).toHaveBeenCalledTimes(5)
+    expect(onReachability).not.toHaveBeenCalledWith(false)
+  })
+
+  it('F-AP-01: a gateway error (502, 503, 504) or a page that is not ours (a captive portal) is not "reachable"', async () => {
+    const onReachability = vi.fn()
+    const { api, fetchMock } = setup({ onReachability })
+    for (const status of [502, 503, 504]) {
+      fetchMock.mockResolvedValueOnce(new Response('<html>bad gateway</html>', { status }))
+      await api.get('/api/x').catch(() => undefined)
+    }
+    fetchMock.mockResolvedValueOnce(
+      new Response('<html>Sign in to the Wi-Fi</html>', { status: 200 }),
+    )
+    await api.get('/api/x').catch(() => undefined)
+    expect(onReachability).not.toHaveBeenCalled()
+  })
+
+  it('F-AP-01: a network failure is reported unreachable', async () => {
+    const onReachability = vi.fn()
+    const { api, fetchMock } = setup({ onReachability })
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await api.get('/api/x').catch(() => undefined)
+    expect(onReachability).toHaveBeenCalledWith(false)
+  })
+
+  it('F-AP-01: a timeout (Wi-Fi with no internet often hangs instead of failing) is reported unreachable', async () => {
+    const onReachability = vi.fn()
+    const { api, fetchMock } = setup({ onReachability, timeoutMs: 20 })
+    fetchMock.mockImplementation(
+      (_url, init) =>
+        new Promise((_res, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('a', 'AbortError')))
+        }),
+    )
+    await api.get('/api/x').catch(() => undefined)
+    expect(onReachability).toHaveBeenCalledWith(false)
+  })
+
+  it('a caller abort says nothing about reachability', async () => {
+    const onReachability = vi.fn()
+    const { api, fetchMock } = setup({ onReachability })
+    fetchMock.mockImplementation(
+      (_url, init) =>
+        new Promise((_res, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('a', 'AbortError')))
+        }),
+    )
+    const controller = new AbortController()
+    const pending = api.get('/api/x', { signal: controller.signal }).catch(() => undefined)
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    controller.abort()
+    await pending
+    expect(onReachability).not.toHaveBeenCalled()
+  })
+
+  it('a callback that throws never breaks the request', async () => {
+    const { api, fetchMock } = setup({
+      onReachability: () => {
+        throw new Error('listener bug')
+      },
+    })
+    fetchMock.mockResolvedValue(json(200, { data: 7 }))
+    await expect(api.get('/api/x')).resolves.toBe(7)
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await expect(api.get('/api/x')).rejects.toMatchObject({ kind: 'offline' })
+  })
+})

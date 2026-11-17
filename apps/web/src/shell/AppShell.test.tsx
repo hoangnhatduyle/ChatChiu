@@ -1,23 +1,19 @@
 // Step 3.3: the shell, routes and navigation (SPEC-AP-001 F-AP-02, F-AP-05).
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter, RouterProvider } from 'react-router'
-import { vi } from 'vitest'
+import { isValidElement } from 'react'
+import { MemoryRouter, Route, Routes } from 'react-router'
+import { afterEach, vi } from 'vitest'
 import { AuthProvider } from '../core/auth'
 import { routes } from '../routes'
+import { renderRoutesAt } from '../test/render-routes'
 import { AppShell } from './AppShell'
-import { RouteError } from './RouteError'
+import { AppErrorBoundary, RoutePageBoundary } from './RouteErrorBoundary'
 
 vi.mock('../core/supabase.client', async () => (await import('../test/fake-auth')).fakeAuthModule())
 
 function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
-  render(
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>,
-  )
-  return router
+  return renderRoutesAt(path, (children) => <AuthProvider>{children}</AuthProvider>)
 }
 
 const rail = () => screen.getByRole('navigation', { name: 'Main' })
@@ -83,11 +79,11 @@ describe('AppShell', () => {
   )
 
   it('F-AP-02: every destination is reachable, including Waste & Stats and Settings via More', async () => {
-    const router = renderAt('/more')
+    const view = renderAt('/more')
     await screen.findByRole('heading', { level: 1, name: 'More' })
     const main = screen.getByRole('main')
     await userEvent.click(within(main).getByRole('link', { name: /Waste & Stats/ }))
-    expect(router.state.location.pathname).toBe('/stats')
+    expect(view.location()).toBe('/stats')
     expect(await screen.findByRole('heading', { level: 1, name: 'Waste & Stats' })).toBeVisible()
   })
 
@@ -114,24 +110,28 @@ describe('AppShell', () => {
     await waitFor(() => expect(stock).toHaveFocus())
   })
 
-  it('a page that fails to load shows an error inside the shell with Reload (react review HIGH)', async () => {
-    function Boom(): never {
-      throw new Error('Failed to fetch dynamically imported module')
-    }
-    const router = createMemoryRouter(
-      [
-        {
-          path: '/',
-          element: <AppShell />,
-          children: [
-            { errorElement: <RouteError />, children: [{ index: true, element: <Boom /> }] },
-          ],
-        },
-      ],
-      { initialEntries: ['/'] },
-    )
+  function Boom(): never {
+    throw new Error('Failed to fetch dynamically imported module')
+  }
+
+  function renderBroken() {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    render(<RouterProvider router={router} />)
+    return render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<AppShell />}>
+            <Route element={<RoutePageBoundary />}>
+              <Route index element={<Boom />} />
+              <Route path="stock" element={<h1>Stock page</h1>} />
+            </Route>
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+  }
+
+  it('a page that fails to load shows an error inside the shell with Reload (react review HIGH)', async () => {
+    renderBroken()
     expect(
       await screen.findByRole('heading', { level: 1, name: "This page didn't load" }),
     ).toBeInTheDocument()
@@ -139,9 +139,69 @@ describe('AppShell', () => {
     expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument()
   })
 
-  it('routes.tsx wraps every page in the RouteError boundary', () => {
-    const shell = routes[0]?.children?.[0]
-    expect(shell?.children?.[0]?.errorElement).toBeDefined()
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('the error screen announces itself to screen readers', async () => {
+    renderBroken()
+    expect(await screen.findByRole('alert')).toHaveTextContent(/updated while it was open/i)
+  })
+
+  it('"Back to the kitchen" works on the page that failed (same path), and the page is tried again', async () => {
+    let failing = true
+    function FailsOnce() {
+      if (failing) throw new Error('Failed to fetch dynamically imported module')
+      return <h1>Kitchen came back</h1>
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<AppShell />}>
+            <Route element={<RoutePageBoundary />}>
+              <Route index element={<FailsOnce />} />
+            </Route>
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+    await screen.findByRole('heading', { name: "This page didn't load" })
+    failing = false // the new version is available now
+    await userEvent.click(
+      within(screen.getByRole('main')).getByRole('link', { name: /back to the kitchen/i }),
+    )
+    expect(await screen.findByRole('heading', { name: 'Kitchen came back' })).toBeInTheDocument()
+  })
+
+  it('a crash above the pages (the shell, the guard, the data provider) shows a full-screen message instead of a blank page', async () => {
+    function Crashes(): never {
+      throw new Error('shell exploded')
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(
+      <AppErrorBoundary>
+        <Crashes />
+      </AppErrorBoundary>,
+    )
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /hit a problem/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument()
+  })
+
+  it('the error screen clears when she navigates elsewhere', async () => {
+    renderBroken()
+    await screen.findByRole('heading', { name: "This page didn't load" })
+    await userEvent.click(screen.getAllByRole('link', { name: 'Stock' })[0] as HTMLElement)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Stock page' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: "This page didn't load" })).toBeNull()
+  })
+
+  it('routes.tsx wraps every page in the RoutePageBoundary', () => {
+    const shell = routes[0]?.children?.[0]?.children?.[0]
+    const boundary = shell?.children?.[0]?.element
+    expect(isValidElement(boundary) && boundary.type === RoutePageBoundary).toBe(true)
   })
 
   it('an unknown path shows a not-found page with a way back to the kitchen', async () => {
