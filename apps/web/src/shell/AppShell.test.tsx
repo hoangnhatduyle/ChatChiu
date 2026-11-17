@@ -5,6 +5,7 @@ import { isValidElement } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, vi } from 'vitest'
 import { AuthProvider } from '../core/auth'
+import { ToastProvider } from '../core/toast'
 import { routes } from '../routes'
 import { renderRoutesAt } from '../test/render-routes'
 import { AppShell } from './AppShell'
@@ -13,7 +14,11 @@ import { AppErrorBoundary, RoutePageBoundary } from './RouteErrorBoundary'
 vi.mock('../core/supabase.client', async () => (await import('../test/fake-auth')).fakeAuthModule())
 
 function renderAt(path: string) {
-  return renderRoutesAt(path, (children) => <AuthProvider>{children}</AuthProvider>)
+  return renderRoutesAt(path, (children) => (
+    <AuthProvider>
+      <ToastProvider>{children}</ToastProvider>
+    </AuthProvider>
+  ))
 }
 
 const rail = () => screen.getByRole('navigation', { name: 'Main' })

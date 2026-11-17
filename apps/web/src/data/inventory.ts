@@ -214,7 +214,8 @@ export const bulkDelete = defineWrite<{ ids: number[] }, unknown, { rows: Invent
   guard: ({ ids }) => tempGuard(...ids),
   label: 'Delete items',
   scope: () => 'inventory:bulk',
-  request: ({ ids }, requestId) => deleteRow('/api/inventory/bulk', requestId, { ids }),
+  request: ({ ids }, requestId, options) =>
+    deleteRow('/api/inventory/bulk', requestId, { ids }, options),
   apply: (client, { ids }) => {
     const gone = new Set(ids)
     const all = itemsStore.read(client)

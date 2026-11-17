@@ -34,8 +34,11 @@ export const wasteFromItem = defineWrite<WasteFromItem, WasteEntry, FromItemUndo
   guard: ({ itemId }) => tempGuard(itemId),
   label: 'Mark as wasted',
   scope: ({ itemId }) => `inventory:${itemId}`,
-  request: (input, requestId) =>
-    api.post<WasteEntry>('/api/waste/from-item', input, { idempotencyKey: requestId }),
+  request: (input, requestId, options) =>
+    api.post<WasteEntry>('/api/waste/from-item', input, {
+      idempotencyKey: requestId,
+      keepalive: options?.keepalive,
+    }),
   apply: (client, { itemId }) => {
     const items = itemsStore.read(client)
     const index = items.findIndex((i) => i.id === itemId)

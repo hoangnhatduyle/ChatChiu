@@ -16,7 +16,9 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Outlet } from 'react-router'
 import { getConnectivity } from '../core/connectivity'
 import { useSession } from '../core/session-context'
+import { useUndo } from '../core/toast-context'
 import './register'
+import { FailedWriteToasts } from './failed-write-toasts'
 import { createLeadership } from './leadership'
 import { createIdbPersister } from './persistence'
 import { createWriteGate } from './write-gate'
@@ -37,6 +39,7 @@ function UserData({ userId }: { userId: string }) {
   const [leadership] = useState(() => createLeadership(userId))
   const isLeader = useSyncExternalStore(leadership.subscribe, leadership.isLeader)
   // Saving is allowed only once the saved cache was read successfully (see write-gate.ts).
+  const undo = useUndo()
   const [gate] = useState(createWriteGate)
   const [restoredOk, setRestoredOk] = useState(false)
   const [persister] = useState(() =>
@@ -87,8 +90,9 @@ function UserData({ userId }: { userId: string }) {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('pagehide', flush)
       flush() // sign-out or a user switch: keep the queue
+      undo.flush() // and send what is held for undo, while the session is still valid
     }
-  }, [gate])
+  }, [gate, undo])
 
   return (
     <PersistQueryClientProvider
@@ -104,6 +108,7 @@ function UserData({ userId }: { userId: string }) {
         gate.setRestored(false)
       }}
     >
+      <FailedWriteToasts />
       <Outlet />
     </PersistQueryClientProvider>
   )

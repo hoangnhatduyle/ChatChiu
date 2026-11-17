@@ -30,8 +30,12 @@ export const clearPurchased = defineWrite<{ ids: number[] }, unknown, { rows: Sh
   refetchOnFailure: queryKeys.shopping,
   label: 'Clear bought items',
   scope: () => 'shopping:clear',
-  request: ({ ids }, requestId) =>
-    api.post('/api/shopping-list/clear-purchased', { ids }, { idempotencyKey: requestId }),
+  request: ({ ids }, requestId, options) =>
+    api.post(
+      '/api/shopping-list/clear-purchased',
+      { ids },
+      { idempotencyKey: requestId, keepalive: options?.keepalive },
+    ),
   apply: (client, { ids }) => {
     const gone = new Set(ids)
     const all = store.read(client)

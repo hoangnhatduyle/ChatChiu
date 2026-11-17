@@ -3,15 +3,18 @@
 import { BrowserRouter } from 'react-router'
 import { AppRoutes } from './AppRoutes'
 import { AuthProvider } from './core/auth'
+import { ToastProvider } from './core/toast'
 import { AppErrorBoundary } from './shell/RouteErrorBoundary'
 
 export default function App() {
   return (
     <AppErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ToastProvider>
         {import.meta.env.VITE_ENABLE_DIAGNOSTICS === 'true' && (
           <a
             href="/diagnostics"

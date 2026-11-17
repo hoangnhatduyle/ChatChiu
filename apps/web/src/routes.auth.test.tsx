@@ -4,6 +4,7 @@
 import { screen } from '@testing-library/react'
 import { vi } from 'vitest'
 import { AuthProvider } from './core/auth'
+import { ToastProvider } from './core/toast'
 import { renderRoutesAt } from './test/render-routes'
 
 const fake = vi.hoisted(() => ({ signedIn: true }))
@@ -23,7 +24,11 @@ vi.mock('./core/supabase.client', async () => {
 
 function renderAt(path: string, signedIn: boolean) {
   fake.signedIn = signedIn
-  return renderRoutesAt(path, (children) => <AuthProvider>{children}</AuthProvider>)
+  return renderRoutesAt(path, (children) => (
+    <AuthProvider>
+      <ToastProvider>{children}</ToastProvider>
+    </AuthProvider>
+  ))
 }
 
 describe('routes.tsx and the guard', () => {

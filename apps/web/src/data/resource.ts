@@ -34,9 +34,18 @@ export function queryListStore<T extends Row>(key: readonly unknown[]): ListStor
  * DELETE that treats "already gone" as done: a replayed delete whose first attempt got through answers
  * 404, and rolling the row back for that would bring back something that no longer exists.
  */
-export async function deleteRow(path: string, requestId: string, body?: unknown): Promise<unknown> {
+export async function deleteRow(
+  path: string,
+  requestId: string,
+  body?: unknown,
+  options?: { keepalive?: boolean },
+): Promise<unknown> {
   try {
-    return await api.delete(path, { idempotencyKey: requestId, body })
+    return await api.delete(path, {
+      idempotencyKey: requestId,
+      body,
+      keepalive: options?.keepalive,
+    })
   } catch (error) {
     // Only the API's own "no such row" (not a proxy or wrong-route 404), and never for a bulk delete,
     // which does not answer 404.
@@ -146,7 +155,8 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
     guard: ({ id }) => tempGuard(id),
     label: `Delete ${o.noun}`,
     scope: ({ id }) => `${o.name}:${id}`,
-    request: ({ id }, requestId) => deleteRow(`${o.path}/${id}`, requestId),
+    request: ({ id }, requestId, options) =>
+      deleteRow(`${o.path}/${id}`, requestId, undefined, options),
     apply: (client, { id }) => {
       const rows = o.store.read(client)
       const index = rows.findIndex((r) => r.id === id)

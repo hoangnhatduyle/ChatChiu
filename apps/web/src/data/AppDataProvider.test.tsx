@@ -14,6 +14,7 @@ import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { AuthProvider } from '../core/auth'
+import { ToastProvider } from '../core/toast'
 import { RequireAuth } from '../core/RequireAuth'
 import { SessionContext, type SessionValue } from '../core/session-context'
 import { AppDataProvider } from './AppDataProvider'
@@ -75,15 +76,17 @@ const liveClient = () =>
 function renderSignedIn() {
   return render(
     <AuthProvider>
-      <MemoryRouter initialEntries={['/']}>
-        <Routes>
-          <Route element={<RequireAuth />}>
-            <Route element={<AppDataProvider />}>
-              <Route path="/" element={<Probe />} />
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Routes>
+            <Route element={<RequireAuth />}>
+              <Route element={<AppDataProvider />}>
+                <Route path="/" element={<Probe />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </MemoryRouter>
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
     </AuthProvider>,
   )
 }
@@ -287,13 +290,15 @@ describe('AppDataProvider', () => {
       }) as unknown as SessionValue
     const view = (id: string) => (
       <SessionContext value={value(id)}>
-        <MemoryRouter>
-          <Routes>
-            <Route element={<AppDataProvider />}>
-              <Route path="/" element={<Probe />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
+        <ToastProvider>
+          <MemoryRouter>
+            <Routes>
+              <Route element={<AppDataProvider />}>
+                <Route path="/" element={<Probe />} />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
       </SessionContext>
     )
     const { rerender } = render(view(USER))

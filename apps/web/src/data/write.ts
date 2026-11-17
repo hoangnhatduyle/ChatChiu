@@ -21,7 +21,7 @@ export type WriteDefinition<TInput, TData, TUndo> = {
   key: string
   /** Plain words for the failed-writes list ("Add milk"). */
   label: string
-  request: (input: TInput, requestId: string) => Promise<TData>
+  request: (input: TInput, requestId: string, options?: RequestOptions) => Promise<TData>
   /** Updates the cache at once and returns what is needed to undo that. */
   apply?: (client: QueryClient, input: TInput) => TUndo
   /** Puts the server's answer in the cache (replacing a temporary row, say). */
@@ -37,6 +37,9 @@ export type WriteDefinition<TInput, TData, TUndo> = {
   persist?: boolean
 }
 
+/** `keepalive`: the page is being hidden, so the request must outlive it (the undo flush, core/undo.ts). */
+export type RequestOptions = { keepalive?: boolean }
+
 export type WriteResult<TData> =
   { status: 'saved'; data: TData } | { status: 'failed'; error: unknown } | { status: 'cancelled' }
 
@@ -45,9 +48,17 @@ export type WriteHandle<TData> = {
   result: Promise<WriteResult<TData>>
   /** Stops a write that has not been sent yet and rolls it back. False once it may have reached the server. */
   cancel: () => boolean
+  /** Drops the write from the failed list if it failed, so Retry can no longer send it (it was undone). */
+  discard: () => void
 }
 
-type Variables<TInput> = { requestId: string; input: TInput }
+type Variables<TInput> = {
+  requestId: string
+  input: TInput
+  keepalive?: boolean
+  undo?: unknown
+  preApplied?: boolean
+}
 type AnyDefinition = WriteDefinition<unknown, unknown, unknown>
 
 const definitions = new Map<string, AnyDefinition>()
@@ -62,13 +73,14 @@ export function defineWrite<TInput, TData, TUndo = undefined>(
 ): WriteDefinition<TInput, TData, TUndo> {
   definitions.set(def.key, def as unknown as AnyDefinition)
   defineMutation<TData, Variables<TInput>, TUndo>(keyOf(def), {
-    mutationFn: ({ requestId, input }) => {
+    mutationFn: ({ requestId, input, keepalive }) => {
       if (cancelledIds.has(requestId)) throw new Error('This change was cancelled.')
       sentIds.add(requestId)
-      return def.request(input, requestId)
+      return def.request(input, requestId, { keepalive })
     },
-    onMutate: ({ requestId, input }, context) => {
-      const undo = def.apply?.(context.client, input) as TUndo
+    onMutate: ({ requestId, input, undo: applied, preApplied }, context) => {
+      // A held write was applied (hidden) when the user acted; it is sent later with that undo context.
+      const undo = (preApplied ? applied : def.apply?.(context.client, input)) as TUndo
       undoById.set(requestId, undo)
       return undo
     },
@@ -95,19 +107,41 @@ export function defineWrite<TInput, TData, TUndo = undefined>(
 
 type Stored = { mutation: Mutation<unknown, Error, Variables<unknown>, unknown> }
 
+export type StartOptions = {
+  /** Reuse an earlier write's idempotency key (Retry). */
+  requestId?: string
+  keepalive?: boolean
+  /** The write was already applied by applyWrite: do not apply it again; this is its undo context. */
+  preApplied?: { undo: unknown }
+}
+
+/** Applies a write's cache change now and sends nothing: the first half of a held write. */
+export function applyWrite<TInput, TData, TUndo>(
+  client: QueryClient,
+  def: WriteDefinition<TInput, TData, TUndo>,
+  input: TInput,
+): { undo: TUndo; revert: () => void } | { blocked: string } {
+  const blocked = def.guard?.(input)
+  if (blocked) return { blocked }
+  const undo = def.apply?.(client, input) as TUndo
+  return { undo, revert: () => def.rollback?.(client, undo, input) }
+}
+
 /** Starts a write: the cache changes before this returns. */
 export function startWrite<TInput, TData, TUndo>(
   client: QueryClient,
   def: WriteDefinition<TInput, TData, TUndo>,
   input: TInput,
-  requestId: string = newRequestId(),
+  options: StartOptions = {},
 ): WriteHandle<TData> {
+  const requestId = options.requestId ?? newRequestId()
   const reason = def.guard?.(input)
   if (reason) {
     return {
       requestId,
-      result: Promise.resolve({ status: 'failed', error: new Error(reason) }),
+      result: Promise.resolve({ status: 'failed', error: new Error(reason), blocked: true }),
       cancel: () => false,
+      discard: () => undefined,
     }
   }
   const cache = client.getMutationCache()
@@ -117,7 +151,8 @@ export function startWrite<TInput, TData, TUndo>(
       mutationKey: keyOf(def),
       // An AI call is never held for later: offline it fails at once.
       ...(def.persist === false ? { networkMode: 'always' as const, retry: false } : {}),
-      scope: def.scope ? { id: def.scope(input) } : undefined,
+      // A keepalive send must not wait behind another write of the same row: the page may be gone first.
+      scope: def.scope && !options.keepalive ? { id: def.scope(input) } : undefined,
       meta: {
         label: def.label,
         writeKey: def.key,
@@ -130,12 +165,21 @@ export function startWrite<TInput, TData, TUndo>(
     cancelNow = () => resolve({ status: 'cancelled' })
   })
   const sent = mutation
-    .execute({ requestId, input })
+    .execute({
+      requestId,
+      input,
+      keepalive: options.keepalive,
+      undo: options.preApplied?.undo,
+      preApplied: options.preApplied !== undefined,
+    })
     .then((data): WriteResult<TData> => ({ status: 'saved', data: data as TData }))
     .catch((error: unknown): WriteResult<TData> => ({ status: 'failed', error }))
   return {
     requestId,
     result: Promise.race([sent, cancelled]),
+    discard: () => {
+      if (mutation.state.status === 'error') cache.remove(mutation)
+    },
     cancel: () => {
       if (sentIds.has(requestId) || mutation.state.status !== 'pending') return false
       cancelledIds.add(requestId)
@@ -196,7 +240,7 @@ export function retryFailedWrite(
   const def = definitions.get(String(failed?.meta?.writeKey))
   if (!failed || !def) return undefined
   const { requestId, input } = failed.state.variables as Variables<unknown>
-  const handle = startWrite(client, def, input, requestId)
+  const handle = startWrite(client, def, input, { requestId })
   client.getMutationCache().remove(failed)
   return handle
 }

@@ -97,7 +97,9 @@ export function registerMutation<TData, TVariables extends Variables, TContext =
     ...(mutationFn
       ? {
           mutationFn: async (variables: TVariables, context: Parameters<typeof mutationFn>[1]) => {
-            await runBeforeSend(client)
+            // A keepalive request (the page is being hidden) goes out at once: an IndexedDB save first
+            // could outlive the page. Its undo context is already in the variables.
+            if (!(variables as { keepalive?: boolean }).keepalive) await runBeforeSend(client)
             return mutationFn(variables, context)
           },
         }
