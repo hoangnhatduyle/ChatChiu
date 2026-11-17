@@ -1,0 +1,79 @@
+/* Base layer: page defaults, focus rings and reduced motion (architecture.md §4, CS-ACCESSIBLE-UI). */
+
+@layer base {
+  /* 100% keeps the device's text-size setting; the type scale is in rem. */
+  html {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--bg);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+
+  /* Links in running text are underlined, so they are not told apart by colour alone (1.4.1).
+   * Styled links (nav, buttons) carry a class and their own cue. */
+  a:not([class]) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  /* Numbers line up in columns (percentages, quantities, prices). */
+  .tabular,
+  data,
+  output {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus rings are ours: one visible ring for keyboard focus, none for pointer clicks.
+   * React Aria sets [data-focus-visible] on its components; native elements use :focus-visible. */
+  :focus-visible,
+  [data-focus-visible] {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+}
+
+/* Motion stops when the device asks for less (CS-ACCESSIBLE-UI). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

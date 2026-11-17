@@ -1,0 +1,38 @@
+spec_id: SPEC-AP-001
+generated_at: 2026-11-17T03:08:59.753Z
+cases:
+  - id: T-SPEC-AP-001-AC-F_AP_01
+    kind: acceptance
+    traces_to: SPEC-AP-001#F-AP-01
+    assertion: given the app was used before and the device is offline, when she opens it and drags a usage bar, then the board shows instantly from the cache, the change shows with a "1 change waiting to sync" badge, survives a reload, and is saved when back online
+    invariant: false
+  - id: T-SPEC-AP-001-AC-F_AP_02
+    kind: acceptance
+    traces_to: SPEC-AP-001#F-AP-02
+    assertion: given widths 390, 768 and 1280, when the shell renders, then 390 shows the bottom bar Kitchen · Stock · Shopping · Meals · More; 768 and 1280 show the 84 px nav rail; every destination (board, inventory, meals, shopping, waste & stats, settings) is reachable
+    invariant: false
+  - id: T-SPEC-AP-001-AC-F_AP_03
+    kind: acceptance
+    traces_to: SPEC-AP-001#F-AP-03
+    assertion: given a success, a failure and an undoable action, when they happen, then one toast system shows them (Undo, Retry, action buttons), and form errors are inline
+    invariant: false
+  - id: T-SPEC-AP-001-AC-F_AP_04
+    kind: acceptance
+    traces_to: SPEC-AP-001#F-AP-04
+    assertion: given any write, when it is made, then the UI updates before the server answers, rolls back with "Couldn't save · Retry" on failure, and no whole list is re-fetched
+    invariant: false
+  - id: T-SPEC-AP-001-AC-F_AP_05
+    kind: acceptance
+    traces_to: SPEC-AP-001#F-AP-05
+    assertion: given the UI, when it renders, then text is English, the brand reads "Chắt Chiu" with correct diacritics in the self-hosted fonts
+    invariant: false
+  - id: T-SPEC-AP-001-FORBID-connectivity_and_queue_OFFLINE_QUEUED_ONLINE_IDLE
+    kind: forbidden-transition
+    traces_to: SPEC-AP-001#connectivity_and_queue:OFFLINE_QUEUED->ONLINE_IDLE
+    assertion: "[connectivity_and_queue] transition OFFLINE_QUEUED -> ONLINE_IDLE MUST be rejected (Queued changes are never dropped silently; they are synced or rolled back with a message)"
+    invariant: true
+  - id: T-SPEC-AP-001-NC-NC_AP_NO_LOST_WRITES
+    kind: negative-constraint
+    traces_to: SPEC-AP-001#NC-AP-NO-LOST-WRITES
+    assertion: A write made offline MUST NOT be lost across a reload or app restart
+    invariant: true

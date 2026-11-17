@@ -18,7 +18,7 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['**/*.config.{js,ts}', 'scripts/**/*.{js,mjs}'],
+    files: ['**/*.config.{js,ts}', 'scripts/**/*.{js,mjs}', 'apps/web/scripts/**/*.mjs'],
     languageOptions: { globals: globals.node },
   },
 ])

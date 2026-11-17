@@ -11,7 +11,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    css: false,
-    include: ['src/**/*.test.{ts,tsx}'],
+    // Raw CSS reaches the token and font tests (styles/*.test.ts); other CSS is stubbed.
+    css: { include: [/\.css\?raw$/] },
+    include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs'],
   },
 })
