@@ -25,8 +25,10 @@ export function bootstrapStore<K extends 'items' | 'locations' | 'categories'>(
   return {
     queryKey: queryKeys.bootstrap,
     read: (client) => client.getQueryData<Bootstrap>(queryKeys.bootstrap)?.[field] ?? [],
-    write: (client, rows) => {
-      void client.cancelQueries({ queryKey: queryKeys.bootstrap }, { revert: false })
+    write: (client, rows, options) => {
+      if (options?.cancelFetch !== false) {
+        void client.cancelQueries({ queryKey: queryKeys.bootstrap }, { revert: false })
+      }
       client.setQueryData<Bootstrap>(queryKeys.bootstrap, (old) =>
         old ? { ...old, [field]: rows } : old,
       )
@@ -251,7 +253,12 @@ export const bulkCreate = defineWrite<
   },
   reconcile: (client, saved, { tempIds }) => {
     const temp = new Set(tempIds)
-    itemsStore.write(client, [...itemsStore.read(client).filter((i) => !temp.has(i.id)), ...saved])
+    // Realtime may have added the saved rows already: keep each once.
+    const savedIds = new Set(saved.map((s) => s.id))
+    itemsStore.write(client, [
+      ...itemsStore.read(client).filter((i) => !temp.has(i.id) && !savedIds.has(i.id)),
+      ...saved,
+    ])
   },
   rollback: (client, { tempIds }) => {
     const temp = new Set(tempIds)

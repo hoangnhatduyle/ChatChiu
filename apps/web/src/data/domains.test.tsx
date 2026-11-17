@@ -110,6 +110,26 @@ describe('inventory', () => {
     })
   })
 
+  it('a refetch that dropped the temporary row, or a realtime event that added the saved one first, never loses or doubles the row', async () => {
+    api.post.mockResolvedValue(item(77, { name: 'Milk' }))
+    const body = {
+      name: 'Milk',
+      categoryId: 1,
+      quantity: 1,
+      unit: 'l',
+      expirationDate: '2030-02-02',
+    } as never
+    const dropped = startWrite(client, inventory.itemWrites.create, { tempId: -1, body })
+    client.setQueryData(queryKeys.bootstrap, bootstrap([item(1), item(2)])) // a stale refetch lands
+    await dropped.result
+    expect(items(client).map((i) => i.id)).toEqual([1, 2, 77])
+    client.setQueryData(queryKeys.bootstrap, bootstrap([item(1), item(2)]))
+    const raced = startWrite(client, inventory.itemWrites.create, { tempId: -2, body })
+    client.setQueryData(queryKeys.bootstrap, bootstrap([item(1), item(2), item(-2), item(77)])) // the event added 77 first
+    await raced.result
+    expect(items(client).map((i) => i.id)).toEqual([1, 2, 77])
+  })
+
   it('F-AP-04: a refused item create takes the temporary row back out', async () => {
     api.post.mockRejectedValue(refusal())
     const result = await startWrite(client, inventory.itemWrites.create, {

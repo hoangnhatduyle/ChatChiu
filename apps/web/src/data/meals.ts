@@ -21,12 +21,16 @@ export const mealStore: ListStore<MealPlan> = {
     }
     return [...seen.values()]
   },
-  write: (client: QueryClient, next) => {
-    void client.cancelQueries({ queryKey: MEALS_PREFIX }, { revert: false })
+  write: (client: QueryClient, next, options) => {
+    if (options?.cancelFetch !== false)
+      void client.cancelQueries({ queryKey: MEALS_PREFIX }, { revert: false })
     const byId = new Map(next.map((row) => [row.id, row]))
     for (const [key, rows] of client.getQueriesData<MealPlan[]>({ queryKey: MEALS_PREFIX })) {
       if (!rows) continue
-      const kept = rows.flatMap((row) => (byId.has(row.id) ? [byId.get(row.id)!] : []))
+      // A meal moved out of this range by another device leaves it; one moved in is added below.
+      const kept = rows
+        .flatMap((row) => (byId.has(row.id) ? [byId.get(row.id)!] : []))
+        .filter((row) => inRange(key, row.planDate))
       const added = next.filter(
         (row) => !rows.some((r) => r.id === row.id) && inRange(key, row.planDate),
       )

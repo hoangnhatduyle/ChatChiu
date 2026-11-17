@@ -12,6 +12,9 @@ import { gzipSync } from 'node:zlib'
 
 export const INITIAL_JS_BUDGET_KB = 150
 export const ROUTE_JS_BUDGET_KB = 120
+/** Libraries the app loads only after the first paint (a dynamic import started once the user is signed in). */
+export const AFTER_FIRST_PAINT_LIBRARIES = ['node_modules/@supabase/realtime-js/']
+export const AFTER_FIRST_PAINT_BUDGET_KB = 30
 /**
  * The board route's own module: the page routes.tsx lazy-loads for "/". A test checks this against
  * routes.tsx and shell/pages.ts, so it cannot go stale when step 5.1 swaps in the board.
@@ -31,6 +34,7 @@ function staticClosure(manifest, key, seen = new Set()) {
 }
 
 const isLibrary = (key) => key.includes('node_modules/')
+const isAfterFirstPaint = (key) => AFTER_FIRST_PAINT_LIBRARIES.some((lib) => key.includes(lib))
 
 /**
  * @param {Record<string, {file: string, isEntry?: boolean, isDynamicEntry?: boolean, imports?: string[]}>} manifest
@@ -47,7 +51,9 @@ export function measureBudgets(manifest, gzipBytes, { board }) {
   for (const e of entries) staticClosure(manifest, e, initial)
   // Libraries the app imports lazily at start (not pages) load on every visit.
   for (const k of Object.keys(manifest)) {
-    if (manifest[k].isDynamicEntry && isLibrary(k)) staticClosure(manifest, k, initial)
+    if (manifest[k].isDynamicEntry && isLibrary(k) && !isAfterFirstPaint(k)) {
+      staticClosure(manifest, k, initial)
+    }
   }
   if (manifest[board]) staticClosure(manifest, board, initial)
   else failures.push(`Board route ${board} not found in the build manifest; update BOARD_ROUTE.`)
@@ -57,6 +63,20 @@ export function measureBudgets(manifest, gzipBytes, { board }) {
     failures.push(
       `Initial JS (shell + board) is ${initialKb.toFixed(1)} KB gz, over the ${INITIAL_JS_BUDGET_KB} KB budget.`,
     )
+  }
+
+  const afterBoot = Object.keys(manifest)
+    .filter((k) => manifest[k].isDynamicEntry && isAfterFirstPaint(k))
+    .map((key) => ({
+      key,
+      kb: kbOf([...staticClosure(manifest, key)].filter((k) => !initial.has(k))),
+    }))
+  for (const a of afterBoot) {
+    if (a.kb > AFTER_FIRST_PAINT_BUDGET_KB) {
+      failures.push(
+        `Library ${a.key} (loaded after first paint) is ${a.kb.toFixed(1)} KB gz, over its ${AFTER_FIRST_PAINT_BUDGET_KB} KB cap.`,
+      )
+    }
   }
 
   const routes = Object.keys(manifest)
@@ -72,7 +92,7 @@ export function measureBudgets(manifest, gzipBytes, { board }) {
       )
     }
   }
-  return { initialKb, routes, failures }
+  return { initialKb, routes, afterBoot, failures }
 }
 
 function main() {
@@ -93,13 +113,18 @@ function main() {
   }
 
   const gzipBytes = (file) => gzipSync(readFileSync(join(DIST, file))).length
-  const { initialKb, routes, failures } = measureBudgets(manifest, gzipBytes, {
+  const { initialKb, routes, afterBoot, failures } = measureBudgets(manifest, gzipBytes, {
     board: BOARD_ROUTE,
   })
 
   console.log(
     `Initial JS (shell + board): ${initialKb.toFixed(1)} KB gz (budget ${INITIAL_JS_BUDGET_KB} KB)`,
   )
+  for (const a of afterBoot) {
+    console.log(
+      `  after first paint ${a.key.slice(-40).padEnd(30)} ${a.kb.toFixed(1)} KB gz (cap ${AFTER_FIRST_PAINT_BUDGET_KB} KB)`,
+    )
+  }
   for (const r of routes) {
     console.log(
       `  lazy ${r.key.padEnd(48)} ${r.kb.toFixed(1)} KB gz (budget ${ROUTE_JS_BUDGET_KB} KB)`,

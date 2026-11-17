@@ -9,22 +9,26 @@ import { defineWrite, type WriteDefinition } from './write'
 export type Row = { id: number }
 
 /** Where a list lives in the cache (its own query, or a field of the bootstrap). */
+export type WriteOptions = { cancelFetch?: boolean }
+
 export type ListStore<T extends Row> = {
   /** The query (prefix) holding the list: refetched after a rollback, and its in-flight fetch is stopped before a write. */
   queryKey: readonly unknown[]
   read: (client: QueryClient) => T[]
-  write: (client: QueryClient, rows: T[]) => void
+  /** `cancelFetch: false` for changes that come from the server (a fetch on its way is still right). */
+  write: (client: QueryClient, rows: T[], options?: WriteOptions) => void
 }
 
 export function queryListStore<T extends Row>(key: readonly unknown[]): ListStore<T> {
   return {
     queryKey: key,
     read: (client) => client.getQueryData<T[]>(key) ?? [],
-    write: (client, rows) => {
+    write: (client, rows, options) => {
       // A list that was never loaded stays unloaded: do not invent a cache entry out of one write.
       if (client.getQueryData(key) === undefined) return
       // A fetch already on its way would land after this change and undo it.
-      void client.cancelQueries({ queryKey: key }, { revert: false })
+      if (options?.cancelFetch !== false)
+        void client.cancelQueries({ queryKey: key }, { revert: false })
       client.setQueryData<T[]>(key, rows)
     },
   }
@@ -97,11 +101,20 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
       o.store.write(client, [...o.store.read(client), o.draft(body, tempId)])
       return { tempId }
     },
-    reconcile: (client, saved, { tempId }) =>
+    reconcile: (client, saved, { tempId }) => {
+      const rows = o.store.read(client)
+      // A refetch may have replaced the temporary row, and a realtime event may already have added the
+      // saved one (it can beat the answer): never lose the row, never show it twice.
+      const next = rows.some((r) => r.id === tempId)
+        ? rows.map((r) => (r.id === tempId ? saved : r))
+        : rows.some((r) => r.id === saved.id)
+          ? rows.map((r) => (r.id === saved.id ? saved : r))
+          : [...rows, saved]
       o.store.write(
         client,
-        o.store.read(client).map((r) => (r.id === tempId ? saved : r)),
-      ),
+        next.filter((row, i) => next.findIndex((other) => other.id === row.id) === i),
+      )
+    },
     rollback: (client, { tempId }) =>
       o.store.write(
         client,

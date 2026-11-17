@@ -19,6 +19,7 @@ import { useSession } from '../core/session-context'
 import { useUndo } from '../core/toast-context'
 import './register'
 import { FailedWriteToasts } from './failed-write-toasts'
+import { RealtimeSync } from './RealtimeSync'
 import { createLeadership } from './leadership'
 import { createIdbPersister } from './persistence'
 import { createWriteGate } from './write-gate'
@@ -109,6 +110,7 @@ function UserData({ userId }: { userId: string }) {
       }}
     >
       <FailedWriteToasts />
+      <RealtimeSync />
       <Outlet />
     </PersistQueryClientProvider>
   )

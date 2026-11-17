@@ -82,6 +82,28 @@ describe('measureBudgets', () => {
     expect(result.routes.map((r) => r.key)).not.toContain('../../node_modules/lib/x.mjs')
   })
 
+  it('NC-AP-BUDGET: a library named as loaded after first paint (realtime) is not initial, but has its own cap', () => {
+    const key = '../../node_modules/@supabase/realtime-js/dist/module/index.js'
+    const withRt = {
+      ...manifest,
+      'index.html': {
+        ...manifest['index.html'],
+        dynamicImports: [...manifest['index.html'].dynamicImports, key],
+      },
+      [key]: { file: 'assets/rt.js', isDynamicEntry: true },
+    }
+    const ok = measureBudgets(withRt, (f) => (f === 'assets/rt.js' ? 20 * KB : (sizes[f] ?? 0)), {
+      board: 'src/board/Board.tsx',
+    })
+    expect(ok.initialKb).toBe(110)
+    expect(ok.afterBoot).toEqual([{ key, kb: 20 }])
+    expect(ok.failures.filter((f) => /after first paint/.test(f))).toEqual([])
+    const big = measureBudgets(withRt, (f) => (f === 'assets/rt.js' ? 40 * KB : (sizes[f] ?? 0)), {
+      board: 'src/board/Board.tsx',
+    })
+    expect(big.failures.some((f) => /after first paint/.test(f))).toBe(true)
+  })
+
   it('NC-AP-BUDGET: a module imported both statically and lazily is initial, so its route costs 0', () => {
     const both = {
       ...manifest,
