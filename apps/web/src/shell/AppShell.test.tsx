@@ -2,13 +2,21 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { vi } from 'vitest'
+import { AuthProvider } from '../core/auth'
 import { routes } from '../routes'
 import { AppShell } from './AppShell'
 import { RouteError } from './RouteError'
 
+vi.mock('../core/supabase.client', async () => (await import('../test/fake-auth')).fakeAuthModule())
+
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
-  render(<RouterProvider router={router} />)
+  render(
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>,
+  )
   return router
 }
 
@@ -132,7 +140,7 @@ describe('AppShell', () => {
   })
 
   it('routes.tsx wraps every page in the RouteError boundary', () => {
-    const shell = routes[0]
+    const shell = routes[0]?.children?.[0]
     expect(shell?.children?.[0]?.errorElement).toBeDefined()
   })
 

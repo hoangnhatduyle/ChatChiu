@@ -57,12 +57,17 @@ jobs:
         run: npx supabase test db
       - name: API integration tests (local Supabase)
         run: npm run test:integration -w api
+      - name: Export the browser-safe Supabase settings for the web build
+        run: node scripts/local-supabase-env.mjs --vite >> "$GITHUB_ENV"
       - name: Install Playwright browser
         run: npx -w @chatchiu/web playwright install --with-deps chromium
       - name: Build
         run: npm run build
       - name: E2E tests
-        run: npm run test:e2e
+        # The service-role key (local demo key) is only needed here, to create test users.
+        run: |
+          export $(node scripts/local-supabase-env.mjs | xargs)
+          npm run test:e2e
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7

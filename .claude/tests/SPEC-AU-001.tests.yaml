@@ -1,0 +1,58 @@
+spec_id: SPEC-AU-001
+generated_at: 2026-11-17T16:20:37.184Z
+cases:
+  - id: T-SPEC-AU-001-AC-F_AU_01
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-01
+    assertion: given valid email and password, when she signs in and later closes and reopens the app, then she lands on the kitchen board still signed in (session persisted)
+    invariant: false
+  - id: T-SPEC-AU-001-AC-F_AU_02
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-02
+    assertion: given the register page, when she submits a password under 12 characters or a mismatched confirmation, then an inline error blocks it; a valid submission creates the account and says to confirm by email when Supabase requires it
+    invariant: false
+  - id: T-SPEC-AU-001-AC-F_AU_03
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-03
+    assertion: given she requested a reset email and opens its link, when Supabase fires PASSWORD_RECOVERY, then the /reset-password page asks for a new password (12+ chars), calls updateUser, and signs her in
+    invariant: false
+  - id: T-SPEC-AU-001-AC-F_AU_04
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-04
+    assertion: given a signed-in session whose token can't be refreshed, when an API call returns 401, then she is signed out once and sees "Your session expired" on the login page; silent refresh is tried first
+    invariant: false
+  - id: T-SPEC-AU-001-AC-F_AU_05
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-05
+    assertion: given no session, when any page other than login, register or reset-password is opened, then she is redirected to login and returned to the requested page after signing in
+    invariant: true
+  - id: T-SPEC-AU-001-AC-F_AU_06
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-06
+    assertion: given two devices signed in to the shared account, both with notifications on, when she signs out on one, then only that device's push subscription is deleted and the other device stays signed in and subscribed (signOut uses scope 'local'; supabase-js defaults to 'global', which would end every device's session)
+    invariant: true
+  - id: T-SPEC-AU-001-FORBID-session_SIGNED_OUT_SIGNED_IN
+    kind: forbidden-transition
+    traces_to: SPEC-AU-001#session:SIGNED_OUT->SIGNED_IN
+    assertion: "[session] transition SIGNED_OUT -> SIGNED_IN MUST be rejected (Protected pages are never reachable without passing through sign-in or recovery)"
+    invariant: true
+  - id: T-SPEC-AU-001-FORBID-session_PASSWORD_RECOVERY_SIGNED_OUT
+    kind: forbidden-transition
+    traces_to: SPEC-AU-001#session:PASSWORD_RECOVERY->SIGNED_OUT
+    assertion: "[session] transition PASSWORD_RECOVERY -> SIGNED_OUT MUST be rejected (A recovery link must lead to setting a password, not silently back to login (the F-AU-03 bug))"
+    invariant: true
+  - id: T-SPEC-AU-001-NC-NC_AU_NO_TOKEN_STORAGE_LEAK
+    kind: negative-constraint
+    traces_to: SPEC-AU-001#NC-AU-NO-TOKEN-STORAGE-LEAK
+    assertion: Tokens MUST NOT be logged, put in URLs, or stored anywhere except the Supabase client's own storage
+    invariant: true
+  - id: T-SPEC-AU-001-NC-NC_AU_SIGNOUT_SCOPE
+    kind: negative-constraint
+    traces_to: SPEC-AU-001#NC-AU-SIGNOUT-SCOPE
+    assertion: Sign out MUST NOT remove other devices' push subscriptions or sign other devices out (shared login, D11)
+    invariant: true
+  - id: T-SPEC-AU-001-NC-NC_AU_NO_WEAK_PASSWORD
+    kind: negative-constraint
+    traces_to: SPEC-AU-001#NC-AU-NO-WEAK-PASSWORD
+    assertion: Registration and reset MUST NOT accept passwords shorter than 12 characters
+    invariant: true

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './support/test'
 
 test('F-AP-05: the app shell loads with the brand "Chắt Chiu"', async ({ page }) => {
   await page.goto('/')

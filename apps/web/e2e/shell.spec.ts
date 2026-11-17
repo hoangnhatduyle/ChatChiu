@@ -1,6 +1,6 @@
 // Step 3.3 e2e: navigation at 390, 768 and 1280 px in both themes, with screenshots
 // (SPEC-AP-001 F-AP-02), and the installable shell's service worker (F-AP-01, shell part).
-import { expect, test } from '@playwright/test'
+import { expect, test } from './support/test'
 
 const SIZES = [
   { name: 'phone', width: 390, height: 844, nav: 'Main (phone)' },

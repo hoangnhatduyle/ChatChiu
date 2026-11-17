@@ -1,6 +1,7 @@
 // Root: the router (step 3.3). The dev-only diagnostics link stays gated here until roadmap
 // 7.0.3 removes the spike; main.tsx serves /diagnostics itself when the flag is on.
 import { createBrowserRouter, RouterProvider } from 'react-router'
+import { AuthProvider } from './core/auth'
 import { routes } from './routes'
 
 const router = createBrowserRouter(routes)
@@ -9,7 +10,7 @@ if (import.meta.hot) import.meta.hot.dispose(() => router.dispose())
 
 export default function App() {
   return (
-    <>
+    <AuthProvider>
       <RouterProvider router={router} />
       {import.meta.env.VITE_ENABLE_DIAGNOSTICS === 'true' && (
         <a
@@ -19,6 +20,6 @@ export default function App() {
           Notification diagnostics
         </a>
       )}
-    </>
+    </AuthProvider>
   )
 }
