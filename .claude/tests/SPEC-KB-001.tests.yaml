@@ -1,0 +1,118 @@
+spec_id: SPEC-KB-001
+generated_at: 2026-11-17T03:51:08.934Z
+cases:
+  - id: T-SPEC-KB-001-AC-F_KB_01
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-01
+    assertion: given locations Fridge (sub-location Top shelf) and Pantry, plus an item whose location was deleted, when the board renders, then it shows columns "Fridge - Top shelf", "Pantry" and "No location", each listing every item stored there; No location is absent when no such item exists
+    invariant: true
+  - id: T-SPEC-KB-001-AC-F_KB_02
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-02
+    assertion: given items in one location with different expiry dates and equal dates, when the column renders, then items are ordered soonest expiry first, then by name
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_03
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-03
+    assertion: given items expired, expiring today, in 2 days and in 3 months, when they render, then their chips read Expired, Today, 2d and 3 mo with a text label, not colour alone
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_04
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-04
+    assertion: given an item at 60%, when she drags its bar down to 35% and releases, then the value snaps to 5% steps, saves on release without a dialog, and an Undo toast appears; Undo restores 60% via usage-undo; a move under 4 px is ignored; dragging above the current value is not possible on the board
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_05
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-05
+    assertion: given an item with 0.6 of 1 L left, when it renders, then it shows 60% and "0.6 of 1 L", and tapping the name opens the quick-action panel
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_06
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-06
+    assertion: given a board row, when she looks for the old Edit / Track usage menu, then there is none; both are reachable from the quick-action panel (SPEC-QP-001)
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_07
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-07
+    assertion: given items at 25%, 18% and 8% with low_stock_threshold 20, and one at 25% with threshold 30, when they render, then 18% shows warning, 8% shows critical (<= 10), the 25%/20 item is normal and the 25%/30 item is warning, each with a text cue
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_08
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-08
+    assertion: given she drags Milk to 0%, when the save lands, then a toast reads "Milk used up · Add to shopping list · Remove"; Milk stays greyed at 0% until she chooses, and the Used up chip lists any left at 0%
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_09
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-09
+    assertion: given an item crossing its low-stock threshold on this device, when the usage save returns crossedLowStock, then a low-stock alert is raised through SPEC-NT-001 (F-NT-03), not a no-op
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_10
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-10
+    assertion: given items at or below threshold with usage history, when she taps the Running low chip, then the board shows only those items, and each item's panel shows the predicted run-out ("~4 days left at your pace") from SQL usage stats with no AI call
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_11
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-11
+    assertion: given a first visit, when the board renders, then an inline hint explains dragging the bar; dismissing it is remembered on this device
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_12
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-12
+    assertion: given the board header, when it renders, then it shows title and date, search, chips All · Use soon · Running low · Used up, Scan receipt and + Add item; each column's + opens the item form with that location pre-filled; Use soon = expiring within 3 days (Q7 default)
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_13
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-13
+    assertion: given the board, when she looks for the old Board/Stats toggle, then it is gone and the nav links to Waste & Stats (SPEC-ST-001)
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_14
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-14
+    assertion: given no items, when the board renders, then an empty state with "Add first item" appears
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_15
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-15
+    assertion: given a search term, when she types it, then the board filters in place, keeping the location columns
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_16
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-16
+    assertion: given the tablet and the phone signed in to the same account, when usage changes on the phone, then the tablet's board shows it within 3 seconds without a reload
+    invariant: false
+  - id: T-SPEC-KB-001-FORBID-board_usage_change_DRAGGING_SAVED
+    kind: forbidden-transition
+    traces_to: SPEC-KB-001#board_usage_change:DRAGGING->SAVED
+    assertion: "[board_usage_change] transition DRAGGING -> SAVED MUST be rejected (The cache is always updated first; nothing reaches the server before the UI shows it)"
+    invariant: true
+  - id: T-SPEC-KB-001-FORBID-board_usage_change_IDLE_APPLIED_LOCALLY
+    kind: forbidden-transition
+    traces_to: SPEC-KB-001#board_usage_change:IDLE->APPLIED_LOCALLY
+    assertion: "[board_usage_change] transition IDLE -> APPLIED_LOCALLY MUST be rejected (A usage change on the board only comes from a released drag; no confirm dialog path exists)"
+    invariant: true
+  - id: T-SPEC-KB-001-FORBID-used_up_item_REMOVED_ACTIVE
+    kind: forbidden-transition
+    traces_to: SPEC-KB-001#used_up_item:REMOVED->ACTIVE
+    assertion: "[used_up_item] transition REMOVED -> ACTIVE MUST be rejected (Remove is held until the Undo toast closes (hold-until-close undo); a removed row is never restored server-side)"
+    invariant: true
+  - id: T-SPEC-KB-001-NC-NC_KB_NO_CONFIRM
+    kind: negative-constraint
+    traces_to: SPEC-KB-001#NC-KB-NO-CONFIRM
+    assertion: A board usage change MUST NOT open a confirm dialog; it saves on release with an Undo toast (D6)
+    invariant: true
+  - id: T-SPEC-KB-001-NC-NC_KB_NO_HIDDEN_ITEMS
+    kind: negative-constraint
+    traces_to: SPEC-KB-001#NC-KB-NO-HIDDEN-ITEMS
+    assertion: "No item may be missing from the board: items whose location is null or deleted MUST appear in a No location column"
+    invariant: true
+  - id: T-SPEC-KB-001-NC-NC_KB_NO_COLOUR_ONLY
+    kind: negative-constraint
+    traces_to: SPEC-KB-001#NC-KB-NO-COLOUR-ONLY
+    assertion: Expiry and low-stock status MUST NOT be conveyed by colour alone
+    invariant: true
+  - id: T-SPEC-KB-001-NC-NC_KB_NO_AUTO_DELETE
+    kind: negative-constraint
+    traces_to: SPEC-KB-001#NC-KB-NO-AUTO-DELETE
+    assertion: An item at 0% MUST NOT be removed until she picks Remove (or Undo); it stays greyed at 0%
+    invariant: true

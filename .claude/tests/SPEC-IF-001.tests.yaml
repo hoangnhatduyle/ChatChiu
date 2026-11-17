@@ -1,0 +1,103 @@
+spec_id: SPEC-IF-001
+generated_at: 2026-11-17T03:51:09.538Z
+cases:
+  - id: T-SPEC-IF-001-AC-F_IF_01
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-01
+    assertion: given existing items named Milk and Mint, when she types "Mi" in Name, then both are suggested; an empty name blocks save inline
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_02
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-02
+    assertion: given the category picker (sheet on phone, popover on tablet), when she adds "Spices" inline, then it is created and selected; the picker works when there are no system categories (7.0.10)
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_03
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-03
+    assertion: given she tapped + on the Pantry column, when the form opens, then Location is pre-filled with Pantry; she can add a new location inline
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_04
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-04
+    assertion: given quantity 0 or a unit outside the list, when she saves, then it is blocked inline; quantity > 0 with a listed unit is accepted
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_05
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-05
+    assertion: given a new item, when the form opens, then purchase date is today
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_06
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-06
+    assertion: given purchase date 2026-01-01, when she picks "in 1 month" or the 1y chip, then expiry becomes 2026-01-31 or 2027-01-01 (month = 30 d, year = 365 d); chips 3d · 1w · 2w · 1m · 3m · 6m · 1y exist
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_07
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-07
+    assertion: given expiry before the purchase date, when she saves, then an inline error on the expiry field blocks it
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_08
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-08
+    assertion: 'given AI quota left, when she asks for a suggestion, then the expiry fills with an inline "Suggested: 7 days — keep refrigerated" and an Undo link; QUOTA_EXCEEDED shows a friendly message'
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_09
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-09
+    assertion: given quantity 10 and total price 4.00, when she saves and reopens in edit, then price is stored as 0.40 and the field shows 4.00
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_10
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-10
+    assertion: given notes text, when she saves, then notes are stored and shown on edit
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_11
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-11
+    assertion: given the notifications toggle and More options, when she turns it off or sets days-before to 5, then notification_enabled / notification_days_before are saved; the default is on with 3
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_12
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-12
+    assertion: given an item with full 1 L and 0.4 L left, when she edits, then the form shows Full amount 1 L and Left now 0.4 L as separate fields, and changing one never changes the other
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_13
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-13
+    assertion: given the form, when it renders, then no photo control exists (D3) and existing item_images rows and storage objects are untouched
+    invariant: true
+  - id: T-SPEC-IF-001-AC-F_IF_14
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-14
+    assertion: given the form, when it renders, then no barcode control exists (D3) and barcode_mappings is untouched
+    invariant: true
+  - id: T-SPEC-IF-001-AC-F_IF_15
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-15
+    assertion: given More options, when she sets the low-stock threshold to 30, then low_stock_threshold = 30 (percent) is saved; default 20
+    invariant: false
+  - id: T-SPEC-IF-001-AC-F_IF_16
+    kind: acceptance
+    traces_to: SPEC-IF-001#F-IF-16
+    assertion: given she saves from the board, when the save is applied, then she returns to the board where the item already appears (no reload) with a toast
+    invariant: false
+  - id: T-SPEC-IF-001-FORBID-item_form_INVALID_SAVING
+    kind: forbidden-transition
+    traces_to: SPEC-IF-001#item_form:INVALID->SAVING
+    assertion: "[item_form] transition INVALID -> SAVING MUST be rejected (An invalid form (missing name/category/location, quantity <= 0, expiry before purchase) is never sent)"
+    invariant: true
+  - id: T-SPEC-IF-001-NC-NC_IF_PER_UNIT
+    kind: negative-constraint
+    traces_to: SPEC-IF-001#NC-IF-PER-UNIT
+    assertion: The price field MUST NOT be stored as the total; store total / quantity and show price × quantity on edit
+    invariant: true
+  - id: T-SPEC-IF-001-NC-NC_IF_NO_PHOTO_BARCODE
+    kind: negative-constraint
+    traces_to: SPEC-IF-001#NC-IF-NO-PHOTO-BARCODE
+    assertion: Photo and barcode controls MUST NOT be rendered (D3)
+    invariant: true
+  - id: T-SPEC-IF-001-NC-NC_IF_NO_SILENT_QTY
+    kind: negative-constraint
+    traces_to: SPEC-IF-001#NC-IF-NO-SILENT-QTY
+    assertion: Editing MUST NOT change one of full amount / left now silently when the other is edited
+    invariant: true

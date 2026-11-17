@@ -183,6 +183,21 @@ describe('tokens.css (Fresh Ledger / Night Kitchen)', () => {
     expect(has('toast-ink', 'toast')).toBe(true)
     expect(has('focus', 'rail-on')).toBe(true)
   })
+
+  it('CS-ACCESSIBLE-UI: gates hover, pressed, disabled and error states (step 3.2, a11y review H3/M1)', () => {
+    const text = (/** @type {string} */ fg, /** @type {string} */ bg) =>
+      PAIRS.some((p) => p.fg === fg && p.bg === bg && p.use === 'text')
+    const graphicPair = (/** @type {string} */ fg, /** @type {string} */ bg) =>
+      PAIRS.some((p) => p.fg === fg && p.bg === bg && p.use === 'graphic')
+    for (const bg of ['hover', 'pressed']) {
+      for (const fg of ['ink', 'muted', 'low', 'accent']) expect(text(fg, bg)).toBe(true)
+    }
+    expect(text('accent-ink', 'accent-hover')).toBe(true)
+    expect(text('error', 'surface')).toBe(true)
+    expect(text('error', 'bg')).toBe(true)
+    expect(graphicPair('error', 'surface')).toBe(true)
+    expect(graphicPair('disabled-ink', 'disabled-bg')).toBe(true)
+  })
 })
 
 describe('CLI', () => {

@@ -1,11 +1,21 @@
 // Fails when the initial JS (scripts referenced by index.html + their static imports) exceeds the
 // gzip budget in docs/plan/architecture.md §5. Per-route budgets are added in roadmap step 6.1.
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
 const DIST = 'apps/web/dist'
 const INITIAL_JS_BUDGET_KB = 150
+
+// The dev-only component gallery (apps/web/ui-gallery.html, step 3.2) must never ship.
+const galleryLeaks = [
+  ...(existsSync(join(DIST, 'ui-gallery.html')) ? ['ui-gallery.html'] : []),
+  ...readdirSync(join(DIST, 'assets')).filter((f) => /gallery/i.test(f)),
+]
+if (galleryLeaks.length > 0) {
+  console.error(`The dev-only UI gallery is in the production build: ${galleryLeaks.join(', ')}`)
+  process.exit(1)
+}
 
 const html = readFileSync(join(DIST, 'index.html'), 'utf8')
 const entries = [...html.matchAll(/<script[^>]+src="\/([^"]+\.js)"/g)].map((m) => m[1])

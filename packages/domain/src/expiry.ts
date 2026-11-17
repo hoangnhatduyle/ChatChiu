@@ -29,8 +29,15 @@ export function expiryFilterStatus(expirationDate: string, today: string): Expir
 
 export type OffsetUnit = 'day' | 'week' | 'month' | 'year'
 
-/** Old-app parity: month = 30 days, year = 365 days (CS-DAY-MATHS). */
-const DAYS_PER: Record<OffsetUnit, number> = { day: 1, week: 7, month: 30, year: 365 }
+/** Old-app parity: month = 30 days, year = 365 days (CS-DAY-MATHS). One definition. */
+export const DAYS_PER_MONTH = 30
+export const DAYS_PER_YEAR = 365
+const DAYS_PER: Record<OffsetUnit, number> = {
+  day: 1,
+  week: 7,
+  month: DAYS_PER_MONTH,
+  year: DAYS_PER_YEAR,
+}
 
 export function addExpiryOffset(fromDate: string, amount: number, unit: OffsetUnit): string {
   return addDays(fromDate, amount * DAYS_PER[unit])

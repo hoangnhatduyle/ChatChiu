@@ -55,6 +55,17 @@ export const PAIRS = [
   text('toast-act', 'toast'),
   // Expiry chips
   ...['expired', 'today', 'soon', 'ok'].map((s) => text(`status-${s}-fg`, `status-${s}-bg`)),
+  // Hover and pressed rows and buttons; primary button hover
+  ...['hover', 'pressed'].flatMap((bg) =>
+    ['ink', 'muted', 'low', 'accent'].map((fg) => text(fg, bg)),
+  ),
+  text('accent-ink', 'accent-hover'),
+  // Form errors (inline text and the invalid border)
+  text('error', 'surface'),
+  text('error', 'bg'),
+  graphic('error', 'surface'),
+  // Disabled controls are exempt from 1.4.3 but must still be recognisable: our own 3:1 floor
+  graphic('disabled-ink', 'disabled-bg'),
   // Usage bar fill against its track
   graphic('fill', 'track'),
   graphic('low', 'track'),

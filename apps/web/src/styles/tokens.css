@@ -56,6 +56,14 @@
   --status-ok-bg: #e3f1ef;
   --status-ok-fg: #074b50;
 
+  /* Interaction states: opaque, so the contrast gate can check them (a11y review H3, M1) */
+  --hover: #f3f4f4;
+  --pressed: #eef0ee;
+  --accent-hover: #095c62;
+  --disabled-bg: #f1f2f2;
+  --disabled-ink: #6f7c77;
+  --error: #a3341a;
+
   /* Elevation */
   --shadow-card: 0 1px 2px rgb(20 32 30 / 0.06);
   --shadow-pop: 0 8px 24px rgb(20 32 30 / 0.18);
@@ -97,6 +105,12 @@
     --status-soon-fg: #ffc98f;
     --status-ok-bg: #1d3a36;
     --status-ok-fg: #8fe0d7;
+    --hover: #252e2b;
+    --pressed: #2b3330;
+    --accent-hover: #ffb46b;
+    --disabled-bg: #232c29;
+    --disabled-ink: #8a9792;
+    --error: #ff6b4a;
     --shadow-card: none;
     --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
   }
@@ -137,6 +151,12 @@
   --status-soon-fg: #ffc98f;
   --status-ok-bg: #1d3a36;
   --status-ok-fg: #8fe0d7;
+  --hover: #252e2b;
+  --pressed: #2b3330;
+  --accent-hover: #ffb46b;
+  --disabled-bg: #232c29;
+  --disabled-ink: #8a9792;
+  --error: #ff6b4a;
   --shadow-card: none;
   --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
 }
@@ -179,6 +199,12 @@
   --color-status-soon-fg: var(--status-soon-fg);
   --color-status-ok-bg: var(--status-ok-bg);
   --color-status-ok-fg: var(--status-ok-fg);
+  --color-hover: var(--hover);
+  --color-pressed: var(--pressed);
+  --color-accent-hover: var(--accent-hover);
+  --color-disabled-bg: var(--disabled-bg);
+  --color-disabled-ink: var(--disabled-ink);
+  --color-error: var(--error);
   --color-transparent: transparent;
   --color-current: currentColor;
 

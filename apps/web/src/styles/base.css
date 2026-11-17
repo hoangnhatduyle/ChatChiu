@@ -77,3 +77,61 @@
     animation: none !important;
   }
 }
+
+/* Forced colours (Windows high contrast): the system drops our backgrounds, so states that were
+ * drawn with a fill get system colours instead (a11y review M6). Fire OS and iOS have no such mode. */
+@media (forced-colors: active) {
+  [data-usage-track] > span {
+    border: 1px solid CanvasText;
+  }
+
+  [data-usage-track] > span > span,
+  [data-usage-thumb] {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+
+  [data-usage-thumb] {
+    border-color: Canvas;
+  }
+
+  [data-selected],
+  [aria-pressed='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  [data-status],
+  [data-toast],
+  [data-panel] {
+    border: 1px solid CanvasText;
+  }
+}
+
+/* Entrance motion: transform and opacity only, 150–250 ms (architecture.md §4). Exits reuse the
+ * same keyframes in reverse. Reduced motion turns them off above. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes panel-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}

@@ -7,6 +7,8 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()],
+  // Pre-bundle the dev-only gallery's deps too, so the dev server never reloads mid-test.
+  optimizeDeps: { entries: ['index.html', 'ui-gallery.html'] },
   test: {
     globals: true,
     environment: 'jsdom',
