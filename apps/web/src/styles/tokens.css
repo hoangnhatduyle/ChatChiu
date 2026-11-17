@@ -1,8 +1,10 @@
 /* Design tokens (architecture.md §4, CS-TOKENS). Components read colours, spacing, radius and type
- * only from here. Light = Fresh Ledger, dark = Night Kitchen, both from the approved prototype
- * (https://claude.ai/artifact/Hne1sPMHaXmxVYfs7A4rVJ, "Kitchen board" row). Four prototype colours
- * were moved to the nearest WCAG 2.2 AA shade (harness decision fe559130): light --low, dark
- * --toast-act, light --focus, and the new --field-line for input borders.
+ * only from here. Light = Fresh Ledger from the approved prototype
+ * (https://claude.ai/artifact/Hne1sPMHaXmxVYfs7A4rVJ, "Kitchen board" row); prototype colours that
+ * missed WCAG 2.2 AA moved to the nearest passing shade (decision fe559130). Dark = Fresh Ledger
+ * Dark, the same design inverted: the same cool green-grey neutrals and teal accent, near-white ink
+ * where light uses near-black (selected chip, toast), and the rail on its own surface. It replaced
+ * the Night Kitchen palette at the user's request in step 3.3 (README D5).
  *
  * Dark applies when the device prefers it (unless Settings forces light) or when Settings sets
  * [data-theme='dark'] (SPEC-SE-001 F-SE-06). The two dark blocks must stay identical; the contrast
@@ -72,45 +74,45 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --bg: #0f1715;
-    --surface: #18221f;
-    --ink: #f4ede3;
-    --muted: #a9b5b0;
-    --line: #22302c;
-    --hair: #22302c;
-    --field-line: #5e6e69;
+    --bg: #0d1312;
+    --surface: #151d1b;
+    --ink: #e6eeeb;
+    --muted: #9aa9a4;
+    --line: #26302e;
+    --hair: #1e2725;
+    --field-line: #62716c;
     --scrim: rgb(0 0 0 / 0.5);
-    --accent: #ffa24c;
-    --accent-ink: #1a1007;
-    --focus: #f59a2e;
-    --chip-on: #ffa24c;
-    --chip-on-ink: #1a1007;
-    --track: #2e3e3a;
+    --accent: #4fc2b8;
+    --accent-ink: #062321;
+    --focus: #4fc2b8;
+    --chip-on: #e6eeeb;
+    --chip-on-ink: #0d1312;
+    --track: #2a3633;
     --fill: #4fc2b8;
-    --low: #ff6b4a;
-    --rail: #0f1715;
-    --rail-ink: #c9d2ce;
-    --rail-on: #22302c;
-    --rail-on-ink: #ffb46b;
-    --icon-bg: #22302c;
-    --icon-ink: #ffb46b;
-    --toast: #f4ede3;
-    --toast-ink: #0f1715;
-    --toast-act: #af510a;
-    --status-expired-bg: #ff6b4a;
-    --status-expired-fg: #1a0a05;
-    --status-today-bg: #ffa24c;
-    --status-today-fg: #1a1007;
-    --status-soon-bg: #3a2a18;
-    --status-soon-fg: #ffc98f;
-    --status-ok-bg: #1d3a36;
+    --low: #f0955c;
+    --rail: #151d1b;
+    --rail-ink: #c3cfcb;
+    --rail-on: #173a37;
+    --rail-on-ink: #8fe0d7;
+    --icon-bg: #173a37;
+    --icon-ink: #8fe0d7;
+    --toast: #e6eeeb;
+    --toast-ink: #0d1312;
+    --toast-act: #0b6e75;
+    --status-expired-bg: #ef6a52;
+    --status-expired-fg: #1a0805;
+    --status-today-bg: #3f2f12;
+    --status-today-fg: #f7c77e;
+    --status-soon-bg: #2c2618;
+    --status-soon-fg: #ebc68c;
+    --status-ok-bg: #173a37;
     --status-ok-fg: #8fe0d7;
-    --hover: #252e2b;
-    --pressed: #2b3330;
-    --accent-hover: #ffb46b;
-    --disabled-bg: #232c29;
-    --disabled-ink: #8a9792;
-    --error: #ff6b4a;
+    --hover: #1c2523;
+    --pressed: #222c2a;
+    --accent-hover: #7fd9cf;
+    --disabled-bg: #1c2523;
+    --disabled-ink: #7f8d89;
+    --error: #f2786a;
     --shadow-card: none;
     --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
   }
@@ -118,45 +120,45 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0f1715;
-  --surface: #18221f;
-  --ink: #f4ede3;
-  --muted: #a9b5b0;
-  --line: #22302c;
-  --hair: #22302c;
-  --field-line: #5e6e69;
+  --bg: #0d1312;
+  --surface: #151d1b;
+  --ink: #e6eeeb;
+  --muted: #9aa9a4;
+  --line: #26302e;
+  --hair: #1e2725;
+  --field-line: #62716c;
   --scrim: rgb(0 0 0 / 0.5);
-  --accent: #ffa24c;
-  --accent-ink: #1a1007;
-  --focus: #f59a2e;
-  --chip-on: #ffa24c;
-  --chip-on-ink: #1a1007;
-  --track: #2e3e3a;
+  --accent: #4fc2b8;
+  --accent-ink: #062321;
+  --focus: #4fc2b8;
+  --chip-on: #e6eeeb;
+  --chip-on-ink: #0d1312;
+  --track: #2a3633;
   --fill: #4fc2b8;
-  --low: #ff6b4a;
-  --rail: #0f1715;
-  --rail-ink: #c9d2ce;
-  --rail-on: #22302c;
-  --rail-on-ink: #ffb46b;
-  --icon-bg: #22302c;
-  --icon-ink: #ffb46b;
-  --toast: #f4ede3;
-  --toast-ink: #0f1715;
-  --toast-act: #af510a;
-  --status-expired-bg: #ff6b4a;
-  --status-expired-fg: #1a0a05;
-  --status-today-bg: #ffa24c;
-  --status-today-fg: #1a1007;
-  --status-soon-bg: #3a2a18;
-  --status-soon-fg: #ffc98f;
-  --status-ok-bg: #1d3a36;
+  --low: #f0955c;
+  --rail: #151d1b;
+  --rail-ink: #c3cfcb;
+  --rail-on: #173a37;
+  --rail-on-ink: #8fe0d7;
+  --icon-bg: #173a37;
+  --icon-ink: #8fe0d7;
+  --toast: #e6eeeb;
+  --toast-ink: #0d1312;
+  --toast-act: #0b6e75;
+  --status-expired-bg: #ef6a52;
+  --status-expired-fg: #1a0805;
+  --status-today-bg: #3f2f12;
+  --status-today-fg: #f7c77e;
+  --status-soon-bg: #2c2618;
+  --status-soon-fg: #ebc68c;
+  --status-ok-bg: #173a37;
   --status-ok-fg: #8fe0d7;
-  --hover: #252e2b;
-  --pressed: #2b3330;
-  --accent-hover: #ffb46b;
-  --disabled-bg: #232c29;
-  --disabled-ink: #8a9792;
-  --error: #ff6b4a;
+  --hover: #1c2523;
+  --pressed: #222c2a;
+  --accent-hover: #7fd9cf;
+  --disabled-bg: #1c2523;
+  --disabled-ink: #7f8d89;
+  --error: #f2786a;
   --shadow-card: none;
   --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
 }

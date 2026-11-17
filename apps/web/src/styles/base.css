@@ -20,6 +20,18 @@
     line-height: var(--text-base--line-height);
   }
 
+  /* Keyboard focus and in-page jumps never land under the phone's bottom bar (WCAG 2.4.11). */
+  @media (width < 768px) {
+    html {
+      scroll-padding-bottom: calc(var(--spacing-nav) + env(safe-area-inset-bottom) + 16px);
+    }
+  }
+
+  /* While the update prompt shows, focus never lands under it either (a11y review M2). */
+  html:has([role='status'] > [data-toast]) {
+    scroll-padding-bottom: calc(var(--spacing-nav) + env(safe-area-inset-bottom) + 96px);
+  }
+
   /* Links in running text are underlined, so they are not told apart by colour alone (1.4.1).
    * Styled links (nav, buttons) carry a class and their own cue. */
   a:not([class]) {

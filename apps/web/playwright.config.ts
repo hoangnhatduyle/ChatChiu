@@ -30,7 +30,8 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: 'ui/**',
+      // shell.spec.ts sets its own sizes (390/768/1280), so it runs once, in the tablet project.
+      testIgnore: ['ui/**', 'shell.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 390, height: 844 },

@@ -117,7 +117,7 @@ Response envelope: keep the old app's shape, since the old frontend depends on i
 
 ## 4. Design system
 
-- **Tokens** in `apps/web/src/styles/tokens.css`. These are the light (Fresh Ledger) and dark (Night Kitchen) palettes from the prototype:
+- **Tokens** in `apps/web/src/styles/tokens.css`. These are the light (Fresh Ledger, from the prototype) and dark (Fresh Ledger Dark, its inverted counterpart; replaced Night Kitchen on 2026-11-17, D5) palettes:
 
   ```text
   --bg, --surface, --ink, --muted, --line, --hair, --accent, --accent-ink, --track, --fill, --low,

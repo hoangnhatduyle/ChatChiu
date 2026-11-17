@@ -32,7 +32,7 @@ The goal is **the same app, with the same data, everything that exists today wor
 | D2 | Reuse the **same Supabase project and data**. Database changes are additive only while the old app is still live. | User |
 | D3 | Scope is **feature parity**, except **item photos and barcode scanning are hidden** (data kept, can be re-enabled on request). Receipt scanning stays. | User |
 | D4 | Main device is the **Fire Max 11 tablet in landscape**; phones must be first-class too | User |
-| D5 | Look: **Fresh Ledger** for light mode, **Night Kitchen** palette for dark mode. Follows the device setting, with an override in Settings. | User |
+| D5 | Look: **Fresh Ledger** for light mode and **Fresh Ledger Dark** (the same design inverted: same cool green-grey neutrals and teal accent) for dark mode. Follows the device setting, with an override in Settings. Changed 2026-11-17 in step 3.3: the prototype's Night Kitchen dark palette (orange accent) read as a different design, not the dark theme of Fresh Ledger. | User |
 | D6 | The dashboard **keeps the board layout** (one column per location, every item visible). Usage changes save immediately with an **Undo toast** instead of a confirm dialog. Tapping an item opens a **quick-action panel**. | User + girlfriend (approved prototype) |
 | D7 | The dashboard's Stats view **moves to a "Waste & Stats" page** | User |
 | D8 | When an item hits 0%, the only choices are **Add to shopping list** or **Remove**. The old empty-item Refill dialog is dropped. | User |

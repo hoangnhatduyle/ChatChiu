@@ -8,15 +8,23 @@ export type EmptyStateProps = {
   title: string
   children?: ReactNode
   action?: { label: string; onPress: () => void }
+  /** `start` lines it up with a left-aligned page heading; `center` stands alone in a list. */
+  align?: 'center' | 'start'
 }
 
-export function EmptyState({ icon, title, children, action }: EmptyStateProps) {
+export function EmptyState({ icon, title, children, action, align = 'center' }: EmptyStateProps) {
   return (
-    <section className="mx-auto flex max-w-sm flex-col items-center gap-3 px-6 py-12 text-center">
+    <section
+      className={
+        align === 'center'
+          ? 'mx-auto flex max-w-sm flex-col items-center gap-3 px-6 py-12 text-center'
+          : 'flex max-w-md flex-col items-start gap-3 py-8'
+      }
+    >
       <span className="flex size-16 items-center justify-center rounded-card bg-icon-bg text-icon-ink">
         <Icon name={icon} size={30} />
       </span>
-      <h2 className="text-lg font-extrabold tracking-tight text-ink">{title}</h2>
+      <h2 className="text-lg font-bold text-ink">{title}</h2>
       {children && <p className="text-base text-muted">{children}</p>}
       {action && (
         <Button variant="primary" className="mt-2" onPress={action.onPress}>

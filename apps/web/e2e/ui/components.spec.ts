@@ -1,4 +1,4 @@
-// Component screenshots in Fresh Ledger (light) and Night Kitchen (dark), at phone and tablet
+// Component screenshots in Fresh Ledger (light) and Fresh Ledger Dark (dark), at phone and tablet
 // widths (roadmap 3.2, architecture.md §4).
 import { expect, test } from '@playwright/test'
 
@@ -32,7 +32,9 @@ for (const theme of THEMES) {
       test('SPEC-QP-001: panel is a bottom sheet on the phone and a side panel on the tablet', async ({
         page,
       }) => {
-        await page.getByRole('button', { name: 'Open Whole milk' }).click()
+        // A DOM click, not a pointer click: no scroll-into-view, so the page behind the scrim is
+        // always at the top and the screenshot is deterministic.
+        await page.getByRole('button', { name: 'Open Whole milk' }).dispatchEvent('click')
         const dialog = page.getByRole('dialog', { name: 'Whole milk' })
         await expect(dialog).toBeVisible()
         // Measure once the entrance animation has settled.

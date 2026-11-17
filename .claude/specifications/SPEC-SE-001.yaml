@@ -108,7 +108,7 @@ acceptance_criteria:
   - id: F-SE-06
     given: the Appearance section
     when: she picks System, Light or Dark
-    then: the theme applies at once (Fresh Ledger / Night Kitchen), System follows the device, and the choice persists
+    then: the theme applies at once (Fresh Ledger / Fresh Ledger Dark), System follows the device, and the choice persists
     invariant: false
   - id: F-SE-07
     given: Settings

@@ -24,7 +24,8 @@ const describeError = (err: unknown): string =>
 
 export async function registerWorker(log: Log): Promise<ServiceWorkerRegistration | null> {
   try {
-    await navigator.serviceWorker.register(SW_URL, { scope: '/' })
+    // Scope /diagnostics, so this spike never replaces the app's own worker at / (decision 5c2a7d16).
+    await navigator.serviceWorker.register(SW_URL, { scope: '/diagnostics' })
     const reg = await navigator.serviceWorker.ready
     log(`Service worker active (scope ${reg.scope})`)
     return reg

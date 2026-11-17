@@ -4,7 +4,8 @@ import './index.css'
 import App from './App.tsx'
 
 // Dev-only spike page (roadmap 0.6). The flag is replaced at build time, so production builds
-// without VITE_ENABLE_DIAGNOSTICS=true drop this import entirely. Real routing arrives in step 3.3.
+// without VITE_ENABLE_DIAGNOSTICS=true drop this import entirely. App routes everything else (step 3.3);
+// this gate is removed by roadmap 7.0.3.
 const DiagnosticsPage =
   import.meta.env.VITE_ENABLE_DIAGNOSTICS === 'true'
     ? lazy(() => import('./features/diagnostics/DiagnosticsPage.tsx'))

@@ -1,15 +1,24 @@
-// Empty shell. The real AppShell and routes arrive in roadmap step 3.3.
+// Root: the router (step 3.3). The dev-only diagnostics link stays gated here until roadmap
+// 7.0.3 removes the spike; main.tsx serves /diagnostics itself when the flag is on.
+import { createBrowserRouter, RouterProvider } from 'react-router'
+import { routes } from './routes'
+
+const router = createBrowserRouter(routes)
+// Dev only: drop the old router (and its history listener) when this module is hot-replaced.
+if (import.meta.hot) import.meta.hot.dispose(() => router.dispose())
+
 export default function App() {
   return (
-    <main className="grid min-h-dvh place-items-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-extrabold tracking-tight">Chắt Chiu</h1>
-        {import.meta.env.VITE_ENABLE_DIAGNOSTICS === 'true' && (
-          <a href="/diagnostics" className="mt-4 inline-block min-h-11 py-2 text-accent underline">
-            Notification diagnostics
-          </a>
-        )}
-      </div>
-    </main>
+    <>
+      <RouterProvider router={router} />
+      {import.meta.env.VITE_ENABLE_DIAGNOSTICS === 'true' && (
+        <a
+          href="/diagnostics"
+          className="fixed bottom-24 left-3 z-50 inline-flex min-h-touch items-center rounded-pill border border-field-line bg-surface px-4 text-sm font-semibold text-ink shadow-pop md:bottom-4 md:left-24"
+        >
+          Notification diagnostics
+        </a>
+      )}
+    </>
   )
 }

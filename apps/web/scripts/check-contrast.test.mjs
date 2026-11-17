@@ -142,7 +142,7 @@ describe('parser hardening', () => {
   })
 })
 
-describe('tokens.css (Fresh Ledger / Night Kitchen)', () => {
+describe('tokens.css (Fresh Ledger / Fresh Ledger Dark)', () => {
   const themes = parseThemes(tokensCss)
 
   it('CS-ACCESSIBLE-UI: every token pair meets WCAG 2.2 AA in light (Fresh Ledger)', () => {
@@ -150,7 +150,7 @@ describe('tokens.css (Fresh Ledger / Night Kitchen)', () => {
     expect(failures.filter((f) => f.theme === 'light')).toEqual([])
   })
 
-  it('CS-ACCESSIBLE-UI: every token pair meets WCAG 2.2 AA in dark (Night Kitchen)', () => {
+  it('CS-ACCESSIBLE-UI: every token pair meets WCAG 2.2 AA in dark (Fresh Ledger Dark)', () => {
     const { failures } = checkContrast(themes, PAIRS)
     expect(failures.filter((f) => f.theme !== 'light')).toEqual([])
   })
