@@ -41,7 +41,10 @@ export type WriteDefinition<TInput, TData, TUndo> = {
 export type RequestOptions = { keepalive?: boolean }
 
 export type WriteResult<TData> =
-  { status: 'saved'; data: TData } | { status: 'failed'; error: unknown } | { status: 'cancelled' }
+  | { status: 'saved'; data: TData }
+  /** `blocked`: refused before it started (nothing was sent and no failed write was recorded). */
+  | { status: 'failed'; error: unknown; blocked?: true }
+  | { status: 'cancelled' }
 
 export type WriteHandle<TData> = {
   requestId: string
