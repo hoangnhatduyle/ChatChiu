@@ -41,6 +41,8 @@ export type RequestOptions = {
    * attempt, so the server can recognise the repeat. 1 to 100 of A-Z a-z 0-9 _ -.
    */
   idempotencyKey?: string
+  /** A JSON body, for the one DELETE that takes one (bulk delete). Ignored by GET, POST and PATCH, which have their own argument. */
+  body?: unknown
 }
 
 export type ApiClientDeps = {
@@ -321,7 +323,7 @@ export function createApiClient(deps: ApiClientDeps = {}): ApiClient {
     get: (path, options) => request('GET', path, undefined, options),
     post: (path, body, options) => request('POST', path, body, options),
     patch: (path, body, options) => request('PATCH', path, body, options),
-    delete: (path, options) => request('DELETE', path, undefined, options),
+    delete: (path, options) => request('DELETE', path, options?.body, options),
   }
 }
 

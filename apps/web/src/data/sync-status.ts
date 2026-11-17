@@ -9,6 +9,7 @@ import {
   type PersistenceStatus,
 } from './persistence'
 import { syncState } from './sync-state'
+import { useFailedWrites } from './write'
 
 type WriteKind = 'waiting' | 'syncing' | 'unresolved'
 
@@ -42,13 +43,16 @@ export function usePersistenceStatus(): PersistenceStatus {
 export function useSyncSummary() {
   const writes = usePendingWrites()
   const reachable = useIsReachable()
+  const failed = useFailedWrites().length
   return {
     ...writes,
+    failed,
     reachable,
     state: syncState({
       reachable,
       waiting: writes.waiting,
       syncing: writes.syncing + writes.unresolved,
+      failed,
     }),
     /** 'unavailable': queued writes would not survive a reload on this device. */
     persistence: usePersistenceStatus(),

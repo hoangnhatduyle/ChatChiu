@@ -16,7 +16,6 @@
 import {
   defaultShouldDehydrateQuery,
   hydrate,
-  MutationCache,
   onlineManager,
   QueryClient,
   type MutationKey,
@@ -89,7 +88,31 @@ export function registerMutation<TData, TVariables extends Variables, TContext =
   key: MutationKey,
   options: Options<TData, TVariables, TContext>,
 ): void {
-  client.setMutationDefaults<TData, Error, TVariables, TContext>(key, options)
+  const { mutationFn } = options
+  client.setMutationDefaults<TData, Error, TVariables, TContext>(key, {
+    ...options,
+    // Write-ahead save, at the start of the request and not in a cache-wide onMutate: TanStack awaits
+    // that one before the mutation's own onMutate, which would delay the optimistic cache update behind
+    // an IndexedDB write (d5533bc0: the cache is written synchronously, before any await).
+    ...(mutationFn
+      ? {
+          mutationFn: async (variables: TVariables, context: Parameters<typeof mutationFn>[1]) => {
+            await runBeforeSend(client)
+            return mutationFn(variables, context)
+          },
+        }
+      : {}),
+  })
+}
+
+const beforeSendByClient = new WeakMap<QueryClient, () => Promise<void> | void>()
+
+async function runBeforeSend(client: QueryClient): Promise<void> {
+  try {
+    await beforeSendByClient.get(client)?.()
+  } catch {
+    // The write still goes ahead; a failing save shows in the persistence status.
+  }
 }
 
 const definitions = new Map<string, (client: QueryClient) => void>()
@@ -108,21 +131,12 @@ export function defineMutation<TData, TVariables extends Variables, TContext = u
 }
 
 export type AppQueryClientOptions = {
-  /** Awaited after a write is created and before it is sent: saves it (write-ahead). A failure never blocks the write. */
+  /** Awaited at the start of every write's request, before it is sent: saves it (write-ahead). A failure never blocks the write. */
   beforeSend?: () => Promise<void> | void
 }
 
 export function createAppQueryClient({ beforeSend }: AppQueryClientOptions = {}): QueryClient {
   const client = new QueryClient({
-    mutationCache: new MutationCache({
-      onMutate: async () => {
-        try {
-          await beforeSend?.()
-        } catch {
-          // The write still goes ahead; a failing save shows in the persistence status.
-        }
-      },
-    }),
     defaultOptions: {
       queries: {
         staleTime: QUERY_STALE_MS,
@@ -139,6 +153,7 @@ export function createAppQueryClient({ beforeSend }: AppQueryClientOptions = {})
       },
     },
   })
+  if (beforeSend) beforeSendByClient.set(client, beforeSend)
   for (const apply of definitions.values()) apply(client)
   return client
 }
@@ -215,7 +230,11 @@ export function persistOptionsFor(
         defaultShouldDehydrateQuery(query) && query.meta?.persist !== false,
       // Every write that has not finished, not only the paused ones: one waiting to retry or in flight
       // when the app closes would otherwise vanish. Safe to run again because of the idempotency key.
-      shouldDehydrateMutation: (mutation) => mutation.state.status === 'pending',
+      shouldDehydrateMutation: (mutation) =>
+        mutation.meta?.persist !== false &&
+        (mutation.state.status === 'pending' ||
+          // A refused write waits for Retry or Discard, and must still be there after a reload.
+          (mutation.state.status === 'error' && mutation.meta?.writeKey !== undefined)),
     },
   }
 }

@@ -33,3 +33,17 @@ export const signUploadRequest = z.object({
   ext: z.enum(['jpg', 'jpeg', 'png', 'webp']),
 })
 export type SignUploadRequest = z.infer<typeof signUploadRequest>
+
+/** One line read off a receipt (POST /api/ai/receipt-scan); every hint is a guess to confirm. */
+export interface ReceiptScanLine {
+  name: string
+  quantity?: number
+  unit?: string
+  price?: number
+  categoryHint?: string
+  shelfLifeDaysHint?: number
+}
+
+export interface ReceiptScanResult {
+  items: ReceiptScanLine[]
+}

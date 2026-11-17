@@ -37,4 +37,14 @@ describe('syncState', () => {
   it('offline with nothing waiting is still ONLINE_IDLE (there is nothing to sync)', () => {
     expect(syncState({ reachable: false, waiting: 0, syncing: 0 })).toBe('ONLINE_IDLE')
   })
+
+  it('SYNC_FAILED: a write the server refused is reported, and never hidden behind ONLINE_IDLE', () => {
+    expect(syncState({ reachable: true, waiting: 0, syncing: 0, failed: 1 })).toBe('SYNC_FAILED')
+    expect(syncState({ reachable: false, waiting: 0, syncing: 0, failed: 2 })).toBe('SYNC_FAILED')
+  })
+
+  it('a refused write is reported even while other writes are pending', () => {
+    expect(syncState({ reachable: true, waiting: 0, syncing: 1, failed: 1 })).toBe('SYNC_FAILED')
+    expect(syncState({ reachable: false, waiting: 1, syncing: 0, failed: 1 })).toBe('SYNC_FAILED')
+  })
 })

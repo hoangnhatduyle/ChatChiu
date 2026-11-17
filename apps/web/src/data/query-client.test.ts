@@ -309,6 +309,37 @@ describe('the offline write queue (NC-AP-NO-LOST-WRITES)', () => {
     expect(savedBeforeSend).toBe(true)
   })
 
+  it('d5533bc0: the optimistic update runs synchronously when a write starts, even though the write-ahead save is slow', async () => {
+    const client = createAppQueryClient({
+      beforeSend: () => new Promise<void>((resolve) => setTimeout(resolve, 20)),
+    })
+    const onMutateRan = vi.fn()
+    registerMutation(client, ['sync'], {
+      onMutate: () => onMutateRan(),
+      mutationFn: () => Promise.resolve('ok'),
+    })
+    const options = client.defaultMutationOptions({ mutationKey: ['sync'] })
+    const pending = client.getMutationCache().build(client, options).execute(vars())
+    // No await between execute() and this line: the optimistic update has already happened.
+    expect(onMutateRan).toHaveBeenCalledTimes(1)
+    await expect(pending).resolves.toBe('ok')
+  })
+
+  it('writes marked meta.persist: false (AI calls that cost quota) are never saved or replayed', async () => {
+    const persister = createIdbPersister('u1')
+    const client = createAppQueryClient()
+    registerMutation(client, ['volatile'], {
+      mutationFn: () => new Promise(() => {}),
+      meta: { persist: false },
+    })
+    void mutate(client, 'volatile', vars())
+    await vi.waitFor(() => expect(allMutations(client)).toHaveLength(1))
+    await save(client, persister)
+    const reloaded = createAppQueryClient()
+    await restore(reloaded, persister)
+    expect(allMutations(reloaded)).toHaveLength(0)
+  })
+
   it('write-ahead: a save that fails never blocks the write', async () => {
     const client = createAppQueryClient({
       beforeSend: () => Promise.reject(new Error('IDB blocked')),

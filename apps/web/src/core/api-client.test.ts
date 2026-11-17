@@ -507,6 +507,20 @@ describe('request hygiene', () => {
   })
 })
 
+describe('DELETE with a body (bulk delete)', () => {
+  it('F-IN-10: sends the body as JSON when one is given', async () => {
+    const { api, fetchMock } = setup()
+    fetchMock.mockResolvedValue(json(200, { data: { deleted: 2 } }))
+    await expect(api.delete('/api/inventory/bulk', { body: { ids: [1, 2] } })).resolves.toEqual({
+      deleted: 2,
+    })
+    const init = fetchMock.mock.calls[0]?.[1]
+    expect(init?.method).toBe('DELETE')
+    expect(init?.body).toBe('{"ids":[1,2]}')
+    expect(headerOf(init, 'Content-Type')).toBe('application/json')
+  })
+})
+
 describe('idempotency key (step 4.3: a queued write is replayed with the same key)', () => {
   it('F-AP-01: sends the key as an Idempotency-Key header', async () => {
     const { api, fetchMock } = setup()
