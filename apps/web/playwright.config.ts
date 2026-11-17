@@ -1,5 +1,12 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// The API router (e2e/api-client.spec.ts) reads these when it is first imported, in whichever worker
+// that is, so they are set for every worker here. Quota 0: the AI routes answer QUOTA_EXCEEDED before
+// any OpenAI call.
+process.env.AI_QUOTA_EXPIRATION_PER_MONTH = '0'
+process.env.AI_QUOTA_RECEIPT_PER_MONTH = '0'
+process.env.OPENAI_API_KEY ??= 'test-key-openai-is-never-called'
+
 const PORT = 4173
 // Dev server for the component gallery (ui-gallery.html never ships in the production build).
 const UI_PORT = 4174
@@ -30,8 +37,9 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      // shell.spec.ts sets its own sizes (390/768/1280), so it runs once, in the tablet project.
-      testIgnore: ['ui/**', 'shell.spec.ts'],
+      // shell.spec.ts sets its own sizes (390/768/1280), and the Node-only specs (no page) do not depend
+      // on the form factor, so they run once, in the tablet project.
+      testIgnore: ['ui/**', 'shell.spec.ts', 'auth-core.spec.ts', 'api-client.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 390, height: 844 },

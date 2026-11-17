@@ -77,7 +77,7 @@ Status 2026-11-17: steps 3.1–3.4 are built, reviewed and user-approved at each
 
 ## Phase 4: core and data layer
 
-Status 2026-11-17: step 4.1 is built, reviewed (security, react, typescript, silent-failure) and approved. 7.0.15 was decided as `@supabase/auth-js` only + declarative router at 4.3 + `realtime-js` loaded after boot at 4.6 (initial JS 142.2 KB gz). New deferred row: 7.0.17.
+Status 2026-11-17: step 4.1 is built, reviewed (security, react, typescript, silent-failure) and approved. 7.0.15 was decided as `@supabase/auth-js` only + declarative router at 4.3 + `realtime-js` loaded after boot at 4.6 (initial JS 142.2 KB gz). New deferred row: 7.0.17. Step 4.2 is built and reviewed (security, typescript, silent-failure): errors carry `kind`, `outcomeUnknown` and `cause`; open design question for 4.3: a replayed POST after a timeout can duplicate (server-side `Idempotency-Key` dedupe is not built).
 
 | Step | Files | Artifact | Verified by |
 |---|---|---|---|

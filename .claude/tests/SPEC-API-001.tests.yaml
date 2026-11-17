@@ -1,5 +1,5 @@
 spec_id: SPEC-API-001
-generated_at: 2026-11-16T23:21:21.099Z
+generated_at: 2026-11-17T16:46:11.853Z
 cases:
   - id: T-SPEC-API-001-AC-AC_API_01
     kind: acceptance
