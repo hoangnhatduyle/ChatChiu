@@ -18,7 +18,11 @@ import {
   getAccessToken,
   handleUnauthorized,
   markSessionExpiring,
+  MAX_USERNAME_LENGTH,
   MIN_PASSWORD_LENGTH,
+  REQUEST_TIMEOUT_MS,
+  markUserSignOut,
+  consumeUserSignOut,
   requestPasswordReset,
   signIn,
   signOut,
@@ -67,14 +71,14 @@ describe('F-AU-01 signIn', () => {
 
 describe('F-AU-02 signUp and NC-AU-NO-WEAK-PASSWORD', () => {
   it('NC-AU-NO-WEAK-PASSWORD: signUp rejects a password under 12 characters without calling Supabase (T-SPEC-AU-001-NC-NC_AU_NO_WEAK_PASSWORD)', async () => {
-    const result = await signUp('a@b.co', 'x'.repeat(MIN_PASSWORD_LENGTH - 1))
+    const result = await signUp('a@b.co', 'x'.repeat(MIN_PASSWORD_LENGTH - 1), 'Chiu')
     expect(result).toMatchObject({ success: false })
     expect(auth.signUp).not.toHaveBeenCalled()
   })
 
   it('F-AU-02: signUp with 12+ characters reports needsConfirmation when Supabase returns no session', async () => {
     auth.signUp.mockResolvedValue({ data: { session: null }, error: null })
-    await expect(signUp('a@b.co', 'x'.repeat(MIN_PASSWORD_LENGTH))).resolves.toEqual({
+    await expect(signUp('a@b.co', 'x'.repeat(MIN_PASSWORD_LENGTH), 'Chiu')).resolves.toEqual({
       success: true,
       needsConfirmation: true,
     })
@@ -82,7 +86,50 @@ describe('F-AU-02 signUp and NC-AU-NO-WEAK-PASSWORD', () => {
 
   it('F-AU-02: signUp signs in directly when Supabase returns a session', async () => {
     auth.signUp.mockResolvedValue({ data: { session: {} }, error: null })
-    await expect(signUp('a@b.co', LONG_PASSWORD)).resolves.toEqual({ success: true })
+    await expect(signUp('a@b.co', LONG_PASSWORD, 'Chiu')).resolves.toEqual({ success: true })
+  })
+
+  it('F-AU-02: signUp stores the trimmed username as user_metadata.username', async () => {
+    auth.signUp.mockResolvedValue({ data: { session: {} }, error: null })
+    await signUp('a@b.co', LONG_PASSWORD, '  Chiu  ')
+    expect(auth.signUp).toHaveBeenCalledWith({
+      email: 'a@b.co',
+      password: LONG_PASSWORD,
+      options: { data: { username: 'Chiu' } },
+    })
+  })
+
+  it.each(['', '   ', 'x'.repeat(MAX_USERNAME_LENGTH + 1)])(
+    'F-AU-02: signUp rejects the username %j without calling Supabase',
+    async (username) => {
+      const result = await signUp('a@b.co', LONG_PASSWORD, username)
+      expect(result).toMatchObject({ success: false })
+      expect(auth.signUp).not.toHaveBeenCalled()
+    },
+  )
+})
+
+describe('auth calls cannot hang forever', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('F-AU-01: a sign-in that never answers ends in a failure after the time limit', async () => {
+    vi.useFakeTimers()
+    auth.signInWithPassword.mockReturnValue(new Promise(() => {}))
+    const pending = signIn('a@b.co', LONG_PASSWORD)
+    await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS)
+    await expect(pending).resolves.toEqual({
+      success: false,
+      message: expect.stringMatching(/taking too long/i),
+    })
+  })
+})
+
+describe('F-AU-09 signing out on purpose', () => {
+  it('F-AU-09: the user-sign-out flag is set by markUserSignOut and read once', () => {
+    expect(consumeUserSignOut()).toBe(false)
+    markUserSignOut()
+    expect(consumeUserSignOut()).toBe(true)
+    expect(consumeUserSignOut()).toBe(false)
   })
 })
 
@@ -249,7 +296,7 @@ describe('actions never throw (a throw would leave the UI mid-sign-in)', () => {
     auth.signUp.mockRejectedValue(new Error('boom'))
     auth.updateUser.mockRejectedValue(new Error('boom'))
     auth.resetPasswordForEmail.mockRejectedValue(new Error('boom'))
-    await expect(signUp('a@b.co', LONG_PASSWORD)).resolves.toMatchObject({ success: false })
+    await expect(signUp('a@b.co', LONG_PASSWORD, 'Chiu')).resolves.toMatchObject({ success: false })
     await expect(updatePassword(LONG_PASSWORD)).resolves.toMatchObject({ success: false })
     await expect(requestPasswordReset('a@b.co')).resolves.toMatchObject({ success: false })
   })

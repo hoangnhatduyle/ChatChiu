@@ -1,5 +1,5 @@
 spec_id: SPEC-AU-001
-generated_at: 2026-11-17T16:20:37.184Z
+generated_at: 2026-11-17T21:54:09.313Z
 cases:
   - id: T-SPEC-AU-001-AC-F_AU_01
     kind: acceptance
@@ -9,7 +9,7 @@ cases:
   - id: T-SPEC-AU-001-AC-F_AU_02
     kind: acceptance
     traces_to: SPEC-AU-001#F-AU-02
-    assertion: given the register page, when she submits a password under 12 characters or a mismatched confirmation, then an inline error blocks it; a valid submission creates the account and says to confirm by email when Supabase requires it
+    assertion: given the register page, when she submits an empty username (after trimming), a password under 12 characters or a mismatched confirmation, then an inline error blocks it; a valid submission creates the account with the username stored as user_metadata.username and says to confirm by email when Supabase requires it
     invariant: false
   - id: T-SPEC-AU-001-AC-F_AU_03
     kind: acceptance
@@ -31,15 +31,30 @@ cases:
     traces_to: SPEC-AU-001#F-AU-06
     assertion: given two devices signed in to the shared account, both with notifications on, when she signs out on one, then only that device's push subscription is deleted and the other device stays signed in and subscribed (signOut uses scope 'local'; supabase-js defaults to 'global', which would end every device's session)
     invariant: true
+  - id: T-SPEC-AU-001-AC-F_AU_07
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-07
+    assertion: given a Supabase recovery link, when it opens on /login, /register or any other page, including a page that is not behind the guard, then she is taken to /reset-password with the page still asking for a new password, and /login and /register cannot be used while the recovery session is active
+    invariant: true
+  - id: T-SPEC-AU-001-AC-F_AU_08
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-08
+    assertion: given the reset-password page during a recovery session, when she presses Cancel, then only this device's recovery session ends (signOut scope 'local') and she lands on /login; nothing else ends a recovery session
+    invariant: false
+  - id: T-SPEC-AU-001-AC-F_AU_09
+    kind: acceptance
+    traces_to: SPEC-AU-001#F-AU-09
+    assertion: given she signs out on purpose, or a session expired, when the login page opens, then it has no remembered page to return to after an explicit sign-out (a later sign-in, possibly by someone else, lands on the board); after an expiry it keeps the page she was on and shows "Your session expired"; a signed-in visitor to /login or /register is sent to the board
+    invariant: false
   - id: T-SPEC-AU-001-FORBID-session_SIGNED_OUT_SIGNED_IN
     kind: forbidden-transition
     traces_to: SPEC-AU-001#session:SIGNED_OUT->SIGNED_IN
     assertion: "[session] transition SIGNED_OUT -> SIGNED_IN MUST be rejected (Protected pages are never reachable without passing through sign-in or recovery)"
     invariant: true
-  - id: T-SPEC-AU-001-FORBID-session_PASSWORD_RECOVERY_SIGNED_OUT
-    kind: forbidden-transition
-    traces_to: SPEC-AU-001#session:PASSWORD_RECOVERY->SIGNED_OUT
-    assertion: "[session] transition PASSWORD_RECOVERY -> SIGNED_OUT MUST be rejected (A recovery link must lead to setting a password, not silently back to login (the F-AU-03 bug))"
+  - id: T-SPEC-AU-001-NC-NC_AU_RECOVERY_NO_SILENT_EXIT
+    kind: negative-constraint
+    traces_to: SPEC-AU-001#NC-AU-RECOVERY-NO-SILENT-EXIT
+    assertion: A recovery session MUST end only by saving a new password or by her explicit Cancel; no link, token event, 401 or page change may silently send her back to login (the F-AU-03 bug). Version 0.2.0 replaced the forbidden PASSWORD_RECOVERY to SIGNED_OUT pair with this rule so that the explicit Cancel is allowed.
     invariant: true
   - id: T-SPEC-AU-001-NC-NC_AU_NO_TOKEN_STORAGE_LEAK
     kind: negative-constraint

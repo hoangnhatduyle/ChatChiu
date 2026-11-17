@@ -2,10 +2,10 @@
 // both the React provider (auth.tsx) and the API client (4.2) can use them. None of them throws: a
 // failure of any kind comes back as a result, so a caller is never left half-way through a state change.
 import { isAuthRetryableFetchError } from '@supabase/auth-js'
+import { MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, normaliseUsername } from './auth-rules'
 import { getAuthClient } from './supabase.client'
 
-/** NC-AU-NO-WEAK-PASSWORD, and the same minimum the Supabase project enforces. */
-export const MIN_PASSWORD_LENGTH = 12
+export { MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH }
 
 const HTTP_TOO_MANY_REQUESTS = 429
 const HTTP_SERVER_ERROR = 500
@@ -16,7 +16,11 @@ const OFFLINE_MESSAGE = "Can't connect right now. Check your internet connection
 const UNAVAILABLE_MESSAGE = 'The service is unavailable right now. Try again in a moment.'
 const RATE_LIMIT_MESSAGE = 'Too many attempts. Wait a minute and try again.'
 const GENERIC_MESSAGE = 'Something went wrong. Try again.'
+const TIMEOUT_MESSAGE = 'This is taking too long. Check your connection and try again.'
+/** An auth call that has not answered by now is reported as a failure, so a form is never stuck. */
+export const REQUEST_TIMEOUT_MS = 20_000
 const WEAK_PASSWORD_MESSAGE = `Use at least ${MIN_PASSWORD_LENGTH} characters for the password.`
+const USERNAME_MESSAGE = `Choose a username of up to ${MAX_USERNAME_LENGTH} characters.`
 
 export type AuthResult =
   { success: true; needsConfirmation?: boolean } | { success: false; message: string }
@@ -34,14 +38,22 @@ function failure(error: AuthFailure): AuthResult {
 
 /** Runs an action and turns anything it throws (a failed fetch, a bad response, no config) into a failure. */
 async function guarded(run: () => Promise<AuthResult>): Promise<AuthResult> {
-  try {
-    return await run()
-  } catch (error) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<AuthResult>((resolve) => {
+    timer = setTimeout(
+      () => resolve({ success: false, message: TIMEOUT_MESSAGE }),
+      REQUEST_TIMEOUT_MS,
+    )
+  })
+  const attempt = run().catch((error: unknown): AuthResult => ({
+    success: false,
     // fetch reports "no connection" as a TypeError.
-    return {
-      success: false,
-      message: error instanceof TypeError ? OFFLINE_MESSAGE : GENERIC_MESSAGE,
-    }
+    message: error instanceof TypeError ? OFFLINE_MESSAGE : GENERIC_MESSAGE,
+  }))
+  try {
+    return await Promise.race([attempt, timeout])
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -52,12 +64,19 @@ export function signIn(email: string, password: string): Promise<AuthResult> {
   })
 }
 
-export function signUp(email: string, password: string): Promise<AuthResult> {
+/** Supabase Auth has no username field, so it travels as user metadata (F-AU-02). */
+export function signUp(email: string, password: string, username: string): Promise<AuthResult> {
   if (password.length < MIN_PASSWORD_LENGTH) {
     return Promise.resolve({ success: false, message: WEAK_PASSWORD_MESSAGE })
   }
+  const name = normaliseUsername(username)
+  if (name === null) return Promise.resolve({ success: false, message: USERNAME_MESSAGE })
   return guarded(async () => {
-    const { data, error } = await getAuthClient().signUp({ email, password })
+    const { data, error } = await getAuthClient().signUp({
+      email,
+      password,
+      options: { data: { username: name } },
+    })
     if (error) return failure(error)
     // With email confirmation on, Supabase returns no session until the link is opened.
     return data.session ? { success: true } : { success: true, needsConfirmation: true }
@@ -95,8 +114,9 @@ export function updatePassword(password: string): Promise<AuthResult> {
 
 /**
  * F-AU-06 / NC-AU-SIGNOUT-SCOPE: end only this device's session. supabase-js's default scope is
- * 'global', which would sign out every device on the shared login (D11). This device is signed out
- * locally before any network call, so a failure here only means the server could not revoke the token.
+ * 'global', which would sign out every device on the shared login (D11). A failure is reported, not
+ * hidden: auth-js can return an error before it has cleared the stored session, so callers that need
+ * the session gone (Cancel on the reset page) must check the result.
  */
 export function signOut(): Promise<AuthResult> {
   return guarded(async () => {
@@ -114,6 +134,21 @@ export async function getAccessToken(): Promise<string | null> {
   const { data, error } = await getAuthClient().getSession()
   if (error) throw error
   return data.session?.access_token ?? null
+}
+
+// F-AU-09: the next SIGNED_OUT event is her own sign-out, so the login page forgets the page she left.
+let signingOutOnPurpose = false
+
+/** Marks that the next SIGNED_OUT event is her own choice (read by the provider). */
+export function markUserSignOut(): void {
+  signingOutOnPurpose = true
+}
+
+/** Reads and clears the user-sign-out flag. */
+export function consumeUserSignOut(): boolean {
+  const was = signingOutOnPurpose
+  signingOutOnPurpose = false
+  return was
 }
 
 // F-AU-04: a 401 first tries a silent refresh; only a refused refresh signs her out, once.

@@ -1,16 +1,17 @@
 id: SPEC-AU-001
-version: 0.1.0
+version: 0.2.0
 kind: product
 title: Sign-in and account (feature.auth)
 status: active
 context_and_scope:
   in_scope:
     - Email and password sign-in with a persisted session (F-AU-01)
-    - Register with password of at least 12 characters and confirmation (F-AU-02)
+    - Register with a username, an email, and a password of at least 12 characters with confirmation (F-AU-02)
     - Forgot password and a working reset-password page (F-AU-03)
     - Session expiry handling on 401 (F-AU-04)
     - Route guard on every page except the auth pages (F-AU-05)
     - Sign out that unregisters only this device's notifications (F-AU-06)
+    - A recovery link that opens on any page reaches the reset page; Cancel on that page; sign-out forgets the remembered page (F-AU-07..09)
     - "Pages: features/auth/{LoginPage, RegisterPage, ResetPasswordPage}.tsx; core/auth.tsx, core/RequireAuth.tsx"
   out_of_scope:
     - "Separate logins per person / household sharing (D11: one shared login)"
@@ -57,14 +58,17 @@ state_machines:
       - from: PASSWORD_RECOVERY
         event: new_password_saved
         to: SIGNED_IN
+      - from: PASSWORD_RECOVERY
+        event: cancel_recovery
+        to: SIGNED_OUT
     forbidden:
       - from: SIGNED_OUT
         to: SIGNED_IN
         reason: Protected pages are never reachable without passing through sign-in or recovery
-      - from: PASSWORD_RECOVERY
-        to: SIGNED_OUT
-        reason: A recovery link must lead to setting a password, not silently back to login (the F-AU-03 bug)
 negative_constraints:
+  - id: NC-AU-RECOVERY-NO-SILENT-EXIT
+    message: A recovery session MUST end only by saving a new password or by her explicit Cancel; no link, token event, 401 or page change may silently send her back to login (the F-AU-03 bug). Version 0.2.0 replaced the forbidden PASSWORD_RECOVERY to SIGNED_OUT pair with this rule so that the explicit Cancel is allowed.
+    severity: high
   - id: NC-AU-NO-TOKEN-STORAGE-LEAK
     message: Tokens MUST NOT be logged, put in URLs, or stored anywhere except the Supabase client's own storage
     severity: critical
@@ -85,8 +89,8 @@ acceptance_criteria:
     invariant: false
   - id: F-AU-02
     given: the register page
-    when: she submits a password under 12 characters or a mismatched confirmation
-    then: an inline error blocks it; a valid submission creates the account and says to confirm by email when Supabase requires it
+    when: she submits an empty username (after trimming), a password under 12 characters or a mismatched confirmation
+    then: an inline error blocks it; a valid submission creates the account with the username stored as user_metadata.username and says to confirm by email when Supabase requires it
     invariant: false
   - id: F-AU-03
     given: she requested a reset email and opens its link
@@ -108,6 +112,21 @@ acceptance_criteria:
     when: she signs out on one
     then: only that device's push subscription is deleted and the other device stays signed in and subscribed (signOut uses scope 'local'; supabase-js defaults to 'global', which would end every device's session)
     invariant: true
+  - id: F-AU-07
+    given: a Supabase recovery link
+    when: it opens on /login, /register or any other page, including a page that is not behind the guard
+    then: she is taken to /reset-password with the page still asking for a new password, and /login and /register cannot be used while the recovery session is active
+    invariant: true
+  - id: F-AU-08
+    given: the reset-password page during a recovery session
+    when: she presses Cancel
+    then: only this device's recovery session ends (signOut scope 'local') and she lands on /login; nothing else ends a recovery session
+    invariant: false
+  - id: F-AU-09
+    given: she signs out on purpose, or a session expired
+    when: the login page opens
+    then: it has no remembered page to return to after an explicit sign-out (a later sign-in, possibly by someone else, lands on the board); after an expiry it keeps the page she was on and shows "Your session expired"; a signed-in visitor to /login or /register is sent to the board
+    invariant: false
 depends_on:
   - SPEC-DATA-001
   - SPEC-API-001

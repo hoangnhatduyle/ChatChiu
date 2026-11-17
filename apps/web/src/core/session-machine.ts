@@ -22,6 +22,7 @@ export const SESSION_EVENTS = [
   'sign_out',
   'open_recovery_link',
   'new_password_saved',
+  'cancel_recovery',
 ] as const
 export type SessionEvent = (typeof SESSION_EVENTS)[number]
 
@@ -33,7 +34,8 @@ const TRANSITIONS: Readonly<Record<SessionState, Partial<Record<SessionEvent, Se
     api_401_after_refresh: 'EXPIRED',
     sign_out: 'SIGNED_OUT',
   },
-  PASSWORD_RECOVERY: { new_password_saved: 'SIGNED_IN' },
+  // NC-AU-RECOVERY-NO-SILENT-EXIT: only these two events end a recovery session.
+  PASSWORD_RECOVERY: { new_password_saved: 'SIGNED_IN', cancel_recovery: 'SIGNED_OUT' },
   EXPIRED: { show_session_expired: 'SIGNED_OUT' },
 }
 
@@ -53,6 +55,8 @@ export type SessionSnapshot = {
   session: Session | null
   /** True after a 401 ended the session: the login page shows "Your session expired". */
   expired: boolean
+  /** True when she signed out herself: the guard then sends her to login without a page to return to. */
+  userSignedOut?: boolean
 }
 
 export const INITIAL_SNAPSHOT: SessionSnapshot = {
@@ -71,7 +75,7 @@ function reachSignedIn(from: SessionState): SessionState {
   return state
 }
 
-/** Walks the allowed transitions to SIGNED_OUT from any state except PASSWORD_RECOVERY (which may not leave that way). */
+/** Walks the allowed transitions to SIGNED_OUT from any state except PASSWORD_RECOVERY (it ends only through its own two events). */
 function reachSignedOut(from: SessionState): SessionState {
   switch (from) {
     case 'SIGNED_IN':
@@ -91,9 +95,21 @@ export function sameSnapshot(a: SessionSnapshot, b: SessionSnapshot): boolean {
     a.ready === b.ready &&
     a.state === b.state &&
     a.expired === b.expired &&
+    (a.userSignedOut ?? false) === (b.userSignedOut ?? false) &&
     a.session?.access_token === b.session?.access_token &&
     a.session?.user.id === b.session?.user.id
   )
+}
+
+/** F-AU-08: her explicit Cancel on the reset page. Only a recovery session can be cancelled. */
+export function cancelRecovery(prev: SessionSnapshot): SessionSnapshot {
+  if (prev.state !== 'PASSWORD_RECOVERY') return prev
+  return {
+    ready: true,
+    state: transition(prev.state, 'cancel_recovery'),
+    session: null,
+    expired: false,
+  }
 }
 
 /**
@@ -114,7 +130,7 @@ export function applyAuthEvent(
         // finds no session (an expired or used link), there is nothing to recover: start signed out.
         // This is the bootstrap, not a transition out of recovery, so the forbidden rule is untouched.
         if (!prev.ready && !session) return { ...INITIAL_SNAPSHOT, ready: true }
-        return { ...prev, ready: true }
+        return { ...prev, ready: true, session: session ?? prev.session }
       }
       if (!session) return { ...prev, ready: true, state: 'SIGNED_OUT', session: null }
       return { ready: true, state: 'SIGNED_IN', session, expired: false }

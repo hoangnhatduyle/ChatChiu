@@ -3,6 +3,7 @@
 import type { Session } from '@supabase/auth-js'
 import {
   applyAuthEvent,
+  cancelRecovery,
   INITIAL_SNAPSHOT,
   sameSnapshot,
   SESSION_EVENTS,
@@ -28,6 +29,7 @@ describe('SPEC-AU-001 session machine', () => {
     ['SIGNED_IN', 'sign_out', 'SIGNED_OUT'],
     ['SIGNED_OUT', 'open_recovery_link', 'PASSWORD_RECOVERY'],
     ['PASSWORD_RECOVERY', 'new_password_saved', 'SIGNED_IN'],
+    ['PASSWORD_RECOVERY', 'cancel_recovery', 'SIGNED_OUT'],
   ]
 
   it.each(allowed)('F-AU-01: %s --%s--> %s', (from, event, to) => {
@@ -40,10 +42,11 @@ describe('SPEC-AU-001 session machine', () => {
     }
   })
 
-  it('FORBID session PASSWORD_RECOVERY->SIGNED_OUT: no event leaves recovery for sign-out (T-SPEC-AU-001-FORBID-session_PASSWORD_RECOVERY_SIGNED_OUT)', () => {
-    for (const event of SESSION_EVENTS) {
-      expect(transition('PASSWORD_RECOVERY', event)).not.toBe('SIGNED_OUT')
-    }
+  it('NC-AU-RECOVERY-NO-SILENT-EXIT: only saving the password or the explicit Cancel leaves recovery (T-SPEC-AU-001-NC-NC_AU_RECOVERY_NO_SILENT_EXIT)', () => {
+    const leaving = SESSION_EVENTS.filter(
+      (event) => transition('PASSWORD_RECOVERY', event) !== 'PASSWORD_RECOVERY',
+    )
+    expect(leaving.sort()).toEqual(['cancel_recovery', 'new_password_saved'])
   })
 
   it('an event that is not allowed from a state leaves the state unchanged', () => {
@@ -125,6 +128,39 @@ describe('SPEC-AU-001 Supabase events drive the machine', () => {
   })
 })
 
+describe('F-AU-03 recovery bootstrap keeps its session', () => {
+  it('F-AU-03: the session found at start is stored, so saving the password can sign her in', () => {
+    const starting: SessionSnapshot = { ...INITIAL_SNAPSHOT, state: 'PASSWORD_RECOVERY' }
+    const found = applyAuthEvent(starting, 'INITIAL_SESSION', session, false)
+    expect(found.session).toBe(session)
+    const saved = applyAuthEvent(found, 'USER_UPDATED', null, false)
+    expect(saved.state).toBe('SIGNED_IN')
+  })
+})
+
+describe('F-AU-08 cancelRecovery', () => {
+  const recovering: SessionSnapshot = {
+    ready: true,
+    state: 'PASSWORD_RECOVERY',
+    session,
+    expired: false,
+  }
+
+  it('F-AU-08: Cancel ends the recovery session: SIGNED_OUT, no session, no expired notice', () => {
+    expect(cancelRecovery(recovering)).toEqual({
+      ready: true,
+      state: 'SIGNED_OUT',
+      session: null,
+      expired: false,
+    })
+  })
+
+  it('F-AU-08: Cancel does nothing outside a recovery session', () => {
+    expect(cancelRecovery(signedIn)).toBe(signedIn)
+    expect(cancelRecovery(readySignedOut)).toBe(readySignedOut)
+  })
+})
+
 describe('sameSnapshot', () => {
   it('F-AU-01: a repeated SIGNED_IN with the same token is the same snapshot (no re-render)', () => {
     const again = applyAuthEvent(signedIn, 'SIGNED_IN', { ...session } as Session, false)
@@ -188,7 +224,7 @@ describe('applyAuthEvent invariants', () => {
     }
   })
 
-  it('FORBID session PASSWORD_RECOVERY->SIGNED_OUT: once ready, no event leaves recovery except saving the password', () => {
+  it('NC-AU-RECOVERY-NO-SILENT-EXIT: once ready, no auth event leaves recovery except saving the password', () => {
     const recovering = starts.filter((s) => s.ready && s.state === 'PASSWORD_RECOVERY')
     for (const start of recovering) {
       for (const event of EVENTS) {

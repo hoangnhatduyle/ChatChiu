@@ -3,10 +3,11 @@
 // route <= 120 KB gz). Phase 5 swaps each PendingPage for its feature page.
 import type { RouteObject } from 'react-router'
 import { LOGIN_PATH, RESET_PASSWORD_PATH } from './core/auth-paths'
+import { PublicRoute } from './core/PublicRoute'
 import { RequireAuth } from './core/RequireAuth'
 import { AppDataProvider } from './data/AppDataProvider'
+import { LoginPage, RegisterPage, ResetPasswordPage } from './features/auth/pages'
 import { AppShell } from './shell/AppShell'
-import { AuthPlaceholderPage } from './shell/AuthPlaceholderPage'
 import { DESTINATIONS } from './shell/nav'
 import { RoutePageBoundary } from './shell/RouteErrorBoundary'
 import { KitchenPage, MorePage, NotFoundPage, PendingPage } from './shell/pages'
@@ -43,8 +44,19 @@ export const routes: RouteObject[] = [
       },
     ],
   },
-  // Public pages (placeholders until 5.11).
-  { path: LOGIN_PATH, element: <AuthPlaceholderPage title="Sign in" /> },
-  { path: '/register', element: <AuthPlaceholderPage title="Create account" /> },
-  { path: RESET_PASSWORD_PATH, element: <AuthPlaceholderPage title="Reset password" /> },
+  {
+    // Auth pages: a recovery session is kept on /reset-password, a signed-in visitor is sent on (F-AU-07, F-AU-09).
+    element: <PublicRoute />,
+    children: [
+      {
+        // A page chunk that fails to load (offline, removed by a deploy) shows a retry, not a crash.
+        element: <RoutePageBoundary />,
+        children: [
+          { path: LOGIN_PATH, element: <LoginPage /> },
+          { path: '/register', element: <RegisterPage /> },
+          { path: RESET_PASSWORD_PATH, element: <ResetPasswordPage /> },
+        ],
+      },
+    ],
+  },
 ]

@@ -1,6 +1,7 @@
 // SPEC-AU-001: AuthProvider + useSession + RequireAuth against a fake Supabase auth client.
 import type { AuthChangeEvent, Session } from '@supabase/auth-js'
 import { act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, Outlet, RouterProvider, useLocation } from 'react-router'
 import { StrictMode } from 'react'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -37,6 +38,10 @@ function Where() {
   const loc = useLocation()
   return <p data-testid="where">{loc.pathname + loc.search}</p>
 }
+function SignOutButton() {
+  const { signOut } = useSession()
+  return <button onClick={() => void signOut()}>Sign out</button>
+}
 function Status() {
   const { status, expired, ready } = useSession()
   return <p data-testid="status">{`${ready ? 'ready' : 'loading'}:${status}:${expired}`}</p>
@@ -50,6 +55,7 @@ function renderApp(initial: string) {
           <AuthProvider>
             <Where />
             <Status />
+            <SignOutButton />
             <Outlet />
           </AuthProvider>
         ),
@@ -123,6 +129,20 @@ describe('F-AU-05 route guard', () => {
     await screen.findByRole('heading', { name: 'Kitchen' })
     await emit('SIGNED_OUT', null)
     expect(await screen.findByRole('heading', { name: 'Login page' })).toBeInTheDocument()
+  })
+
+  it('F-AU-09: signing out on purpose leaves /login with no remembered page; an expiry keeps it', async () => {
+    // Raw callbacks, not act(): a click's own handler is already inside user-event's wrapper.
+    auth.signOut.mockImplementation(async () => {
+      for (const cb of [...listeners]) cb('SIGNED_OUT', null)
+      return { error: null }
+    })
+    const { router } = renderApp('/stock')
+    await emit('INITIAL_SESSION', session)
+    await screen.findByRole('heading', { name: 'Stock' })
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(await screen.findByRole('heading', { name: 'Login page' })).toBeInTheDocument()
+    expect(router.state.location.state).toBeNull()
   })
 
   it('F-AU-04: an expired session ends on /login with the expired notice flag on', async () => {

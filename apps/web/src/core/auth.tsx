@@ -3,6 +3,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   consumeSessionExpiring,
+  consumeUserSignOut,
+  markUserSignOut,
   requestPasswordReset,
   signIn,
   signOut,
@@ -13,6 +15,7 @@ import {
 import { recoveryInUrl } from './auth-paths'
 import {
   applyAuthEvent,
+  cancelRecovery,
   INITIAL_SNAPSHOT,
   sameSnapshot,
   transition,
@@ -38,9 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = getAuthClient().onAuthStateChange((event, session) => {
       // Read the flag here, not inside the updater: StrictMode runs updaters twice.
       const expiring = event === 'SIGNED_OUT' && consumeSessionExpiring()
+      const byUser = event === 'SIGNED_OUT' && consumeUserSignOut()
       // Same state and token (a tab refocus re-sends SIGNED_IN): keep the old object, no re-render.
       setSnapshot((prev) => {
-        const next = applyAuthEvent(prev, event, session, expiring)
+        const applied = applyAuthEvent(prev, event, session, expiring)
+        const next =
+          byUser && applied.state === 'SIGNED_OUT' ? { ...applied, userSignedOut: true } : applied
         return sameSnapshot(prev, next) ? prev : next
       })
     })
@@ -57,18 +63,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result
   }
 
+  async function signOutOnPurpose(): Promise<AuthResult> {
+    // The flag has to be on before the call: auth-js emits SIGNED_OUT from inside signOut(), and the
+    // guard redirects on that event. The finally clears it whatever happens.
+    markUserSignOut()
+    try {
+      return await signOut()
+    } finally {
+      consumeUserSignOut()
+    }
+  }
+
+  async function cancelRecoverySession(): Promise<AuthResult> {
+    // NC-AU-RECOVERY-NO-SILENT-EXIT: she leaves recovery only once the client has really dropped the
+    // session. If the sign-out failed the session may still be stored (and a reload would sign her
+    // in without a new password), so the caller shows the reason and she stays in recovery.
+    const result = await signOut()
+    if (result.success) setSnapshot((prev) => cancelRecovery(prev))
+    return result
+  }
+
   const value: SessionValue = {
     ready: snapshot.ready,
     status: snapshot.state,
     session: snapshot.session,
     user: snapshot.session?.user ?? null,
     expired: snapshot.expired,
+    signedOutOnPurpose: snapshot.userSignedOut ?? false,
     configError,
     signIn: signInAndTrack,
     signUp,
-    signOut,
+    signOut: signOutOnPurpose,
     requestPasswordReset,
     updatePassword,
+    cancelRecovery: cancelRecoverySession,
   }
   return <SessionContext value={value}>{children}</SessionContext>
 }
