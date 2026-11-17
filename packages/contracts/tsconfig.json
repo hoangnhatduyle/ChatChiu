@@ -1,4 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Shared by the browser app and the Node API: URL and friends come from DOM.
+    "lib": ["ES2023", "DOM"]
+  },
   "include": ["src"]
 }

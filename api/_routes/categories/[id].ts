@@ -38,7 +38,21 @@ export default authedHandler(async ({ client }, req) => {
     .delete({ count: 'exact' })
     .eq('id', id)
     .eq('is_system', false);
-  if (error) throw new ApiError('INTERNAL', 'Failed to delete category', error);
+  if (error) {
+    // Still used by items (FK, AC-DATA-14): a readable 409 instead of a 500.
+    if (error.code === '23503') {
+      const used = await client
+        .from('inventory_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('category_id', id);
+      const n = used.count ?? 0;
+      throw new ApiError(
+        'CONFLICT',
+        `This category is still used by ${n} item${n === 1 ? '' : 's'}. Move them to another category first.`,
+      );
+    }
+    throw new ApiError('INTERNAL', 'Failed to delete category', error);
+  }
   if (!count) throw new ApiError('NOT_FOUND', 'Category not found or not deletable');
   return { deleted: true };
 });

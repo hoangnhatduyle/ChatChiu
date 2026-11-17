@@ -84,6 +84,11 @@ describe('restock', () => {
     expect(restock.safeParse({}).success).toBe(false)
   })
 
+  it('AC-API-08: bounds the amount and the total so the maths cannot overflow', () => {
+    expect(restock.safeParse({ quantity: 1e10 }).success).toBe(false)
+    expect(restock.safeParse({ quantity: 1, totalPrice: 1e10 }).success).toBe(false)
+  })
+
   it('AC-API-08: carries no defaults, so absent fields stay absent', () => {
     expect(restock.parse({ quantity: 3 })).toEqual({ quantity: 3 })
   })

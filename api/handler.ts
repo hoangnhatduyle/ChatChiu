@@ -36,6 +36,15 @@ import h29 from "./_routes/uploads/sign.js";
 import h30 from "./_routes/waste/[id].js";
 import h31 from "./_routes/waste/from-item.js";
 import h32 from "./_routes/waste/index.js";
+// Phase 2 step 2.4 (architecture.md §3.4)
+import h33 from "./_routes/bootstrap.js";
+import h34 from "./_routes/inventory/bulk.js";
+import h35 from "./_routes/inventory/[id]/restock.js";
+import h36 from "./_routes/inventory/[id]/usage-undo.js";
+import h37 from "./_routes/shopping-list/clear-purchased.js";
+import h38 from "./_routes/recipes/suggestions.js";
+import h39 from "./_routes/stats/overview.js";
+import h40 from "./_routes/preferences.js";
 
 type Handler = (req: VercelRequest, res: VercelResponse) => unknown | Promise<unknown>;
 
@@ -75,6 +84,14 @@ const routes: Route[] = [
   { segments: ["waste",":id"], handler: h30 },
   { segments: ["waste","from-item"], handler: h31 },
   { segments: ["waste"], handler: h32 },
+  { segments: ["bootstrap"], handler: h33 },
+  { segments: ["inventory","bulk"], handler: h34 },
+  { segments: ["inventory",":id","restock"], handler: h35 },
+  { segments: ["inventory",":id","usage-undo"], handler: h36 },
+  { segments: ["shopping-list","clear-purchased"], handler: h37 },
+  { segments: ["recipes","suggestions"], handler: h38 },
+  { segments: ["stats","overview"], handler: h39 },
+  { segments: ["preferences"], handler: h40 },
 ];
 
 function getParts(req: VercelRequest): string[] {

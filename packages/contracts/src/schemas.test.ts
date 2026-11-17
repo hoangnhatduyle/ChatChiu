@@ -19,6 +19,7 @@ import {
   statsOverviewQuery,
   wasteCreate,
   wasteFromItem,
+  isAllowedPushEndpoint,
 } from './index.js'
 
 describe('update schemas (CS-ZOD4-NO-UPDATE-DEFAULTS)', () => {
@@ -138,6 +139,33 @@ describe('preferences', () => {
     expect(preferencesUpdate.safeParse({ notifyHour: 24 }).success).toBe(false)
     expect(preferencesUpdate.safeParse({ timezone: 'Mars/Base' }).success).toBe(false)
     expect(preferencesUpdate.safeParse({ theme: 'sepia' }).success).toBe(false)
+  })
+
+  it.each([
+    'https://web.push.apple.com/QGx',
+    'https://fcm.googleapis.com/fcm/send/abc',
+    'https://updates.push.services.mozilla.com/wpush/v2/x',
+    'https://wns2-bl2p.notify.windows.com/w/?token=x',
+  ])('SSRF guard: accepts the push service %s', (endpoint) => {
+    expect(isAllowedPushEndpoint(endpoint)).toBe(true)
+    expect(pushSubscribe.safeParse({ endpoint, keys: { p256dh: 'p', auth: 'a' } }).success).toBe(
+      true,
+    )
+  })
+
+  it.each([
+    'http://web.push.apple.com/x',
+    'https://web.push.apple.com.evil.example/x',
+    'https://169.254.169.254/latest/meta-data',
+    'https://localhost/x',
+    'https://web.push.apple.com:8443/x',
+    'https://push.invalid/x',
+    'not a url',
+  ])('SSRF guard: rejects %s', (endpoint) => {
+    expect(isAllowedPushEndpoint(endpoint)).toBe(false)
+    expect(pushSubscribe.safeParse({ endpoint, keys: { p256dh: 'p', auth: 'a' } }).success).toBe(
+      false,
+    )
   })
 
   it('push subscribe needs an endpoint and both keys', () => {

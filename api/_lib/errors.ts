@@ -29,12 +29,20 @@ export class ApiError extends Error {
   readonly code: ApiErrorCode;
   readonly status: number;
   readonly details?: unknown;
+  /** Meal-slot 409 only (AC-API-12). Unlike details, it is sent in production too. */
+  readonly existingId?: number;
 
-  constructor(code: ApiErrorCode, message: string, details?: unknown) {
+  constructor(
+    code: ApiErrorCode,
+    message: string,
+    details?: unknown,
+    extra: { existingId?: number } = {},
+  ) {
     super(message);
     this.code = code;
     this.status = STATUS_FOR[code];
     this.details = details;
+    this.existingId = extra.existingId;
   }
 }
 
@@ -56,6 +64,7 @@ export function withErrorHandler(handler: Handler) {
             code: err.code,
             message: err.message,
             ...(isProd ? {} : { details: err.details }),
+            ...(err.existingId != null ? { existingId: err.existingId } : {}),
           },
         });
         return;

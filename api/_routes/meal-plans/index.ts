@@ -43,39 +43,36 @@ export default authedHandler(async ({ user, client }, req) => {
     if (existingFavorite) isFavorite = true;
   }
 
+  // A typed meal name goes into her recipe library first (ensure_recipe: no
+  // duplicate in any case, F-MP-05 / AC-API-13). Errors are not swallowed. This
+  // replaces the old best-effort upsert, which matched no constraint (42P10).
+  if (!body.recipeId && body.mealName) {
+    const ensured = await client.rpc('ensure_recipe', { p_name: body.mealName });
+    if (ensured.error) {
+      throw new ApiError('INTERNAL', 'Failed to add the meal to recipes', ensured.error);
+    }
+  }
+
   const row = toSnake({ ...body, userId: user.id, isFavorite });
 
   const insert = await client.from('meal_plans').insert(row).select('*').single();
   if (insert.error) {
     if ((insert.error as { code?: string }).code === '23505') {
+      // The slot is taken: return its id so the UI can offer Replace (AC-API-12).
+      const existing = await client
+        .from('meal_plans')
+        .select('id')
+        .eq('plan_date', body.planDate)
+        .eq('meal_type', body.mealType)
+        .maybeSingle();
       throw new ApiError(
         'CONFLICT',
         `A meal is already planned for ${body.planDate} ${body.mealType}`,
+        undefined,
+        { existingId: existing.data?.id as number | undefined },
       );
     }
     throw new ApiError('INTERNAL', 'Failed to add meal plan', insert.error);
-  }
-
-  // Sync free-text meal name into the recipe library so it shows up in the
-  // Meals tab. Replaces the buggy ensureMealInLibrary on the web client
-  // (audit finding H9). Best-effort - we never block the create on this.
-  if (!body.recipeId && body.mealName) {
-    await client
-      .from('recipes')
-      .upsert(
-        toSnake({
-          userId: user.id,
-          name: body.mealName,
-          ingredients: '',
-        }),
-        { onConflict: 'user_id,name' },
-      )
-      .select('id')
-      .single()
-      .then(
-        () => undefined,
-        (err) => console.warn('[meal-plans] ensureMealInLibrary failed', err),
-      );
   }
 
   return toCamel(insert.data);

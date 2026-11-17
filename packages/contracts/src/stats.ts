@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { idSchema } from './fields.js'
+import type { Category } from './categories.js'
 import type { InventoryItem } from './inventory.js'
+import type { Location } from './locations.js'
 
 export const statsRange = z.enum(['week', 'month', 'year', 'all'])
 export type StatsRange = z.infer<typeof statsRange>
@@ -84,4 +86,12 @@ export interface StatsOverview {
     mostWastedByValue: WastedItemStat[]
   }
   lowStock: RunOutRow[]
+}
+
+/** GET /api/bootstrap (AC-API-06): one round trip for the board. */
+export interface Bootstrap {
+  items: InventoryItem[]
+  locations: Location[]
+  categories: Category[]
+  summary: DashboardSummaryV2
 }

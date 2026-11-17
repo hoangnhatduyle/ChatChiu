@@ -1,10 +1,16 @@
 import { authedHandler, assertMethod } from '../../../_lib/handler.js';
 import { ApiError } from '../../../_lib/errors.js';
 import { parseBody } from '../../../_lib/validation.js';
-import { toCamel, toCamelList, toSnake } from '../../../_lib/mappers.js';
+import { toCamel, toCamelList } from '../../../_lib/mappers.js';
 import { usageLog as schema } from '../../../_lib/schemas.js';
 
-export default authedHandler(async ({ user, client }, req) => {
+// GET  /api/inventory/:id/usage - history, newest first (unchanged)
+// POST /api/inventory/:id/usage { amountUsed, currentQuantity, notes? } - same body
+// as the old app. Now one atomic call (log_item_usage): the history row and the
+// new current_quantity are written together, amount_used is computed from the
+// locked row, and the response keeps the old usage-row fields plus
+// crossedLowStock and the updated item (AC-API-07; additive, NC-API-NO-BREAK-OLD).
+export default authedHandler(async ({ client }, req) => {
   const method = assertMethod(req, ['GET', 'POST']);
   const itemId = Number.parseInt(String(req.query.id ?? ''), 10);
   if (!Number.isFinite(itemId) || itemId <= 0) {
@@ -22,30 +28,26 @@ export default authedHandler(async ({ user, client }, req) => {
   }
 
   const body = parseBody(req, schema);
-  const insert = await client
-    .from('usage_history')
-    .insert(
-      toSnake({
-        itemId,
-        userId: user.id,
-        amountUsed: body.amountUsed,
-        remainingAmount: body.currentQuantity,
-        notes: body.notes,
-      }),
-    )
-    .select('*')
-    .single();
-  if (insert.error) throw new ApiError('INTERNAL', 'Failed to log usage', insert.error);
-
-  // Keep inventory_items.current_quantity in sync.
-  await client
-    .from('inventory_items')
-    .update({ current_quantity: body.currentQuantity })
-    .eq('id', itemId)
-    .then(
-      () => undefined,
-      (err) => console.warn('[usage] failed to update current_quantity', err),
-    );
-
-  return toCamel(insert.data);
+  const { data, error } = await client.rpc('log_item_usage', {
+    p_item_id: itemId,
+    p_new_current: body.currentQuantity,
+    p_notes: body.notes ?? null,
+  });
+  if (error) {
+    if (error.code === 'P0002') throw new ApiError('NOT_FOUND', 'Item not found');
+    if (error.code === '22023') {
+      throw new ApiError('BAD_REQUEST', 'A usage can only lower the amount left (use edit or restock to raise it)', error);
+    }
+    throw new ApiError('INTERNAL', 'Failed to log usage', error);
+  }
+  const result = data as {
+    usage: Record<string, unknown>;
+    item: Record<string, unknown>;
+    crossed_low_stock: boolean;
+  };
+  return {
+    ...toCamel(result.usage),
+    crossedLowStock: result.crossed_low_stock,
+    item: toCamel(result.item),
+  };
 });

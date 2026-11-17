@@ -52,9 +52,34 @@ export function defaultPreferences(deviceTimeZone: string | undefined): Preferen
   }
 }
 
+// Web Push services the app may send to. A subscription endpoint is a URL the
+// server-side send job POSTs to, so anything else would be SSRF (step 2.4 review).
+const PUSH_HOST_PATTERNS: readonly RegExp[] = [
+  /^web\.push\.apple\.com$/,
+  /^fcm\.googleapis\.com$/,
+  /^android\.googleapis\.com$/, // legacy GCM endpoints on older Chrome subscriptions
+  /^updates\.push\.services\.mozilla\.com$/,
+  /^[a-z0-9-]+\.notify\.windows\.com$/,
+]
+
+/** https, default port, and a known push-service host. */
+export function isAllowedPushEndpoint(endpoint: string): boolean {
+  let url: URL
+  try {
+    url = new URL(endpoint)
+  } catch {
+    return false
+  }
+  return (
+    url.protocol === 'https:' &&
+    url.port === '' &&
+    PUSH_HOST_PATTERNS.some((re) => re.test(url.hostname))
+  )
+}
+
 // Push subscription body; lives with the notification preferences (decided in step 2.1).
 export const pushSubscribe = z.object({
-  endpoint: z.string().url().max(2000),
+  endpoint: z.string().url().max(2000).refine(isAllowedPushEndpoint, 'Unknown push service'),
   expirationTime: z.number().nullable().optional(),
   keys: z.object({
     p256dh: z.string().min(1).max(500),

@@ -42,6 +42,9 @@ const COVERED = new Set([
   'meal-plans', 'push/subscribe', 'push/test', 'recipes/:id', 'recipes', 'shopping-list/:id',
   'shopping-list', 'statistics/dashboard', 'uploads/read', 'uploads/sign', 'waste/:id',
   'waste/from-item', 'waste',
+  // New in step 2.4, exercised by routes-v2.test.ts and send-job.test.ts:
+  'bootstrap', 'inventory/bulk', 'inventory/:id/restock', 'inventory/:id/usage-undo',
+  'shopping-list/clear-purchased', 'recipes/suggestions', 'stats/overview', 'preferences',
 ]);
 const envelope = <T extends z.ZodType>(data: T) => z.strictObject({ data });
 
@@ -170,7 +173,7 @@ describe('AC-DATA-02: every old route behaves as before on the migrated database
   it('AC-API-02: the suite covers every route registered in api/handler.ts', () => {
     const handler = readFileSync(new URL('../../handler.ts', import.meta.url), 'utf8');
     const registered = [...handler.matchAll(/segments: \[([^\]]*)\]/g)].map((m) =>
-      [...(m[1] ?? '').matchAll(/"([^"]+)"/g)].map((x) => x[1]).join('/'),
+      [...(m[1] ?? '').matchAll(/["']([^"']+)["']/g)].map((x) => x[1]).join('/'),
     );
     expect(registered.length).toBeGreaterThan(20);
     expect(registered.filter((r) => !COVERED.has(r))).toEqual([]);
@@ -392,7 +395,13 @@ describe('AC-DATA-02: every old route behaves as before on the migrated database
   });
 
   it('AC-API-02: push subscribe (old body, no channel) and unsubscribe', async () => {
-    const endpoint = 'https://push.invalid/old-routes-test';
+    // A real push-service host (web-push is mocked in this file: nothing is sent).
+    const endpoint = 'https://web.push.apple.com/old-routes-test';
+    const ssrf = await callApi('POST', 'push/subscribe', {
+      user,
+      body: { endpoint: 'https://169.254.169.254/latest/meta-data', keys: { p256dh: 'p', auth: 'a' } },
+    });
+    expect(ssrf.status).toBe(400);
     await ok(envelope(z.looseObject({ id: num })), 'POST', 'push/subscribe', {
       user,
       body: { endpoint, expirationTime: null, keys: { p256dh: 'p', auth: 'a' } },

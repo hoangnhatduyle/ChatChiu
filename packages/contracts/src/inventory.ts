@@ -54,11 +54,14 @@ export const usageUndo = z.object({ usageId: idSchema })
 export type UsageUndo = z.infer<typeof usageUndo>
 
 /** POST /api/inventory/:id/restock — refills the same item (D13). No defaults. */
+/** Upper bound for the new amount fields, so numeric maths cannot overflow. */
+export const MAX_AMOUNT = 1e9
+
 export const restock = z.object({
-  quantity: z.coerce.number().positive(),
+  quantity: z.coerce.number().positive().max(MAX_AMOUNT),
   expirationDate: dateString.optional(),
   /** Total paid; stored as totalPrice / quantity per unit. */
-  totalPrice: positiveNumber.optional().nullable(),
+  totalPrice: positiveNumber.max(MAX_AMOUNT).optional().nullable(),
 })
 export type Restock = z.infer<typeof restock>
 
