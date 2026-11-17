@@ -6,6 +6,7 @@ status: active
 context_and_scope:
   in_scope:
     - "Envelope: every route returns { data } with status 200 on success and { error: { code, message, details? } } on failure (codes BAD_REQUEST 400, UNAUTHORIZED 401, FORBIDDEN 403, NOT_FOUND 404, METHOD_NOT_ALLOWED 405, CONFLICT 409, PAYLOAD_TOO_LARGE 413, UNSUPPORTED_MEDIA_TYPE 415, RATE_LIMITED 429, QUOTA_EXCEEDED 429, INTERNAL 500); details only outside production"
+    - "Idempotent writes (roadmap 4.3b, migration 0018): a POST, PATCH or DELETE that carries an Idempotency-Key header (1 to 100 of A-Z a-z 0-9 _ -) runs once per (user, key). Replays: a finished success or a request-only error (400, 413, 415, 422) returns the stored response; any other outcome (404, 403, 409, 429, 5xx, a crash) releases the key so a retry runs again. A repeat that is still running waits up to 6 s then answers 429 RATE_LIMITED with Retry-After; a claim running over 2 minutes is taken over (its owner died). The same key for a different method, route, query or body is 400. Keys are kept 35 days. Delivery is at-least-once in two narrow cases (a crash after commit before the response was recorded; a server error after a commit), both logged. Routes whose response is a credential (uploads/sign) ignore the header. Requests without the header are unchanged; the header is allowed and Retry-After exposed by CORS"
     - "Routing: one function api/handler.ts, /api/(.*) rewritten to it, static segments beat params; unknown path returns NOT_FOUND"
     - "Auth: every route except health and the scheduled send job requires a Supabase bearer JWT; the API uses a client bound to that JWT so RLS applies"
     - OLD unchanged — GET /api/health (public) -> { status, time }
@@ -248,6 +249,11 @@ acceptance_criteria:
     when: the API integration tests run
     then: they pass using categories they create themselves
     invariant: false
+  - id: AC-API-25
+    given: the same user sends the same write twice with one Idempotency-Key (a retry after a timeout, or a queued write replayed after a reload)
+    when: the second request arrives, even while the first is still running
+    then: the write runs once and the second gets the first response (for example one usage_history row, not two); another user's use of the same key is independent; the same key with a different request is 400; only request-only errors (400, 413, 415, 422) are replayed, every other failure releases the key so a retry runs; a claim whose owner died is taken over after 2 minutes; calls without the header, and uploads/sign, behave as before
+    invariant: true
 depends_on:
   - SPEC-DATA-001
 constitution_rules:

@@ -48,6 +48,8 @@ export async function deleteTestUser(user: TestUser | undefined): Promise<void> 
 export interface RouteResult<T = unknown> {
   status: number;
   body: T;
+  /** Response headers the route set (for example Retry-After). */
+  headers: Record<string, string>;
 }
 
 interface CallOptions {
@@ -55,21 +57,26 @@ interface CallOptions {
   jwt?: string;
   body?: unknown;
   query?: Record<string, string>;
+  /** Extra request headers, lower-case names (for example idempotency-key). */
+  headers?: Record<string, string>;
 }
 
 /** Call the real router in-process, like Vercel would after the /api rewrite. */
 export async function callApi<T = unknown>(
   method: string,
   path: string,
-  { user, jwt, body, query = {} }: CallOptions = {},
+  { user, jwt, body, query = {}, headers = {} }: CallOptions = {},
 ): Promise<RouteResult<T>> {
-  const out: RouteResult = { status: 0, body: undefined };
+  const out: RouteResult = { status: 0, body: undefined, headers: {} };
   let sent = false;
   const res = {
     get headersSent() {
       return sent;
     },
-    setHeader: () => res,
+    setHeader: (name: string, value: string) => {
+      out.headers[name] = value;
+      return res;
+    },
     status(code: number) {
       out.status = code;
       return res;
@@ -88,7 +95,7 @@ export async function callApi<T = unknown>(
   const req = {
     method,
     url: `/api/${path}`,
-    headers: token ? { authorization: `Bearer ${token}` } : {},
+    headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...headers },
     query: { ...query, __path: path },
     body,
   } as unknown as VercelRequest;

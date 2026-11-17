@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { applyCors } from './cors.js';
 import { withErrorHandler, ApiError } from './errors.js';
+import { readIdempotencyKey, withIdempotency } from './idempotency.js';
 import { requireAuth, type AuthContext } from './supabase.js';
 
 type AuthedHandler = (
@@ -11,11 +12,22 @@ type AuthedHandler = (
 
 // Compose CORS + auth + error envelope. Endpoints that need auth use this
 // wrapper; public endpoints (none currently) would use withErrorHandler directly.
-export function authedHandler(handler: AuthedHandler) {
+export interface AuthedOptions {
+  /**
+   * False for a route whose response must not be stored or replayed (it carries a credential, such as
+   * uploads/sign's signed URL and token). The Idempotency-Key header is then ignored.
+   */
+  idempotent?: boolean;
+}
+
+export function authedHandler(handler: AuthedHandler, { idempotent = true }: AuthedOptions = {}) {
   return withErrorHandler(async (req, res) => {
     if (applyCors(req, res)) return;
     const ctx = await requireAuth(req);
-    return handler(ctx, req, res);
+    // A write that carries an Idempotency-Key runs once per key (step 4.3b); others are unchanged.
+    const key = idempotent ? readIdempotencyKey(req) : undefined;
+    if (!key) return handler(ctx, req, res);
+    return withIdempotency(ctx, req, res, key, () => handler(ctx, req, res));
   });
 }
 

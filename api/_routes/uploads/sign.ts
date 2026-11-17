@@ -34,4 +34,5 @@ export default authedHandler(async ({ user, client }, req) => {
     contentType: body.contentType,
     expiresIn: 60, // seconds; Supabase default for signed upload URLs
   };
-});
+}, { idempotent: false }); // the signed URL and token are a short-lived credential: never stored or replayed
+
