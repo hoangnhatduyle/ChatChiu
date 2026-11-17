@@ -21,8 +21,16 @@ export default defineConfig({
       injectRegister: false,
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,woff2,png,ico,svg,webmanifest}'],
-        globIgnores: ['**/sw-diagnostics.js'],
+        // Everything the app shows offline. Fail-safe: any new image is precached unless it is
+        // listed here. The install icons (Chrome fetches them itself) and the 1.5 MB chef-pig
+        // artwork are left out to keep the install download small.
+        globPatterns: ['**/*.{js,css,html,woff2,ico,png,svg,webmanifest}'],
+        globIgnores: [
+          '**/sw-diagnostics.js',
+          'chac-chiu-icon.png',
+          'icons/icon-{72x72,128x128,144x144,152x152,192x192,384x384,512x512}.png',
+          'icons/icon-maskable-*.png',
+        ],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,

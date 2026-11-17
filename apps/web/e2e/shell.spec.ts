@@ -110,3 +110,26 @@ test('F-AP-01 (shell): the app registers a service worker and opens offline', as
   await expect(page.getByRole('heading', { level: 1, name: 'Meals' })).toBeVisible()
   await context.setOffline(false)
 })
+
+test('F-AP-01 (roadmap 3.4): Chrome finds the app installable (no installability errors)', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1, name: 'Kitchen' })).toBeVisible()
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready
+  })
+  const cdp = await page.context().newCDPSession(page)
+  try {
+    // The check Lighthouse's former PWA audit used (Lighthouse 12 dropped that category); polled,
+    // because it can report errors while the worker and manifest settle.
+    await expect
+      .poll(async () => (await cdp.send('Page.getInstallabilityErrors')).installabilityErrors)
+      .toEqual([])
+    const { url, errors } = await cdp.send('Page.getAppManifest')
+    expect(url).toMatch(/\/manifest\.webmanifest$/)
+    expect(errors).toEqual([])
+  } finally {
+    await cdp.detach()
+  }
+})

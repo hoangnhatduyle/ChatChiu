@@ -6,7 +6,8 @@ import { cx } from '../ui/cx'
 import { Icon } from '../ui/Icon'
 import { DESTINATIONS, currentState } from './nav'
 
-export const BRAND_ICON = '/icons/icon-192x192.png'
+// 96 px icon for the 50 px logo (2x). The chef-pig artwork in public/chac-chiu-icon.png is 1.5 MB.
+export const BRAND_ICON = '/icons/icon-96x96.png'
 
 export function NavRail() {
   const { pathname } = useLocation()

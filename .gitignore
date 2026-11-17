@@ -28,3 +28,6 @@ test-results/
 .vscode/*
 !.vscode/extensions.json
 .vercel
+
+# Lighthouse temp profiles created under WSL (Windows-style path names)
+C:*
