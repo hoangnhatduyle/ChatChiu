@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { RUN_OUT_WINDOW_DAYS, averageDailyUse, predictRunOutDate } from './run-out.js'
+import {
+  RUN_OUT_MAX_DAYS,
+  RUN_OUT_WINDOW_DAYS,
+  averageDailyUse,
+  predictRunOutDate,
+} from './run-out.js'
 
 const today = '2026-11-16'
 const at = (date: string, amountUsed: number) => ({ recordedAt: `${date}T08:00:00Z`, amountUsed })
@@ -35,6 +40,16 @@ describe('run-out prediction (F-KB-10, F-ST-06)', () => {
   it('predicts the run-out date as today + ceil(remaining / rate)', () => {
     expect(predictRunOutDate(1, 0.3, today)).toBe('2026-11-20')
     expect(predictRunOutDate(0, 0.3, today)).toBe(today)
+  })
+
+  it('matches SQL numeric maths at exact ratios (6 / 0.3 = 20 days, not 21)', () => {
+    expect(predictRunOutDate(6, 3 / 10, today)).toBe('2026-12-06')
+    expect(predictRunOutDate(1, 1 / 3, today)).toBe('2026-11-19')
+  })
+
+  it('treats a run-out beyond 100 years as no prediction', () => {
+    expect(RUN_OUT_MAX_DAYS).toBe(36_500)
+    expect(predictRunOutDate(500, 0.00003, today)).toBeNull()
   })
 
   it('cannot predict without a positive rate', () => {

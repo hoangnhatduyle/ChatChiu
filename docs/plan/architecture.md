@@ -111,6 +111,7 @@ New or changed API routes under `api/_routes/`:
   - `meal-plans/index.ts` → `ensure_recipe` RPC; 409 returns the existing id so the UI can offer Replace
   - `cron/check-expirations.ts` → user timezone (UTC when she has no preferences row), at most one expiry run per local day (`last_expiry_reminder_on`), low-stock pass, writes `low_stock_notified_at`, deletes 404/410 subscriptions and records failures in `push_failures`
   - `categories/[id].ts` → deleting a category still used by items answers 409 CONFLICT instead of 500 (AC-DATA-14; added 2026-11-16, Phase 2)
+  - `recipes/index.ts` → POST inserts instead of upserting on `(user_id, name)`, which matched no constraint and failed every create with 42P10; a duplicate name (any case) answers 409 CONFLICT (found by the step 2.3 regression suite, fixed in 2.3 at the user's request, 2026-11-16)
 
 Response envelope: keep the old app's shape, since the old frontend depends on it: success is `{ data: … }` and errors are `{ error: { code, message, details? } }` (`api/_lib/errors.ts`). New routes use the same wrapper (decided 2026-11-16, Phase 1).
 

@@ -16,7 +16,8 @@ context_and_scope:
     - "OLD changed — DELETE /api/categories/:id: a category still used by items answers 409 CONFLICT with a readable message instead of 500 (AC-DATA-14; added to architecture.md §3.4 on 2026-11-16)"
     - "OLD unchanged — GET|POST /api/shopping-list; PATCH|DELETE /api/shopping-list/:id  [contracts: shopping — shoppingItemCreate, shoppingItemUpdate]"
     - "OLD changed — GET|POST /api/meal-plans (GET ?from&to; POST calls ensure_recipe and a 409 carries the existing plan id as error.existingId, an additive field present in production too, because details is stripped there); PATCH|DELETE /api/meal-plans/:id (favourite propagates to sibling plans)  [contracts: meals — mealPlanCreate, mealPlanUpdate]"
-    - "OLD unchanged — GET|POST /api/recipes; PATCH|DELETE /api/recipes/:id  [contracts: recipes]"
+    - "OLD unchanged — GET /api/recipes; PATCH|DELETE /api/recipes/:id  [contracts: recipes]"
+    - "OLD changed — POST /api/recipes: plain insert; a duplicate name in any case answers 409 CONFLICT (the old upsert on (user_id, name) matched no constraint and failed every create with 42P10; fixed in step 2.3, 2026-11-16)  [contracts: recipes]"
     - "OLD changed — GET|POST /api/waste: GET joins the category name; POST /api/waste/from-item (mark_item_wasted); DELETE /api/waste/:id  [contracts: waste — wasteCreate]"
     - OLD unchanged — GET /api/statistics/dashboard (old dashboard_summary, kept for the old app)
     - "OLD unchanged — POST /api/ai/expiration-suggest; POST /api/ai/receipt-scan (monthly AI quota consumed in SQL before OpenAI; image ownership, size <= 5 MiB and MIME sniffing)  [contracts: ai — expirationSuggestRequest, receiptScanRequest]"

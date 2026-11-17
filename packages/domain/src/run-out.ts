@@ -3,6 +3,8 @@
 import { addDays, daysBetween, todayInTimeZone } from './dates.js'
 
 export const RUN_OUT_WINDOW_DAYS = 30
+/** Beyond this many days a run-out date is not a useful prediction (same cap in SQL). */
+export const RUN_OUT_MAX_DAYS = 36_500
 
 export interface UsagePoint {
   amountUsed: number
@@ -33,7 +35,7 @@ export function averageDailyUse(
   return total / span
 }
 
-/** today + ceil(remaining / rate); null when the rate is unknown or zero. */
+/** today + ceil(remaining / rate); null when the rate is unknown or zero, or beyond RUN_OUT_MAX_DAYS. */
 export function predictRunOutDate(
   remaining: number,
   avgDailyUse: number | null,
@@ -41,5 +43,9 @@ export function predictRunOutDate(
 ): string | null {
   if (avgDailyUse == null || avgDailyUse <= 0) return null
   if (remaining <= 0) return today
-  return addDays(today, Math.ceil(remaining / avgDailyUse))
+  // Rounded to 9 decimals before ceil, exactly as consumption_stats() does in SQL,
+  // so float noise never adds a day the numeric maths would not.
+  const daysLeft = Math.round((remaining / avgDailyUse) * 1e9) / 1e9
+  if (daysLeft > RUN_OUT_MAX_DAYS) return null
+  return addDays(today, Math.ceil(daysLeft))
 }

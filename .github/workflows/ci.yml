@@ -53,6 +53,8 @@ jobs:
       - run: npm ci
       - name: Start local Supabase (applies supabase/migrations)
         run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,mailpit
+      - name: SQL tests (pgTAP, supabase/tests)
+        run: npx supabase test db
       - name: API integration tests (local Supabase)
         run: npm run test:integration -w api
       - name: Install Playwright browser

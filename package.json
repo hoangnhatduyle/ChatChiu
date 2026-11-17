@@ -13,14 +13,15 @@
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w @chatchiu/contracts -w @chatchiu/domain && npm run build -w apps/web",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && npm run test:scripts",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:e2e": "npm run test:e2e -w @chatchiu/web",
     "check:budget": "node scripts/check-bundle-budget.mjs",
-    "check:migrations": "node scripts/check-additive-migrations.mjs"
+    "check:migrations": "node scripts/check-additive-migrations.mjs",
+    "test:scripts": "vitest run --dir scripts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

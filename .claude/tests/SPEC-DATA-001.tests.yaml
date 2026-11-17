@@ -1,0 +1,153 @@
+spec_id: SPEC-DATA-001
+generated_at: 2026-11-16T23:59:51.691Z
+cases:
+  - id: T-SPEC-DATA-001-AC-AC_DATA_01
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-01
+    assertion: given migrations 0012 and later, when scripts/check-additive-migrations.mjs scans them, then it fails on any drop, rename, alter ... type, or create or replace of a function defined in 0001–0011, and passes otherwise
+    invariant: true
+  - id: T-SPEC-DATA-001-AC-AC_DATA_02
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-02
+    assertion: given the old-route regression suite api/__tests__/old-routes.test.ts (the old app has no API tests; the suite replays the old app's request shapes for every old route, decided 2026-11-16) and a local Supabase with 0001–0017 applied, when it runs, then every old route behaves as before (board loads, usage, add item, shopping tick, dashboard_summary unchanged)
+    invariant: true
+  - id: T-SPEC-DATA-001-AC-AC_DATA_03
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-03
+    assertion: given an item bought as 10 eggs for a total of 4.00, when it is saved, then price is stored as 0.40, an edit shows 4.00, and stock value and waste value use 0.40 × the relevant quantity
+    invariant: true
+  - id: T-SPEC-DATA-001-AC-AC_DATA_04
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-04
+    assertion: given an item with initial_quantity 1, current_quantity 0.15 and low_stock_threshold 20, when low stock is evaluated in packages/domain and in dashboard_summary_v2, then both say low stock (15% <= 20%), and an item with current 5 of initial 100 g is low while the same absolute amount of a 5 g item is not
+    invariant: true
+  - id: T-SPEC-DATA-001-AC-AC_DATA_05
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-05
+    assertion: given an old row with initial_quantity and current_quantity null and quantity 2, when it is read by the new app or by inventory_snapshot, then it is shown as 2 of 2 (100%) and the stored row is unchanged
+    invariant: true
+  - id: T-SPEC-DATA-001-AC-AC_DATA_06
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-06
+    assertion: given two users A and B on local Supabase, when A reads or writes through any table or any 0012+ function, then A never sees or changes B's rows (RLS isolation holds for user_preferences, usage RPCs, bulk RPCs and snapshots)
+    invariant: true
+  - id: T-SPEC-DATA-001-AC-AC_DATA_07
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-07
+    assertion: given a database where every category is user-owned and none has is_system = true (production after 7.0.10), when the contract and integration tests run, then they pass, because each test creates the categories it needs instead of relying on seeded ids or names
+    invariant: true
+  - id: T-SPEC-DATA-001-AC-AC_DATA_08
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-08
+    assertion: given an item at current 0.6 of 1, when log_item_usage(item, 0.1, note) runs, then one usage_history row (amount_used 0.5, remaining 0.1, note) and the new current_quantity are written in one transaction, and crossed_low_stock is true
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_09
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-09
+    assertion: given a usage_history row created by log_item_usage, when undo_item_usage(usage_id) runs, then that row is deleted and current_quantity returns to its previous value
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_10
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-10
+    assertion: given an item in any non-deleted state, when it is restocked with a new full amount, optional expiry and optional total price, then quantity = initial_quantity = current_quantity = the new amount, price = total / amount when given, low_stock_notified_at is cleared, and no second item is created
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_11
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-11
+    assertion: given a meal_plans slot that is already filled, when a second insert for the same user, date and meal type is attempted, then it is rejected by the unique constraint and the API answers 409 with the existing id
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_12
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-12
+    assertion: given a typed meal name that differs only in case from an existing recipe, when ensure_recipe(name) runs, then no duplicate recipe is created and no error is raised
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_13
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-13
+    assertion: given a location that has items, when the location is deleted, then the items keep existing with location_id null (on delete set null) and are shown under No location
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_14
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-14
+    assertion: given a category that is still referenced by inventory items, when deleting it is attempted, then the FK rejects it and the API returns a readable error instead of a 500
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_15
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-15
+    assertion: given a pending shopping item, when it is ticked, unticked, deleted or cleared as purchased, then only the shopping_item transitions in this spec occur, and clear_purchased(ids) deletes, in one statement, only the caller's rows whose id is in ids AND is_purchased is still true (a row unticked meanwhile is kept; a row ticked after the tap is not in ids)
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_16
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-16
+    assertion: given a push_subscriptions row whose endpoint returns 404 or 410, when the new cron sends to it, then the row is deleted and the failure is recorded; other users' rows are untouched
+    invariant: false
+  - id: T-SPEC-DATA-001-AC-AC_DATA_17
+    kind: acceptance
+    traces_to: SPEC-DATA-001#AC-DATA-17
+    assertion: given create_items(jsonb) with N valid items, or delete_items(ids) with N ids, when it runs, then all N rows are created or deleted in one transaction, or none are on error
+    invariant: false
+  - id: T-SPEC-DATA-001-FORBID-inventory_item_WASTED_IN_STOCK
+    kind: forbidden-transition
+    traces_to: SPEC-DATA-001#inventory_item:WASTED->IN_STOCK
+    assertion: "[inventory_item] transition WASTED -> IN_STOCK MUST be rejected (mark_item_wasted deletes the row; waste undo happens before the server call (hold-until-close), never by resurrecting a row)"
+    invariant: true
+  - id: T-SPEC-DATA-001-FORBID-inventory_item_DELETED_IN_STOCK
+    kind: forbidden-transition
+    traces_to: SPEC-DATA-001#inventory_item:DELETED->IN_STOCK
+    assertion: "[inventory_item] transition DELETED -> IN_STOCK MUST be rejected (Delete is held until the Undo window closes; a deleted row is never restored server-side)"
+    invariant: true
+  - id: T-SPEC-DATA-001-FORBID-inventory_item_WASTED_DELETED
+    kind: forbidden-transition
+    traces_to: SPEC-DATA-001#inventory_item:WASTED->DELETED
+    assertion: "[inventory_item] transition WASTED -> DELETED MUST be rejected (A wasted item no longer exists in inventory_items)"
+    invariant: true
+  - id: T-SPEC-DATA-001-FORBID-shopping_item_REMOVED_PENDING
+    kind: forbidden-transition
+    traces_to: SPEC-DATA-001#shopping_item:REMOVED->PENDING
+    assertion: "[shopping_item] transition REMOVED -> PENDING MUST be rejected (Deletes and clear-purchased are held until the Undo window closes; a removed row is never restored server-side)"
+    invariant: true
+  - id: T-SPEC-DATA-001-FORBID-push_subscription_STALE_KEY_STALE_KEY
+    kind: forbidden-transition
+    traces_to: SPEC-DATA-001#push_subscription:STALE_KEY->STALE_KEY
+    assertion: "[push_subscription] transition STALE_KEY -> STALE_KEY MUST be rejected (A subscription whose applicationServerKey differs from the current VAPID key must be replaced on app start, never kept (step 0.8 root cause))"
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_ADDITIVE_ONLY
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-ADDITIVE-ONLY
+    assertion: Migrations 0012+ MUST NOT drop, rename, or alter the type of any table, column, function or policy, tighten a constraint on existing data, or change an existing function's behaviour, while the old app is live
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_NO_EDIT_OLD_MIGRATIONS
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-NO-EDIT-OLD-MIGRATIONS
+    assertion: Migrations 0001–0011 MUST NOT be edited; they are byte-identical to the old repo
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_RLS
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-RLS
+    assertion: No new table may be created without RLS enabled and owner-only policies on auth.uid() = user_id; new functions MUST be security invoker (the cron's service-role path is the only exception)
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_NO_SEEDED_CATEGORIES
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-NO-SEEDED-CATEGORIES
+    assertion: Specs, code and tests MUST NOT assume seeded system categories exist in production, nor their ids, names or is_system flag; production categories were converted to user-owned rows by make-categories-editable.sql (7.0.10)
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_PRICE_PER_UNIT
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-PRICE-PER-UNIT
+    assertion: price MUST NOT be stored or summed as a total; it is per unit and every value is price × a quantity
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_ONE_LOW_STOCK_RULE
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-ONE-LOW-STOCK-RULE
+    assertion: Low stock MUST NOT be computed as an absolute amount (the old dashboard_summary bug); only as percent of the full amount
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_HIDDEN_UNTOUCHED
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-HIDDEN-UNTOUCHED
+    assertion: item_images, barcode_mappings, inventory_items.barcode and storage objects MUST NOT be modified or deleted by the new app (D3)
+    invariant: true
+  - id: T-SPEC-DATA-001-NC-NC_DATA_NO_PROD_WRITE_WITHOUT_ASK
+    kind: negative-constraint
+    traces_to: SPEC-DATA-001#NC-DATA-NO-PROD-WRITE-WITHOUT-ASK
+    assertion: No production SQL write, db push or data fix may run without the user's explicit go-ahead (D18)
+    invariant: true
