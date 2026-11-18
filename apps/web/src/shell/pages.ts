@@ -5,6 +5,7 @@ import { lazy } from 'react'
 export const KitchenPage = lazy(() => import('../features/kitchen-board/KitchenBoardPage'))
 export const ItemFormPage = lazy(() => import('../features/item-form/ItemFormPage'))
 export const InventoryPage = lazy(() => import('../features/inventory/InventoryPage'))
+export const ShoppingPage = lazy(() => import('../features/shopping/ShoppingPage'))
 export const PendingPage = lazy(() => import('./PendingPage'))
 export const MorePage = lazy(() => import('./MorePage'))
 export const NotFoundPage = lazy(() => import('./NotFoundPage'))

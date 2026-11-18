@@ -1,0 +1,53 @@
+spec_id: SPEC-SL-001
+generated_at: 2026-11-18T05:37:10.831Z
+cases:
+  - id: T-SPEC-SL-001-AC-F_SL_01
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-01
+    assertion: given the quick add field, when she adds "Eggs" with quantity "10" and a note, then it appears at once; an empty name is blocked inline
+    invariant: false
+  - id: T-SPEC-SL-001-AC-F_SL_02
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-02
+    assertion: given a pending row, when she ticks it, then it shows purchased immediately and the PATCH is sent in the background without reloading the list; a failure rolls it back with Retry
+    invariant: false
+  - id: T-SPEC-SL-001-AC-F_SL_03
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-03
+    assertion: given a row, when she deletes it, then it disappears with Undo, and the DELETE is sent after the window
+    invariant: false
+  - id: T-SPEC-SL-001-AC-F_SL_04
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-04
+    assertion: given 3 purchased rows, when she taps Clear purchased, then all 3 disappear with one Undo toast, and after the window one POST /api/shopping-list/clear-purchased is sent with exactly those 3 ids; an item ticked during the window stays on the list
+    invariant: false
+  - id: T-SPEC-SL-001-AC-F_SL_05
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-05
+    assertion: given purchased and pending rows in two categories, when she toggles show purchased and group by category, then purchased rows hide or show and sink to the bottom of each group
+    invariant: false
+  - id: T-SPEC-SL-001-AC-F_SL_06
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-06
+    assertion: given Eggs (10) and Milk pending, when she taps Share, then the text "Shopping List:\n- Eggs (10)\n- Milk" goes to the share sheet, or is copied with a toast when sharing is unavailable
+    invariant: false
+  - id: T-SPEC-SL-001-AC-F_SL_07
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-07
+    assertion: given an item sent from the quick-action panel, when it arrives, then it carries its category and note, and is not duplicated (F-QP-04)
+    invariant: false
+  - id: T-SPEC-SL-001-AC-F_SL_08
+    kind: acceptance
+    traces_to: SPEC-SL-001#F-SL-08
+    assertion: given 2 pending and 3 purchased, when the page renders, then counts read 2 pending and 3 purchased
+    invariant: false
+  - id: T-SPEC-SL-001-FORBID-shopping_row_REMOVED_PENDING
+    kind: forbidden-transition
+    traces_to: SPEC-SL-001#shopping_row:REMOVED->PENDING
+    assertion: "[shopping_row] transition REMOVED -> PENDING MUST be rejected (After the Undo window the row is deleted server-side and not restored)"
+    invariant: true
+  - id: T-SPEC-SL-001-NC-NC_SL_NO_DUPLICATES
+    kind: negative-constraint
+    traces_to: SPEC-SL-001#NC-SL-NO-DUPLICATES
+    assertion: Items sent from the inventory MUST NOT duplicate an unpurchased row with the same name
+    invariant: true
