@@ -2,6 +2,7 @@
 // OLD/src/app/services/meal-plan.service.ts (lines 48–169) as a pure function:
 // "today" and the optional from/to range are passed in, plans are not fetched.
 import { addDays, daysBetween } from './dates.js'
+import { weekStartMonday } from './meal-calendar.js'
 
 export type MealTypeKey = 'breakfast' | 'lunch' | 'dinner'
 
@@ -48,11 +49,6 @@ function favouritesPerMeal<P extends SummaryPlan>(plans: readonly P[]): P[] {
     if (!existing || p.planDate > existing.planDate) byIdentity.set(identity, p)
   }
   return [...byIdentity.values()].sort(byDateDesc)
-}
-
-function weekStartMonday(today: string): string {
-  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay()
-  return addDays(today, weekday === 0 ? -6 : 1 - weekday)
 }
 
 function streakEndingToday(dates: Set<string>, today: string): number {

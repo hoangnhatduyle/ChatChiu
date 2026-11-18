@@ -20,6 +20,14 @@ const save = defineWrite<{ n: number }, null, undefined>({
       : Promise.resolve(null)
   },
 })
+const conflictWrite = defineWrite<{ n: number }, null, undefined>({
+  key: 'test/toast-conflict',
+  label: 'Add a note',
+  request: () =>
+    Promise.reject(
+      new ApiClientError({ status: 409, code: 'CONFLICT', message: 'taken', existingId: 5 }),
+    ),
+})
 const aiWrite = defineWrite<{ n: number }, null, undefined>({
   key: 'test/toast-ai',
   label: 'Ask the AI',
@@ -50,6 +58,23 @@ describe('FailedWriteToasts', () => {
     expect(screen.getAllByText("Couldn't save · Save a note").length).toBeGreaterThan(0)
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
     await vi.waitFor(() => expect(calls).toHaveBeenCalledTimes(2))
+    client.unmount()
+  })
+
+  it('NC-MP-NO-UNHANDLED-409: a conflict that names the row in the way is left to the screen, with no toast', async () => {
+    const client = setup()
+    await act(
+      async () =>
+        void (await startWrite(client, conflictWrite, { n: 1 }, { handlesConflict: true }).result),
+    )
+    expect(screen.queryByText(/Couldn't save/)).not.toBeInTheDocument()
+    client.unmount()
+  })
+
+  it('a conflict nobody is waiting for (a replayed or retried write) still gets the toast', async () => {
+    const client = setup()
+    await act(async () => void (await startWrite(client, conflictWrite, { n: 1 }).result))
+    expect(await screen.findAllByText("Couldn't save · Add a note")).not.toHaveLength(0)
     client.unmount()
   })
 

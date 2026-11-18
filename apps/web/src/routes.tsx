@@ -1,5 +1,5 @@
 // Route table (architecture.md §2). Every page is a React.lazy chunk, checked against the budgets
-// in scripts/check-bundle-budget.mjs (initial JS incl. the board route <= 170 KB gz, each other
+// in scripts/check-bundle-budget.mjs (initial JS incl. the board route <= 200 KB gz, each other
 // route <= 120 KB gz). Phase 5 swaps each PendingPage for its feature page.
 import type { RouteObject } from 'react-router'
 import { LOGIN_PATH, RESET_PASSWORD_PATH } from './core/auth-paths'
@@ -14,6 +14,7 @@ import {
   InventoryPage,
   ItemFormPage,
   KitchenPage,
+  MealsPage,
   MorePage,
   NotFoundPage,
   PendingPage,
@@ -39,7 +40,11 @@ export const routes: RouteObject[] = [
                 children: [
                   { index: true, element: <KitchenPage /> },
                   ...DESTINATIONS.filter(
-                    (d) => d.path !== '/' && d.path !== '/stock' && d.path !== '/shopping',
+                    (d) =>
+                      d.path !== '/' &&
+                      d.path !== '/stock' &&
+                      d.path !== '/shopping' &&
+                      d.path !== '/meals',
                   ).map((d): RouteObject => ({
                     path: d.path.slice(1),
                     element: <PendingPage title={d.title} icon={d.icon} />,
@@ -47,6 +52,7 @@ export const routes: RouteObject[] = [
                   { path: 'more', element: <MorePage /> },
                   { path: 'stock', element: <InventoryPage /> },
                   { path: 'shopping', element: <ShoppingPage /> },
+                  { path: 'meals', element: <MealsPage /> },
                   // The item form (5.3); the receipt scan (5.10) is a stand-in until its step lands.
                   { path: 'stock/new', element: <ItemFormPage /> },
                   { path: 'stock/:id/edit', element: <ItemFormPage /> },

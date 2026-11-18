@@ -8,6 +8,7 @@ const PATHS = {
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4',
   book: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z M5 17a3 3 0 0 1 3-3h11',
   trash: 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13',
+  edit: 'M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4',
   chart: 'M4 20V11 M10 20V5 M16 20v-6 M21 20H3',
   settings: 'M4 6h9 M17 6h3 M4 12h3 M11 12h9 M4 18h11 M19 18h1 M15 4v4 M9 10v4 M17 16v4',
   fridge: 'M6 3h12v18H6z M6 10h12 M9 6v2 M9 13v3',

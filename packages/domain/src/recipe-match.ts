@@ -83,3 +83,12 @@ export function recipesUsingItem<R extends RecipeLike>(
 ): R[] {
   return recipes.filter((r) => matchRecipe(r, [itemName]).length > 0)
 }
+
+const fold = (text: string): string =>
+  text.normalize('NFD').replace(/\p{M}/gu, '').replace(/[đĐ]/g, 'd').toLowerCase()
+
+/** Recipe library search (F-MP-09): the text is in the name or in an ingredient; blank matches all. */
+export function recipeMatchesQuery(recipe: RecipeLike, query: string): boolean {
+  const q = fold(query.trim())
+  return q === '' || fold(recipe.name).includes(q) || fold(recipe.ingredients).includes(q)
+}

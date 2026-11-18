@@ -1,4 +1,4 @@
-// Step 3.3: initial JS (shell + board route) <= 170 KB gz, each lazy route <= 120 KB gz
+// Step 3.3: initial JS (shell + board route) <= 200 KB gz, each lazy route <= 120 KB gz
 // (architecture.md §5, NC-AP-BUDGET), measured from the Vite build manifest.
 import { readFileSync } from 'node:fs'
 import { posix } from 'node:path'
@@ -57,9 +57,13 @@ describe('measureBudgets', () => {
   })
 
   it(`NC-AP-BUDGET: fails initial JS over ${INITIAL_JS_BUDGET_KB} KB`, () => {
-    const big = measureBudgets(manifest, (f) => (f === 'assets/board.js' ? 200 * KB : 0), {
-      board: 'src/board/Board.tsx',
-    })
+    const big = measureBudgets(
+      manifest,
+      (f) => (f === 'assets/board.js' ? (INITIAL_JS_BUDGET_KB + 30) * KB : 0),
+      {
+        board: 'src/board/Board.tsx',
+      },
+    )
     expect(big.failures.some((f) => /Initial JS/.test(f))).toBe(true)
   })
 

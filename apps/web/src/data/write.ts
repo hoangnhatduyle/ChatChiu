@@ -116,6 +116,8 @@ export type StartOptions = {
   keepalive?: boolean
   /** The write was already applied by applyWrite: do not apply it again; this is its undo context. */
   preApplied?: { undo: unknown }
+  /** The caller turns a 409 that names the row in the way into its own prompt: no failed-write toast for it. */
+  handlesConflict?: boolean
 }
 
 /** Applies a write's cache change now and sends nothing: the first half of a held write. */
@@ -160,6 +162,7 @@ export function startWrite<TInput, TData, TUndo>(
         label: def.label,
         writeKey: def.key,
         ...(def.persist === false ? { persist: false } : {}),
+        ...(options.handlesConflict ? { handlesConflict: true } : {}),
       },
     }),
   ) as unknown as Stored['mutation']

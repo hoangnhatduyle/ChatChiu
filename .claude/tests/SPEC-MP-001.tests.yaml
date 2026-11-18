@@ -1,0 +1,78 @@
+spec_id: SPEC-MP-001
+generated_at: 2026-11-18T06:03:43.386Z
+cases:
+  - id: T-SPEC-MP-001-AC-F_MP_01
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-01
+    assertion: given the meal plan on the tablet, when it opens, then the whole week (7 days × breakfast, lunch, dinner) is visible, with prev/next week and Today
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_02
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-02
+    assertion: given the monthly view, when she taps a day, then the weekly view opens on that day's week
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_03
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-03
+    assertion: given an empty slot, when she adds a meal with date, type, name (autocompleted from the library) and notes, then it appears in the slot immediately and is saved
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_04
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-04
+    assertion: given a filled slot, when she adds another meal there, then she is offered Replace (using the 409's existingId) or Cancel; only one meal per slot ever shows
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_05
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-05
+    assertion: given a meal named "Pho bo" not in the library, when it is planned, then "Pho bo" appears under Recipes (ensure_recipe), and a case-variant does not create a duplicate
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_06
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-06
+    assertion: given a planned meal, when she edits it or deletes it, then edits save; delete hides it with Undo and sends after the window
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_07
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-07
+    assertion: given a favourited meal, when the same meal is planned again or favourited elsewhere, then the new plan inherits the favourite and toggling it updates all plans of that meal
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_08
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-08
+    assertion: given a meal dragged to another slot, when she drops it, then it is copied (the original stays); a filled target asks Replace or Cancel
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_09
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-09
+    assertion: given the Recipes tab, when she searches by name or ingredient, adds, edits or deletes a recipe (name, comma-separated ingredients, prep time, servings, instructions), then the library reflects it
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_10
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-10
+    assertion: given planned meals across months, when she opens Summary, then it shows total meals, this week, streak, completion %, by type, top 5 meals, favourites, recent 10 and the monthly breakdown with the same numbers as the old getSummary(); tapping a meal opens its edit
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_11
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-11
+    assertion: given the nav, when she wants the recipe library, then it is under Meal plan → Recipes; there is no separate recipe-manager page
+    invariant: false
+  - id: T-SPEC-MP-001-AC-F_MP_12
+    kind: acceptance
+    traces_to: SPEC-MP-001#F-MP-12
+    assertion: 'given recipes "Omelette: eggs, milk, cheese" and "Toast: bread, butter" and items Eggs and Milk expiring within 3 days, when suggestions load, then Omelette is suggested first (2 matches) and Toast is not, without any AI call; suggestions show at the top of Meal plan and in the quick panel'
+    invariant: false
+  - id: T-SPEC-MP-001-FORBID-meal_slot_ui_CONFLICT_PROMPT_EMPTY
+    kind: forbidden-transition
+    traces_to: SPEC-MP-001#meal_slot_ui:CONFLICT_PROMPT->EMPTY
+    assertion: "[meal_slot_ui] transition CONFLICT_PROMPT -> EMPTY MUST be rejected (Resolving a conflict never empties the slot)"
+    invariant: true
+  - id: T-SPEC-MP-001-NC-NC_MP_NO_SWALLOWED_ERRORS
+    kind: negative-constraint
+    traces_to: SPEC-MP-001#NC-MP-NO-SWALLOWED-ERRORS
+    assertion: Saving a typed meal name to the library MUST NOT discard errors (the old .then(() => undefined) bug)
+    invariant: true
+  - id: T-SPEC-MP-001-NC-NC_MP_NO_UNHANDLED_409
+    kind: negative-constraint
+    traces_to: SPEC-MP-001#NC-MP-NO-UNHANDLED-409
+    assertion: A filled target slot MUST NOT surface an unhandled error; it asks Replace or Cancel
+    invariant: true
