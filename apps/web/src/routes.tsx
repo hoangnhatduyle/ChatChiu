@@ -19,6 +19,7 @@ import {
   NotFoundPage,
   PendingPage,
   ShoppingPage,
+  StatsPage,
 } from './shell/pages'
 
 export const routes: RouteObject[] = [
@@ -44,7 +45,8 @@ export const routes: RouteObject[] = [
                       d.path !== '/' &&
                       d.path !== '/stock' &&
                       d.path !== '/shopping' &&
-                      d.path !== '/meals',
+                      d.path !== '/meals' &&
+                      d.path !== '/stats',
                   ).map((d): RouteObject => ({
                     path: d.path.slice(1),
                     element: <PendingPage title={d.title} icon={d.icon} />,
@@ -53,6 +55,7 @@ export const routes: RouteObject[] = [
                   { path: 'stock', element: <InventoryPage /> },
                   { path: 'shopping', element: <ShoppingPage /> },
                   { path: 'meals', element: <MealsPage /> },
+                  { path: 'stats', element: <StatsPage /> },
                   // The item form (5.3); the receipt scan (5.10) is a stand-in until its step lands.
                   { path: 'stock/new', element: <ItemFormPage /> },
                   { path: 'stock/:id/edit', element: <ItemFormPage /> },

@@ -1,8 +1,8 @@
 import type { StatsOverview, StatsRange, WastedItemStat } from '@chatchiu/contracts';
-import { addDays, roundMoney, todayInTimeZone, wasteValue } from '@chatchiu/domain';
+import { rangeStart, roundMoney, todayInTimeZone, wasteValue } from '@chatchiu/domain';
 
-/** First local date inside each range (inclusive); null = no lower bound. */
-const RANGE_DAYS: Record<StatsRange, number | null> = { week: 7, month: 30, year: 365, all: null };
+export { rangeStart };
+
 const TOP_WASTED = 5;
 
 export interface WasteRow {
@@ -12,12 +12,6 @@ export interface WasteRow {
   price: number | null;
   wasted_date: string;
   categories: { name: string } | null;
-}
-
-/** Her first local date inside the range, or null for "all". */
-export function rangeStart(range: StatsRange, today: string): string | null {
-  const days = RANGE_DAYS[range];
-  return days == null ? null : addDays(today, -(days - 1));
 }
 
 /** Waste entries in range (dated in her timezone) and, optionally, one category. */

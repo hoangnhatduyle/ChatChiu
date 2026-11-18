@@ -80,6 +80,8 @@ export type ResourceOptions<T extends Row, TCreate> = {
   store: ListStore<T>
   /** The row to show before the server answers. */
   draft: (body: TCreate, tempId: number) => T
+  /** Runs after a create, update or delete is saved: refresh anything computed from these rows (e.g. statistics). */
+  onSaved?: (client: QueryClient) => void
 }
 
 export type Resource<T extends Row, TCreate, TUpdate> = {
@@ -102,6 +104,7 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
       return { tempId }
     },
     reconcile: (client, saved, { tempId }) => {
+      o.onSaved?.(client)
       const rows = o.store.read(client)
       // A refetch may have replaced the temporary row, and a realtime event may already have added the
       // saved one (it can beat the answer): never lose the row, never show it twice.
@@ -148,11 +151,13 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
       )
       return { id, before: before as Partial<T> }
     },
-    reconcile: (client, saved) =>
+    reconcile: (client, saved) => {
+      o.onSaved?.(client)
       o.store.write(
         client,
         o.store.read(client).map((r) => (r.id === saved.id ? saved : r)),
-      ),
+      )
+    },
     rollback: (client, { id, before }) => {
       if (!before) return
       o.store.write(
@@ -181,6 +186,7 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
       )
       return { row, index }
     },
+    reconcile: (client) => o.onSaved?.(client),
     rollback: (client, undo) => {
       if (!undo) return
       const rows = o.store.read(client).filter((r) => r.id !== undo.row.id)

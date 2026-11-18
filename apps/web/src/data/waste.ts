@@ -15,6 +15,8 @@ export const wasteWrites = defineResource<WasteEntry, WasteCreate, Partial<Waste
   noun: 'a waste entry',
   path: '/api/waste',
   store: wasteStore,
+  // The totals, charts and most-wasted lists are computed by the server from the log.
+  onSaved: (client) => void client.invalidateQueries({ queryKey: queryKeys.statsAll }),
   draft: (body, id) => ({
     id,
     userId: '',
@@ -51,6 +53,7 @@ export const wasteFromItem = defineWrite<WasteFromItem, WasteEntry, FromItemUndo
     return { item, index }
   },
   reconcile: (client, entry) => {
+    void client.invalidateQueries({ queryKey: queryKeys.statsAll })
     // Only add to the log if it was loaded: otherwise the next read fetches it.
     if (client.getQueryData(queryKeys.waste) !== undefined) {
       wasteStore.write(client, [entry, ...wasteStore.read(client)])

@@ -12,6 +12,8 @@ export const queryKeys = {
   recipeSuggestions: ['recipes', 'suggestions'] as const,
   waste: ['waste'] as const,
   stats: (range: string, categoryId?: number) => ['stats', range, categoryId ?? null] as const,
+  /** Every cached statistics query: they follow from the pantry and the waste log. */
+  statsAll: ['stats'] as const,
   preferences: ['preferences'] as const,
 }
 

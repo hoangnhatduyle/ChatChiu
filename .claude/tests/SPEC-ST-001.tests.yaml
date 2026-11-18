@@ -1,0 +1,58 @@
+spec_id: SPEC-ST-001
+generated_at: 2026-11-18T16:50:10.030Z
+cases:
+  - id: T-SPEC-ST-001-AC-F_ST_01
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-01
+    assertion: given waste entries, when the log renders and she deletes one, then each shows name, qty, unit, value and date; the deleted one hides with Undo
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_02
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-02
+    assertion: given entries in Dairy and Meat over 2 months, when she filters by month and by Dairy, then only matching entries show, each with its real category name
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_03
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-03
+    assertion: "given 2 wasted items: 6 × 0.40 and 1 × 3.00, when totals render, then items wasted = 2 and value lost = $5.40"
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_04
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-04
+    assertion: given waste over several months and categories, when the page renders, then two small charts show waste by month and by category, readable in light and dark
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_05
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-05
+    assertion: given 10 eggs at 0.40 with 6 left, when the overview renders, then stock value counts $2.40 for them (price × current), alongside total items, expiring ≤ 7 d, expired, by category, by location, recently added and waste over 30 days
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_06
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-06
+    assertion: given items at or below their percent threshold with 30 days of usage history, when the low stock list renders, then each shows % left, average daily use over the last 30 days and the predicted run-out date
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_07
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-07
+    assertion: given a waste history, when the page renders, then Most wasted lists the top 5 by count and the top 5 by value
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_08
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-08
+    assertion: given the stats page, when it renders, then there is no quick-actions card (the nav covers it)
+    invariant: false
+  - id: T-SPEC-ST-001-FORBID-waste_entry_delete_DELETED_LISTED
+    kind: forbidden-transition
+    traces_to: SPEC-ST-001#waste_entry_delete:DELETED->LISTED
+    assertion: "[waste_entry_delete] transition DELETED -> LISTED MUST be rejected (Once sent, a deleted waste entry is not restored)"
+    invariant: true
+  - id: T-SPEC-ST-001-NC-NC_ST_NO_RAW_PRICE_SUM
+    kind: negative-constraint
+    traces_to: SPEC-ST-001#NC-ST-NO-RAW-PRICE-SUM
+    assertion: Stock value and waste value MUST NOT sum the per-unit price; they are price × quantity
+    invariant: true
+  - id: T-SPEC-ST-001-NC-NC_ST_NO_ABSOLUTE_LOW
+    kind: negative-constraint
+    traces_to: SPEC-ST-001#NC-ST-NO-ABSOLUTE-LOW
+    assertion: Low stock MUST NOT use an absolute amount; one percent-based rule everywhere
+    invariant: true
