@@ -9,6 +9,7 @@ export const ShoppingPage = lazy(() => import('../features/shopping/ShoppingPage
 export const MealsPage = lazy(() => import('../features/meals/MealsPage'))
 export const StatsPage = lazy(() => import('../features/stats/StatsPage'))
 export const SettingsPage = lazy(() => import('../features/settings/SettingsPage'))
+export const ReceiptScanPage = lazy(() => import('../features/receipt-scan/ReceiptScanPage'))
 export const PendingPage = lazy(() => import('./PendingPage'))
 export const MorePage = lazy(() => import('./MorePage'))
 export const NotFoundPage = lazy(() => import('./NotFoundPage'))

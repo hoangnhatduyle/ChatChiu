@@ -1,0 +1,73 @@
+spec_id: SPEC-RS-001
+generated_at: 2026-11-18T17:44:42.597Z
+cases:
+  - id: T-SPEC-RS-001-AC-F_RS_01
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-01
+    assertion: given a 12 MB camera photo, when she takes or picks it, then it is compressed on the device to under 5 MiB before upload
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_02
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-02
+    assertion: given a compressed image, when it uploads, then it goes to <uid>/receipts/<uuid>.jpg in the private bucket via a signed URL
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_03
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-03
+    assertion: given an uploaded receipt, when the AI reads it, then items come back with name, qty, unit, line price, category hint and shelf-life hint; quota exhausted, busy and bad-image cases each show a friendly message
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_04
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-04
+    assertion: given a receipt dated 2026-11-10, when review opens, then every item's purchase date is 2026-11-10
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_05
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-05
+    assertion: given an item with AI unit "kg" and shelf-life hint 10 days, and another with no hint in category Dairy and unit "bunch", when review opens, then the first uses kg and expiry = purchase + 10 d; the second uses the Dairy default 14 d and unit piece (bunch is not in our list)
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_06
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-06
+    assertion: given her last-used location is Fridge, or she has never picked one, when review opens, then items default to Fridge, or have no location and adding is blocked until she picks one
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_07
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-07
+    assertion: given phone width or tablet width, when review opens, then the phone shows one item at a time with skip/include, the tablet shows the table; both modes are available
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_08
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-08
+    assertion: given review, when she edits name, qty, unit, total price, category, location, purchase date, expiry (date or N units), notes, notify flag, or asks AI for one item's expiry, then each field updates that item only; total price is stored per unit on add
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_09
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-09
+    assertion: given 8 selected items, when she taps Add, then one POST /api/inventory/bulk creates all 8 with a progress indicator, and they appear on the board immediately
+    invariant: false
+  - id: T-SPEC-RS-001-AC-F_RS_10
+    kind: acceptance
+    traces_to: SPEC-RS-001#F-RS-10
+    assertion: given a successful add, when the done screen shows, then it reads "8 items added" with View on board
+    invariant: false
+  - id: T-SPEC-RS-001-FORBID-receipt_flow_REVIEW_DONE
+    kind: forbidden-transition
+    traces_to: SPEC-RS-001#receipt_flow:REVIEW->DONE
+    assertion: "[receipt_flow] transition REVIEW -> DONE MUST be rejected (Items are only reported as added after the bulk request succeeds)"
+    invariant: true
+  - id: T-SPEC-RS-001-FORBID-receipt_flow_CAPTURE_READING
+    kind: forbidden-transition
+    traces_to: SPEC-RS-001#receipt_flow:CAPTURE->READING
+    assertion: "[receipt_flow] transition CAPTURE -> READING MUST be rejected (The AI only reads an image that was uploaded to the caller's own folder)"
+    invariant: true
+  - id: T-SPEC-RS-001-NC-NC_RS_NO_HARDCODED_LOCATION
+    kind: negative-constraint
+    traces_to: SPEC-RS-001#NC-RS-NO-HARDCODED-LOCATION
+    assertion: The flow MUST NOT fall back to a hard-coded location or category id (old fallback id 1)
+    invariant: true
+  - id: T-SPEC-RS-001-NC-NC_RS_NO_PARTIAL_SILENT
+    kind: negative-constraint
+    traces_to: SPEC-RS-001#NC-RS-NO-PARTIAL-SILENT
+    assertion: A failed bulk add MUST NOT leave some items created without telling her; the bulk is all-or-nothing
+    invariant: true

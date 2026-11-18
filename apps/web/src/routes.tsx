@@ -16,7 +16,7 @@ import {
   MealsPage,
   MorePage,
   NotFoundPage,
-  PendingPage,
+  ReceiptScanPage,
   SettingsPage,
   ShoppingPage,
   StatsPage,
@@ -49,7 +49,7 @@ export const routes: RouteObject[] = [
                   // The item form (5.3); the receipt scan (5.10) is a stand-in until its step lands.
                   { path: 'stock/new', element: <ItemFormPage /> },
                   { path: 'stock/:id/edit', element: <ItemFormPage /> },
-                  { path: 'scan', element: <PendingPage title="Scan receipt" icon="scan" /> },
+                  { path: 'scan', element: <ReceiptScanPage /> },
                   { path: '*', element: <NotFoundPage /> },
                 ],
               },

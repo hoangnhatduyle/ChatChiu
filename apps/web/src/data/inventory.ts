@@ -286,6 +286,29 @@ export const bulkCreate = defineWrite<
   },
 })
 
+/**
+ * Adds the items of a scanned receipt in ONE request, all or nothing (SPEC-RS-001 F-RS-09, NC-RS-NO-PARTIAL-SILENT).
+ * Unlike `bulkCreate` it shows nothing until the server has saved them and is not queued: the review screen
+ * stays open and tells her itself when the request is refused, so no "Couldn't save · Retry" toast can add the
+ * same items a second time. The saved rows go into the cache at once, so they are on the board immediately.
+ */
+export const bulkCreateScanned = defineWrite<{ body: BulkCreate }, InventoryItem[]>({
+  key: 'inventory/bulk-create-scanned',
+  label: 'Add scanned items',
+  persist: false,
+  scope: () => 'inventory:bulk',
+  request: ({ body }, requestId) =>
+    api.post<InventoryItem[]>('/api/inventory/bulk', body, { idempotencyKey: requestId }),
+  reconcile: (client, saved) => {
+    const savedIds = new Set(saved.map((s) => s.id))
+    itemsStore.write(client, [
+      ...itemsStore.read(client).filter((i) => !savedIds.has(i.id)),
+      ...saved,
+    ])
+    void client.invalidateQueries({ queryKey: queryKeys.statsAll })
+  },
+})
+
 export const useBootstrapQuery = () => useApiQuery<Bootstrap>(queryKeys.bootstrap, '/api/bootstrap')
 
 /** One item, read from the bootstrap (no request of its own). */
