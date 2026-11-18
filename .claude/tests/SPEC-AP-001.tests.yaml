@@ -1,5 +1,5 @@
 spec_id: SPEC-AP-001
-generated_at: 2026-11-17T03:08:59.753Z
+generated_at: 2026-11-18T19:48:25.046Z
 cases:
   - id: T-SPEC-AP-001-AC-F_AP_01
     kind: acceptance

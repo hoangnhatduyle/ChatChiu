@@ -142,7 +142,7 @@ Response envelope: keep the old app's shape, since the old frontend depends on i
 
 | Metric | Target |
 |---|---|
-| Initial JS (shell + board route), gzipped | ≤ 200 KB (150 until step 5.1, 170 until step 5.6; raised to 200 by the user on 2026-11-18 when the initial JS reached 171.4 KB; trimming is in step 6.1) |
+| Initial JS (shell + board route), gzipped | ≤ 160 KB (150 until step 5.1, 170 until step 5.6, 200 until step 6.1; step 6.1 loaded the react-aria slider after first paint and replaced react-aria's Button, ToggleButton and Switch with native elements: 178.8 → 159.2 KB). The remaining 10 KB to 150 is react-aria's Select, Field and Dialog, which the board does not need first: see roadmap row 7.0.37 |
 | Each lazy route, gzipped | ≤ 120 KB |
 | LCP on the Fire Max 11, cold (no cache) | < 2.5 s |
 | Board visible on the Fire, warm (cached snapshot) | < 1 s |
