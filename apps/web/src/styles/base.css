@@ -33,6 +33,11 @@
     scroll-padding-bottom: calc(var(--spacing-nav) + env(safe-area-inset-bottom) + 13rem);
   }
 
+  /* The sync bar sticks to the top of the page: a row focused with the keyboard or jumped to never lands under it. */
+  html:has([data-sync-badge]) {
+    scroll-padding-top: 4rem;
+  }
+
   /* Links in running text are underlined, so they are not told apart by colour alone (1.4.1).
    * Styled links (nav, buttons) carry a class and their own cue. */
   a:not([class]) {

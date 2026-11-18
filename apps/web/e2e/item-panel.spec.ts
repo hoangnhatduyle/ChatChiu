@@ -176,11 +176,12 @@ test('7.0.21d: a toast made with the panel open is announced in the live region'
   await expect(page.locator('[data-live-announcer] [role="status"]')).toContainText(
     'Milk: 50% left',
   )
-  // The announcer is not hidden from assistive tech by the open modal.
+  // No announcer (the toasts' and the sync bar's) is hidden from assistive tech by the open modal.
   const hidden = await page
     .locator('[data-live-announcer]')
-    .evaluate((el) => el.closest('[aria-hidden="true"], [inert]') !== null)
-  expect(hidden).toBe(false)
+    .evaluateAll((els) => els.map((el) => el.closest('[aria-hidden="true"], [inert]') !== null))
+  expect(hidden.length).toBeGreaterThanOrEqual(2)
+  expect(hidden.every((isHidden) => !isHidden)).toBe(true)
 })
 
 test('F-QP-07 / F-QP-06: the panel moves the item and restocks the same item, no second row', async ({
