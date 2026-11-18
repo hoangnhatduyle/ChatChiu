@@ -72,9 +72,9 @@ describe('DateField', () => {
   it('F-IF-06: from purchase 2026-01-01, "1m" gives 2026-01-31 and "1y" gives 2027-01-01', async () => {
     const onChange = vi.fn()
     render(<DateField label="Expires" value={null} onChange={onChange} quickFrom="2026-01-01" />)
-    await userEvent.click(screen.getByRole('button', { name: 'In 1 month' }))
+    await userEvent.click(screen.getByRole('button', { name: /^1m,/ }))
     expect(onChange).toHaveBeenLastCalledWith('2026-01-31')
-    await userEvent.click(screen.getByRole('button', { name: 'In 1 year' }))
+    await userEvent.click(screen.getByRole('button', { name: /^1y,/ }))
     expect(onChange).toHaveBeenLastCalledWith('2027-01-01')
   })
 
@@ -86,7 +86,7 @@ describe('DateField', () => {
     render(<Form />)
     const status = screen.getByRole('status')
     expect(status).toBeEmptyDOMElement()
-    await userEvent.click(screen.getByRole('button', { name: 'In 1 month' }))
+    await userEvent.click(screen.getByRole('button', { name: /^1m,/ }))
     expect(status).toHaveTextContent('Expires Sat 31 Jan 2026')
   })
 

@@ -105,7 +105,7 @@ async function fillValid(user: User, overrides: { skipCategory?: boolean } = {})
   await pick(user, /Location/, 'Fridge')
   await user.clear(textbox(/^Quantity/))
   await user.type(textbox(/^Quantity/), '2')
-  await user.click(screen.getByRole('button', { name: 'In 1 month' }))
+  await user.click(screen.getByRole('button', { name: /^1m,/ }))
 }
 const save = (user: User) => user.click(screen.getByRole('button', { name: /^Save/ }))
 
@@ -230,7 +230,7 @@ describe('F-IF-04 / F-IF-05 / F-IF-06 / F-IF-07 amounts and dates', () => {
         .map((b) => b.textContent),
     ).toEqual(['3d', '1w', '2w', '1m', '3m', '6m', '1y'])
     await fillValid(user)
-    await user.click(screen.getByRole('button', { name: 'In 1 year' }))
+    await user.click(screen.getByRole('button', { name: /^1y,/ }))
     await save(user)
     expect(api.post).toHaveBeenCalledWith(
       '/api/inventory',
@@ -473,7 +473,7 @@ describe('F-IF-16 save returns to the board', () => {
     await user.type(name, 'Oat milk')
     await save(user)
     await waitFor(() => expect(location()).toBe('/'))
-    expect(await screen.findByRole('button', { name: 'Open Oat milk' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Open Oat milk\b/ })).toBeInTheDocument()
     expect(inToasts(/Saving Oat milk/)).toBeInTheDocument()
     expect(api.patch).toHaveBeenCalledWith(
       '/api/inventory/5',

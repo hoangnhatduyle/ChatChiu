@@ -19,12 +19,16 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
 export function Block({ title, children }: { title: string; children: React.ReactNode }) {
   const headingId = useId()
   return (
-    <section aria-labelledby={headingId} className="rounded-card border border-line bg-surface p-3">
+    <div
+      role="group"
+      aria-labelledby={headingId}
+      className="rounded-card border border-line bg-surface p-3"
+    >
       <h3 id={headingId} className="mb-2 text-md font-extrabold text-ink">
         {title}
       </h3>
       {children}
-    </section>
+    </div>
   )
 }
 

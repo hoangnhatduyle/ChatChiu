@@ -93,13 +93,14 @@ function Card({ item, ...actions }: { item: InventoryItem } & RowActions) {
         ) : (
           <button
             type="button"
-            aria-label={`Open ${item.name}`}
+            aria-label={`Open ${item.name}, ${amount}${where ? ` · ${where}` : ''}`}
+            data-open-item={item.id}
             onClick={() => actions.onOpen(item.id)}
             className="min-h-touch min-w-0 flex-1 cursor-pointer text-left outline-offset-2"
           >
             <span className={cx('block truncate text-base font-semibold', usedUp && 'text-muted')}>
               {item.name}
-            </span>
+            </span>{' '}
             <span className="block truncate text-sm text-muted">
               {amount}
               {where && ` · ${where}`}

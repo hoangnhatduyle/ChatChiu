@@ -69,4 +69,33 @@ describe('toast store', () => {
     vi.advanceTimersByTime(ANNOUNCE_GAP_MS * 2)
     expect(store.getAnnouncements().status).toBe('')
   })
+
+  it('7.0.25: two toasts shown within the announce gap are announced together, not one over the other', () => {
+    const store = createToastStore()
+    store.show({ message: 'Milk used up' })
+    store.show({ message: 'Eggs restocked' })
+    vi.advanceTimersByTime(ANNOUNCE_GAP_MS)
+    expect(store.getAnnouncements().status).toBe('Milk used up. Eggs restocked')
+    store.dispose()
+  })
+
+  it('7.0.25: a store disposed with an announcement waiting still announces the next one', () => {
+    const store = createToastStore()
+    store.show({ message: 'First' })
+    store.dispose() // the pending timer is cleared
+    store.show({ message: 'Second' })
+    vi.advanceTimersByTime(ANNOUNCE_GAP_MS)
+    expect(store.getAnnouncements().status).toBe('Second')
+    store.dispose()
+  })
+
+  it('7.0.25: the same message twice in one gap is announced once, without a doubled full stop', () => {
+    const store = createToastStore()
+    store.show({ message: 'Saved.' })
+    store.show({ message: 'Saved.' })
+    store.show({ message: 'Undo ready' })
+    vi.advanceTimersByTime(ANNOUNCE_GAP_MS)
+    expect(store.getAnnouncements().status).toBe('Saved. Undo ready')
+    store.dispose()
+  })
 })

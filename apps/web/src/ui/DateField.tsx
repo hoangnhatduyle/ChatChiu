@@ -108,7 +108,7 @@ export function DateField({
           {EXPIRY_CHIPS.map((chip) => (
             <Button
               key={chip.label}
-              aria-label={expiryOffsetPhrase(chip.amount, chip.unit)}
+              aria-label={`${chip.label}, ${expiryOffsetPhrase(chip.amount, chip.unit)}`}
               onPress={() => pickQuick(addExpiryOffset(quickFrom, chip.amount, chip.unit))}
               className={cx(
                 'inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-pill',

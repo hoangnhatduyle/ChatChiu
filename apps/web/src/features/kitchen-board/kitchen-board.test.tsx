@@ -81,7 +81,7 @@ function renderBoard(items: InventoryItem[] | null, path = '/') {
   return { ...view, location: () => probe() ?? '', user: userEvent.setup() }
 }
 const rowOf = (name: string) =>
-  screen.getByRole('button', { name: `Open ${name}` }).closest('li') as HTMLElement
+  screen.getByRole('button', { name: new RegExp(`^Open ${name}\\b`) }).closest('li') as HTMLElement
 const sliderOf = (name: string) => screen.getByRole('slider', { name: new RegExp(`${name}`) })
 
 beforeEach(() => {
@@ -106,7 +106,7 @@ describe('F-KB-01 / F-KB-02 / NC-KB-NO-HIDDEN-ITEMS columns', () => {
       .getByRole('heading', { level: 2, name: /No location/ })
       .closest('section')!
     expect(within(noLocation).getAllByRole('listitem')).toHaveLength(2)
-    expect(within(noLocation).getByRole('button', { name: 'Open Orphan' })).toBeInTheDocument()
+    expect(within(noLocation).getByRole('button', { name: /^Open Orphan\b/ })).toBeInTheDocument()
   })
 
   it('F-KB-01: no No location column when every item has a location', async () => {
@@ -121,7 +121,7 @@ describe('F-KB-01 / F-KB-02 / NC-KB-NO-HIDDEN-ITEMS columns', () => {
       makeItem(2, { name: 'z', expirationDate: inDays(5) }),
       makeItem(3, { name: 'a', expirationDate: inDays(8) }),
     ])
-    await screen.findByRole('button', { name: 'Open z' })
+    await screen.findByRole('button', { name: /^Open z\b/ })
     const names = screen.getAllByRole('button', { name: /^Open / }).map((b) => b.textContent)
     expect(names.map((t) => t?.charAt(0))).toEqual(['z', 'a', 'b'])
   })
@@ -135,7 +135,7 @@ describe('F-KB-03 / F-KB-05 / F-KB-07 what a row shows', () => {
       makeItem(3, { name: 'C', expirationDate: inDays(2) }),
       makeItem(4, { name: 'D', expirationDate: inDays(90) }),
     ])
-    await screen.findByRole('button', { name: 'Open A' })
+    await screen.findByRole('button', { name: /^Open A\b/ })
     expect(within(rowOf('A')).getByText('Expired')).toBeInTheDocument()
     expect(within(rowOf('B')).getByText('Today')).toBeInTheDocument()
     expect(within(rowOf('C')).getByText('2d')).toBeInTheDocument()
@@ -147,13 +147,13 @@ describe('F-KB-03 / F-KB-05 / F-KB-07 what a row shows', () => {
     const row = rowOf('Milk')
     expect(await within(row).findByText('60%')).toBeInTheDocument()
     expect(within(row).getByText('0.6 of 1 L')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Open Milk' }))
+    await user.click(screen.getByRole('button', { name: /^Open Milk\b/ }))
     expect(location()).toBe('/?item=1')
   })
 
   it('F-KB-06: there is no Edit or Track usage menu on a row', async () => {
     renderBoard([makeItem(1, { name: 'Milk' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByRole('button', { name: /edit|track usage|menu/i })).toBeNull()
   })
 
@@ -170,7 +170,7 @@ describe('F-KB-03 / F-KB-05 / F-KB-07 what a row shows', () => {
         lowStockThreshold: 30,
       }),
     ])
-    await screen.findByRole('button', { name: 'Open N20' })
+    await screen.findByRole('button', { name: /^Open N20\b/ })
     expect(within(rowOf('N20')).queryByText(/low/i)).toBeNull()
     expect(within(rowOf('W18')).getByText('Low')).toBeInTheDocument()
     expect(within(rowOf('C8')).getByText('Very low')).toBeInTheDocument()
@@ -200,7 +200,7 @@ describe('F-KB-04 / NC-KB-NO-CONFIRM / NC-KB-NO-UP-DRAG the usage drag', () => {
     })
     api.post.mockResolvedValueOnce(usageResult(milk, 35))
     const { user } = renderBoard([milk])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await dragTo(user, 'Milk', 5)
     await waitFor(() => expect(api.post).toHaveBeenCalled(), { timeout: SLIDER_COMMIT_WAIT_MS })
     expect(api.post).toHaveBeenCalledWith(
@@ -233,7 +233,7 @@ describe('F-KB-04 / NC-KB-NO-CONFIRM / NC-KB-NO-UP-DRAG the usage drag', () => {
     })
     api.post.mockReturnValue(new Promise(() => {})) // the server never answers
     const { user } = renderBoard([milk])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await dragTo(user, 'Milk', 5)
     await waitFor(() => expect(within(rowOf('Milk')).getByText('35%')).toBeInTheDocument(), {
       timeout: SLIDER_COMMIT_WAIT_MS,
@@ -242,7 +242,7 @@ describe('F-KB-04 / NC-KB-NO-CONFIRM / NC-KB-NO-UP-DRAG the usage drag', () => {
 
   it('NC-KB-NO-UP-DRAG: the board bar cannot go above the current amount', async () => {
     const { user } = renderBoard([makeItem(1, { name: 'Milk', currentQuantity: 0.6 })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     sliderOf('Milk').focus()
     await user.keyboard('{ArrowRight}{ArrowRight}')
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -259,7 +259,7 @@ describe('F-KB-04 / NC-KB-NO-CONFIRM / NC-KB-NO-UP-DRAG the usage drag', () => {
     })
     api.post.mockResolvedValueOnce(usageResult(milk, 15, true))
     const { user } = renderBoard([milk])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await dragTo(user, 'Milk', 3)
     expect(
       await screen.findByText(/Milk is running low/i, {}, { timeout: 3000 }),
@@ -272,7 +272,7 @@ describe('board review fixes', () => {
     const { user } = renderBoard([
       makeItem(1, { name: 'Oat milk', quantity: 100, initialQuantity: 100, currentQuantity: 98 }),
     ])
-    await screen.findByRole('button', { name: 'Open Oat milk' })
+    await screen.findByRole('button', { name: /^Open Oat milk\b/ })
     sliderOf('Oat milk').focus()
     await user.keyboard('{ArrowRight}')
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -313,7 +313,7 @@ describe('board review fixes', () => {
       new ApiClientError({ status: 400, code: 'BAD_REQUEST', message: 'nope' }),
     )
     const { user } = renderBoard([milk])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     sliderOf('Milk').focus()
     await user.keyboard('{ArrowLeft}')
     await screen.findByText(/Milk used up/i, {}, { timeout: SLIDER_COMMIT_WAIT_MS })
@@ -324,7 +324,7 @@ describe('board review fixes', () => {
 
   it('F-KB-10: an unknown ?show= value (even a prototype key) falls back to All', async () => {
     renderBoard([makeItem(1, { name: 'Milk' })], '/?show=constructor')
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -338,7 +338,7 @@ describe('board review fixes', () => {
 
   it('4.1.3: the number of items shown is announced when a chip or the search changes it', async () => {
     const { user } = renderBoard([makeItem(1, { name: 'Milk' }), makeItem(2, { name: 'Rice' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     const status = screen.getByTestId('board-result-count')
     expect(status).toHaveTextContent('2 items shown')
     await user.type(screen.getByRole('searchbox', { name: /search the board/i }), 'rice')
@@ -347,13 +347,13 @@ describe('board review fixes', () => {
 
   it('a failed background refresh keeps the board and says it may be out of date, with Retry', async () => {
     const { user } = renderBoard([makeItem(1, { name: 'Milk' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     api.get.mockRejectedValue(new Error('offline'))
     await act(async () => {
       await client.refetchQueries({ queryKey: queryKeys.bootstrap })
     })
     expect(await screen.findByText(/couldn't refresh/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
     api.get.mockResolvedValue(bootstrap([makeItem(1, { name: 'Milk' })]))
     await user.click(screen.getByRole('button', { name: 'Retry' }))
     await waitFor(() => expect(screen.queryByText(/couldn't refresh/i)).toBeNull())
@@ -375,7 +375,7 @@ describe('F-KB-08 / NC-KB-NO-AUTO-DELETE used up', () => {
       item: { ...milk, currentQuantity: 0 },
     })
     const view = renderBoard([milk])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     sliderOf('Milk').focus()
     await view.user.keyboard('{ArrowLeft}')
     await screen.findByText(/Milk used up/i, {}, { timeout: SLIDER_COMMIT_WAIT_MS })
@@ -409,17 +409,17 @@ describe('F-KB-08 / NC-KB-NO-AUTO-DELETE used up', () => {
   it('F-KB-08 / used_up_item REMOVED->ACTIVE: Remove hides the row and is held; Undo brings it back and nothing is deleted', async () => {
     const { user } = await useUp()
     await user.click(screen.getByRole('button', { name: 'Remove' }))
-    expect(screen.queryByRole('button', { name: 'Open Milk' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Open Milk\b/ })).toBeNull()
     expect(api.delete).not.toHaveBeenCalled()
     const undos = await screen.findAllByRole('button', { name: 'Undo' })
     await user.click(undos[undos.length - 1]!)
-    expect(await screen.findByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
     expect(api.delete).not.toHaveBeenCalled()
   })
 
   it('NC-KB-NO-AUTO-DELETE: an item at 0% is on the board and in the Used up chip until she chooses', async () => {
     const { user } = renderBoard([makeItem(1, { name: 'Milk', currentQuantity: 0 })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.click(screen.getByRole('button', { name: /^Used up/ }))
     expect(rowOf('Milk')).toBeInTheDocument()
     expect(api.delete).not.toHaveBeenCalled()
@@ -463,31 +463,31 @@ describe('F-KB-10 / F-KB-12 / F-KB-13 / F-KB-15 header, chips and search', () =>
 
   it('F-KB-10: Running low shows only items at or under their threshold (URL state ?show=)', async () => {
     const { user, location } = renderBoard(items())
-    await screen.findByRole('button', { name: 'Open Jam' })
+    await screen.findByRole('button', { name: /^Open Jam\b/ })
     await user.click(screen.getByRole('button', { name: /^Running low/ }))
     expect(location()).toBe('/?show=running-low')
     expect(screen.getByRole('button', { name: /^Running low/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
-    expect(screen.getByRole('button', { name: 'Open Jam' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Open Milk' })).toBeNull()
+    expect(screen.getByRole('button', { name: /^Open Jam\b/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Open Milk\b/ })).toBeNull()
   })
 
   it('F-KB-12: Use soon shows items expiring within 3 days', async () => {
     const { user } = renderBoard(items())
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.click(screen.getByRole('button', { name: /^Use soon/ }))
-    expect(screen.getByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Open Rice' })).toBeNull()
+    expect(screen.getByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Open Rice\b/ })).toBeNull()
   })
 
   it('F-KB-15: typing in search filters in place and keeps every location column (URL state ?q=)', async () => {
     const { user, location } = renderBoard(items())
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.type(screen.getByRole('searchbox', { name: /search the board/i }), 'rice')
-    expect(screen.getByRole('button', { name: 'Open Rice' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Open Milk' })).toBeNull()
+    expect(screen.getByRole('button', { name: /^Open Rice\b/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Open Milk\b/ })).toBeNull()
     expect(
       screen.getByRole('heading', { level: 2, name: /Fridge - Top shelf/ }),
     ).toBeInTheDocument()
@@ -497,7 +497,7 @@ describe('F-KB-10 / F-KB-12 / F-KB-13 / F-KB-15 header, chips and search', () =>
 
   it('F-KB-13: there is no Board/Stats toggle on the board', async () => {
     renderBoard(items())
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByRole('button', { name: /^(board|stats)$/i })).toBeNull()
   })
 })
@@ -510,7 +510,7 @@ describe('F-KB-11 / F-KB-14 hint and empty state', () => {
     expect(screen.queryByText(/drag any bar down/i)).toBeNull()
     unmount()
     renderBoard([makeItem(1, { name: 'Milk' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByText(/drag any bar down/i)).toBeNull()
   })
 
@@ -528,7 +528,7 @@ describe('7.0.20 / F-KB-16 states the data layer leaves to the screen', () => {
     const row = (await screen.findByText('Fresh')).closest('li') as HTMLElement
     expect(within(row).getByText('Saving…')).toBeInTheDocument()
     expect(within(row).getByRole('slider')).toBeDisabled()
-    expect(screen.queryByRole('button', { name: 'Open Fresh' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Open Fresh\b/ })).toBeNull()
   })
 
   it('shows a loading state while the first load is pending, and no empty-state flash', async () => {
@@ -544,7 +544,7 @@ describe('7.0.20 / F-KB-16 states the data layer leaves to the screen', () => {
     expect(await screen.findByText(/couldn't load the kitchen/i)).toBeInTheDocument()
     api.get.mockResolvedValueOnce(bootstrap([makeItem(1, { name: 'Milk' })]))
     await user.click(screen.getByRole('button', { name: 'Retry' }))
-    expect(await screen.findByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
   })
 
   it('F-KB-16: a change that arrives in the cache (live sync) shows on the board without a reload', async () => {

@@ -44,12 +44,20 @@ export function createToastStore(): ToastStore {
   const timers = new Set<ReturnType<typeof setTimeout>>()
   const notify = () => listeners.forEach((listener) => listener())
 
+  // Messages that arrive while a clear-and-set is already waiting join it: two announcements set
+  // within a few milliseconds would overwrite each other, and a screen reader would say only the last.
+  const waiting: Record<keyof Announcements, string[]> = { status: [], alert: [] }
+
   function announce(kind: keyof Announcements, text: string) {
+    waiting[kind].push(text)
+    if (waiting[kind].length > 1) return // its timer is already running
     announcements = { ...announcements, [kind]: '' }
     notify()
     const timer = setTimeout(() => {
       timers.delete(timer)
-      announcements = { ...announcements, [kind]: text }
+      const parts = [...new Set(waiting[kind])].map((m) => m.replace(/\.$/, ''))
+      announcements = { ...announcements, [kind]: parts.join('. ') }
+      waiting[kind] = []
       notify()
     }, ANNOUNCE_GAP_MS)
     timers.add(timer)
@@ -91,6 +99,8 @@ export function createToastStore(): ToastStore {
     dispose: () => {
       timers.forEach(clearTimeout)
       timers.clear()
+      waiting.status = []
+      waiting.alert = []
       listeners.clear()
     },
   }

@@ -37,7 +37,7 @@ export function WasteLog({
     })
   }
   return (
-    <section aria-label="Waste log" className="flex flex-col gap-2">
+    <div role="group" aria-label="Waste log" className="flex flex-col gap-2">
       <h3
         id="waste-log-heading"
         tabIndex={-1}
@@ -90,6 +90,6 @@ export function WasteLog({
           ))}
         </ul>
       )}
-    </section>
+    </div>
   )
 }

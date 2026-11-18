@@ -24,6 +24,8 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
+    // E2E_COLOR_SCHEME=dark runs the functional specs once in the dark theme (roadmap 7.0.35b).
+    colorScheme: process.env.E2E_COLOR_SCHEME === 'dark' ? 'dark' : undefined,
   },
   expect: {
     // Same Chromium and self-hosted fonts locally and in CI; allow anti-aliasing noise only.

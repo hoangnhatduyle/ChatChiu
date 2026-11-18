@@ -27,9 +27,10 @@
     }
   }
 
-  /* While the update prompt shows, focus never lands under it either (a11y review M2). */
-  html:has([role='status'] > [data-toast]) {
-    scroll-padding-bottom: calc(var(--spacing-nav) + env(safe-area-inset-bottom) + 96px);
+  /* While any toast shows (the update prompt, Undo, errors: up to three stacked), focus never lands under
+   * them either (a11y review M2, roadmap 7.0.25). */
+  html:has([data-toast]) {
+    scroll-padding-bottom: calc(var(--spacing-nav) + env(safe-area-inset-bottom) + 13rem);
   }
 
   /* Links in running text are underlined, so they are not told apart by colour alone (1.4.1).

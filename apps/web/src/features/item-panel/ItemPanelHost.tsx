@@ -16,6 +16,38 @@ function parseItemId(raw: string | null): number | null {
   return raw !== null && ID_PATTERN.test(raw) ? Number(raw) : null
 }
 
+/** How long to wait for the panel to leave the page before giving up on returning focus. */
+const FOCUS_RETURN_TIMEOUT_MS = 1000
+
+/** A newer request (or a route change that unmounts the host) cancels an older one still waiting. */
+let focusRequest = 0
+
+/**
+ * The panel unmounts with its URL parameter, which drops focus to the page: put it back on the row.
+ * The page behind a modal cannot take focus while the modal is mounted, so wait until it is gone. Gives up
+ * (no focus move) if another dialog stays open, if something else has taken focus meanwhile, or if the row
+ * is gone.
+ */
+function focusOpener(id: number) {
+  const request = ++focusRequest
+  const started = performance.now()
+  const tryFocus = () => {
+    if (request !== focusRequest) return
+    if (document.querySelector('[role="dialog"]')) {
+      if (performance.now() - started < FOCUS_RETURN_TIMEOUT_MS) requestAnimationFrame(tryFocus)
+      return
+    }
+    const active = document.activeElement
+    if (active && active !== document.body) return // she or the app already moved focus
+    // The row may be gone (removed, filtered out, scrolled out of a virtual list): the page title takes focus.
+    const target =
+      document.querySelector<HTMLElement>(`[data-open-item="${id}"]`) ??
+      document.querySelector<HTMLElement>('h1')
+    target?.focus()
+  }
+  requestAnimationFrame(tryFocus)
+}
+
 export default function ItemPanelHost() {
   const [params, setParams] = useSearchParams()
   const id = parseItemId(params.get(ITEM_PARAM))
@@ -53,11 +85,26 @@ export default function ItemPanelHost() {
     close()
   }, [isMissing, id, close, toasts])
 
-  // After Move to waste or Delete the row she opened is gone: focus the page title, not the page's end.
-  const removed = useCallback(() => {
-    close()
-    setTimeout(() => document.querySelector<HTMLElement>('h1')?.focus(), 0)
-  }, [close])
+  // After Move to waste or Delete the row she opened is gone: closing returns focus to the page title (below).
+  const removed = close
+
+  // One place returns focus whenever the panel goes from open to closed: Escape, the scrim, Close, Back, a
+  // removed item. The page behind a modal cannot take focus until the modal is gone (focusOpener waits).
+  const openId = item?.id
+  const previousOpenId = useRef<number | undefined>(undefined)
+  useEffect(() => {
+    const previous = previousOpenId.current
+    previousOpenId.current = openId
+    if (previous !== undefined && openId === undefined) focusOpener(previous)
+  }, [openId])
+  // The board unmounts this host as a whole when `?item` goes away: that is also a close.
+  useEffect(
+    () => () => {
+      const open = previousOpenId.current
+      if (open !== undefined) focusOpener(open)
+    },
+    [],
+  )
 
   if (!item) return null
   const where = bootstrap?.locations.find((l) => l.id === item.locationId)?.name

@@ -43,13 +43,14 @@ export function BoardRow({ item, today, onOpen, onUse }: BoardRowProps) {
         ) : (
           <button
             type="button"
-            aria-label={`Open ${item.name}`}
+            aria-label={`Open ${item.name}, ${amount}`}
+            data-open-item={item.id}
             onClick={() => onOpen(item.id)}
             className="min-h-touch min-w-0 flex-1 cursor-pointer text-left outline-offset-2"
           >
             <span className={cx('block truncate text-base font-semibold', usedUp && 'text-muted')}>
               {item.name}
-            </span>
+            </span>{' '}
             <span className="block text-sm text-muted">{amount}</span>
           </button>
         )}

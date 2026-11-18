@@ -125,9 +125,17 @@ describe('ItemPanelHost: ?item= opens the panel', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
+  it('6.2: closing the panel (Close or Escape) returns focus to the row that was opened', async () => {
+    const { user, location } = renderPanel([makeItem(1, { name: 'Milk' })], 1)
+    const dialog = await panel()
+    await user.click(dialog.getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(location()).toBe('/'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Open Milk\b/ })).toHaveFocus())
+  })
+
   it('an unknown ?item= id opens nothing', async () => {
     renderPanel([makeItem(1, { name: 'Milk' })], 99)
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 

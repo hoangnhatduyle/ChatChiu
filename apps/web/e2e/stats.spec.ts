@@ -92,7 +92,7 @@ test('F-ST-01 / F-ST-02 / F-ST-03: the log, the Month range and the totals follo
   await seed(account)
   await routeApi(context)
   await page.goto('/stats')
-  const log = page.getByRole('region', { name: 'Waste log' })
+  const log = page.getByRole('group', { name: 'Waste log' })
   await expect(log.getByText('Old bread')).toBeVisible()
   await expect(stat(page, 'Items wasted')).toContainText('3')
   await expect(stat(page, 'Value lost')).toContainText('$7.40')
@@ -131,7 +131,7 @@ test('F-ST-04 / F-ST-07: the charts and most wasted lists show; no sideways scro
   await expect(page.getByRole('figure', { name: 'Waste by month' })).toBeVisible()
   await expect(page.getByRole('figure', { name: 'Waste by category' })).toBeVisible()
   await expect(
-    page.getByRole('region', { name: 'Most wasted by value' }).getByText('Cheese'),
+    page.getByRole('group', { name: 'Most wasted by value' }).getByText('Cheese'),
   ).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

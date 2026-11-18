@@ -106,6 +106,7 @@ function Row({
           <button
             type="button"
             aria-label={`Open ${item.name}`}
+            data-open-item={item.id}
             onClick={() => actions.onOpen(item.id)}
             className={cx(
               'min-h-touch w-full cursor-pointer truncate text-left text-base font-semibold outline-offset-2',

@@ -105,7 +105,7 @@ function renderPage(items: InventoryItem[], path = '/stock', width = 800) {
 const names = () =>
   screen
     .queryAllByRole('button', { name: /^Open / })
-    .map((b) => b.getAttribute('aria-label')!.slice(5))
+    .map((b) => b.getAttribute('aria-label')!.slice(5).split(',')[0])
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -120,7 +120,7 @@ describe('F-IN-01 search', () => {
       makeItem(2, { name: 'Granola', notes: 'with oats and honey' }),
       makeItem(3, { name: 'Cereal', barcode: 'oat-12345' }),
     ])
-    await screen.findByRole('button', { name: 'Open Oat milk' })
+    await screen.findByRole('button', { name: /^Open Oat milk\b/ })
     await user.type(screen.getByRole('searchbox', { name: /search stock/i }), 'oat')
     await waitFor(() => expect(names().sort()).toEqual(['Granola', 'Oat milk']))
   })
@@ -136,13 +136,13 @@ describe('F-IN-02 filters in the URL', () => {
 
   it('F-IN-02: ?category=1&location=1&status=expiring shows only Milk (expiring means within 3 days)', async () => {
     renderPage(items(), '/stock?category=1&location=1&status=expiring')
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(names()).toEqual(['Milk'])
   })
 
   it('F-IN-02 / NC-IN-NO-LOST-FILTERS: applying the filters writes them to the URL', async () => {
     const { user, location } = renderPage(items())
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.click(screen.getByRole('button', { name: /Category/ }))
     await user.click(await screen.findByRole('option', { name: 'Dairy' }))
     await user.click(screen.getByRole('button', { name: /Location/ }))
@@ -169,13 +169,13 @@ describe('F-IN-03 sort and F-IN-04 group', () => {
     ['recent', ['Cherry', 'Apple', 'Banana']],
   ])('F-IN-03: sort=%s orders the list', async (sort, expected) => {
     renderPage(items(), `/stock?sort=${sort}`)
-    await screen.findByRole('button', { name: 'Open Apple' })
+    await screen.findByRole('button', { name: /^Open Apple\b/ })
     expect(names()).toEqual(expected)
   })
 
   it('F-IN-03: the Sort control sets ?sort=', async () => {
     const { user, location } = renderPage(items())
-    await screen.findByRole('button', { name: 'Open Apple' })
+    await screen.findByRole('button', { name: /^Open Apple\b/ })
     await user.click(screen.getByRole('button', { name: /Sort/ }))
     await user.click(await screen.findByRole('option', { name: 'Name' }))
     await waitFor(() => expect(location()).toContain('sort=name'))
@@ -190,19 +190,19 @@ describe('F-IN-03 sort and F-IN-04 group', () => {
     ]
     const headers = () => screen.queryAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     const first = renderPage(mixed, '/stock?group=category')
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(headers().join('|')).toMatch(/Dairy/)
     expect(headers().join('|')).toMatch(/Grains/)
     first.unmount()
     client.unmount()
     const second = renderPage(mixed, '/stock?group=location')
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(headers().join('|')).toMatch(/Fridge/)
     expect(headers().join('|')).toMatch(/Pantry/)
     second.unmount()
     client.unmount()
     renderPage(mixed, '/stock?group=none')
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(headers().filter((h) => /Dairy|Grains|Fridge|Pantry/.test(h ?? ''))).toHaveLength(0)
   })
 })
@@ -210,18 +210,18 @@ describe('F-IN-03 sort and F-IN-04 group', () => {
 describe('F-IN-05 cards below 1024 px, table from 1024 px', () => {
   it('F-IN-05: 1023 px shows cards, 1024 px shows the table', async () => {
     const narrow = renderPage([makeItem(1, { name: 'Milk' })], '/stock', 1023)
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByRole('table')).toBeNull()
     narrow.unmount()
     client.unmount()
     renderPage([makeItem(1, { name: 'Milk' })], '/stock', 1024)
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.getByRole('table')).toBeInTheDocument()
   })
 
   it('F-IN-05: a manual choice beats the width and is remembered on this device', async () => {
     const first = renderPage([makeItem(1, { name: 'Milk' })], '/stock', 800)
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await first.user.click(screen.getByRole('radio', { name: 'Table' }))
     expect(await screen.findByRole('table')).toBeInTheDocument()
     first.unmount()
@@ -258,7 +258,7 @@ describe('F-IN-07 counters', () => {
 
   it('F-IN-07: Expired 2 and Expiring 3; tapping one applies that status filter', async () => {
     const { user, location } = renderPage(items())
-    await screen.findByRole('button', { name: 'Open E1' })
+    await screen.findByRole('button', { name: /^Open E1\b/ })
     const expired = screen.getByRole('button', { name: /^Expired/ })
     const expiring = screen.getByRole('button', { name: /^Expiring/ })
     expect(expired).toHaveTextContent('2')
@@ -283,7 +283,7 @@ describe('F-IN-08 usage drag on cards, F-IN-09 tap opens the panel', () => {
       item: { ...milk(), currentQuantity: 35 },
     })
     const { user } = renderPage([milk()])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     screen.getByRole('slider', { name: /Milk/ }).focus()
     for (let i = 0; i < 5; i++) await user.keyboard('{ArrowLeft}')
     await waitFor(() => expect(api.post).toHaveBeenCalled(), { timeout: SLIDER_COMMIT_WAIT_MS })
@@ -298,7 +298,7 @@ describe('F-IN-08 usage drag on cards, F-IN-09 tap opens the panel', () => {
 
   it('F-IN-09: tapping a card opens the quick-action panel; there is no View image action', async () => {
     const { user, location } = renderPage([milk()])
-    await user.click(await screen.findByRole('button', { name: 'Open Milk' }))
+    await user.click(await screen.findByRole('button', { name: /^Open Milk\b/ }))
     expect(location()).toContain('item=1')
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByRole('link', { name: /Edit all details/ })).toBeInTheDocument()
@@ -307,7 +307,7 @@ describe('F-IN-08 usage drag on cards, F-IN-09 tap opens the panel', () => {
 
   it('F-IN-09: in the table, tapping the name opens the panel too', async () => {
     const { user, location } = renderPage([milk()], '/stock', 1100)
-    await user.click(await screen.findByRole('button', { name: 'Open Milk' }))
+    await user.click(await screen.findByRole('button', { name: /^Open Milk\b/ }))
     expect(location()).toContain('item=1')
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
@@ -322,7 +322,7 @@ describe('F-IN-08 usage drag on cards, F-IN-09 tap opens the panel', () => {
       price: 0.4,
     })
     const { user } = renderPage([eggs])
-    await user.click(await screen.findByRole('button', { name: 'Open Eggs' }))
+    await user.click(await screen.findByRole('button', { name: /^Open Eggs\b/ }))
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Move to waste' }),
     )
@@ -345,7 +345,7 @@ describe('F-IN-10 select mode and bulk delete', () => {
   it('F-IN-10: 4 selected and Delete selected hides them with Undo, and one bulk DELETE goes out after the window', async () => {
     api.delete.mockResolvedValue({})
     const { user } = renderPage(six())
-    await screen.findByRole('button', { name: 'Open Thing 1' })
+    await screen.findByRole('button', { name: /^Open Thing 1\b/ })
     await select(user, 1, 2, 3, 4)
     await user.click(screen.getByRole('button', { name: 'Delete selected (4)' }))
     await waitFor(() => expect(names()).toEqual(['Thing 5', 'Thing 6']))
@@ -361,7 +361,7 @@ describe('F-IN-10 select mode and bulk delete', () => {
 
   it('bulk_delete UNDONE->SENT is forbidden: Undo brings the items back and nothing is ever sent', async () => {
     const { user } = renderPage(six())
-    await screen.findByRole('button', { name: 'Open Thing 1' })
+    await screen.findByRole('button', { name: /^Open Thing 1\b/ })
     await select(user, 1, 2)
     await user.click(screen.getByRole('button', { name: 'Delete selected (2)' }))
     await waitFor(() => expect(names()).toHaveLength(4))
@@ -373,7 +373,7 @@ describe('F-IN-10 select mode and bulk delete', () => {
 
   it('F-IN-10: Select all and Select none work on what the filters show', async () => {
     const { user } = renderPage(six())
-    await screen.findByRole('button', { name: 'Open Thing 1' })
+    await screen.findByRole('button', { name: /^Open Thing 1\b/ })
     await user.click(screen.getByRole('button', { name: 'Select' }))
     await user.click(screen.getByRole('button', { name: 'Select all' }))
     expect(screen.getByRole('button', { name: 'Delete selected (6)' })).toBeInTheDocument()
@@ -407,20 +407,20 @@ describe('F-IN-12 / F-IN-13 hidden controls and the receipt scan link', () => {
   it('F-IN-12 / NC-IN-NO-BARCODE-UI: no barcode scan, barcode text or image viewer anywhere (cards and table)', async () => {
     const item = makeItem(1, { name: 'Milk', barcode: '4006381333931' })
     const first = renderPage([item])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByText(/barcode|view image|photo/i)).toBeNull()
     expect(screen.queryByText('4006381333931')).toBeNull()
     first.unmount()
     client.unmount()
     renderPage([item], '/stock', 1100)
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByText(/barcode|view image|photo/i)).toBeNull()
     expect(screen.queryByText('4006381333931')).toBeNull()
   })
 
   it('F-IN-13: Scan receipt opens the receipt scan (/scan)', async () => {
     renderPage([makeItem(1, { name: 'Milk' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.getByRole('link', { name: 'Scan receipt' })).toHaveAttribute('href', '/scan')
   })
 })
@@ -442,7 +442,7 @@ describe('F-IN-14 remembered filters', () => {
       [makeItem(1, { name: 'Milk', expirationDate: inDays(1) })],
       '/stock?status=expiring',
     )
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await waitFor(() =>
       expect(
         JSON.parse(window.localStorage.getItem('chatchiu.inventory.filters') ?? '{}'),
@@ -460,7 +460,7 @@ describe('F-IN-14 remembered filters', () => {
 
   it('an unknown ?sort= or ?status= value falls back to the default instead of hiding items', async () => {
     renderPage([makeItem(1, { name: 'Milk' })], '/stock?sort=constructor&status=__proto__&group=x')
-    expect(await screen.findByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
   })
 })
 
@@ -472,7 +472,7 @@ describe('states', () => {
 
   it('the number of items shown is announced', async () => {
     const { user } = renderPage([makeItem(1, { name: 'Milk' }), makeItem(2, { name: 'Rice' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     const status = screen.getByTestId('inventory-result-count')
     expect(status).toHaveTextContent('2 items')
     await user.type(screen.getByRole('searchbox', { name: /search stock/i }), 'rice')
@@ -487,7 +487,7 @@ describe('review fixes', () => {
 
   it('a category filter that no longer exists is ignored, said so, and not remembered', async () => {
     renderPage([makeItem(1, { name: 'Milk' })], '/stock?category=99')
-    expect(await screen.findByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
     expect(screen.getByText(/no longer exists/i)).toBeInTheDocument()
     await waitFor(() =>
       expect(JSON.parse(window.localStorage.getItem('chatchiu.inventory.filters') ?? '{}')).toEqual(
@@ -498,7 +498,7 @@ describe('review fixes', () => {
 
   it('ids that are not positive whole numbers are not filters (?category=0, a 20-digit id)', async () => {
     renderPage([makeItem(1, { name: 'Milk' })], '/stock?category=0&location=99999999999999999999')
-    expect(await screen.findByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
     expect(screen.queryByText(/no longer exists/i)).toBeNull()
   })
 
@@ -511,7 +511,7 @@ describe('review fixes', () => {
       ],
       '/stock?category=2',
     )
-    await screen.findByRole('button', { name: 'Open Rice' })
+    await screen.findByRole('button', { name: /^Open Rice\b/ })
     expect(screen.getByRole('button', { name: /^Expiring/ })).toHaveTextContent('1')
     expect(screen.getByRole('button', { name: /^Expired/ })).toHaveTextContent('1')
     expect(screen.getByRole('button', { name: /^All\s*2$/ })).toBeInTheDocument()
@@ -519,7 +519,7 @@ describe('review fixes', () => {
 
   it('select mode ends when the last item disappears, instead of getting stuck', async () => {
     const { user } = renderPage([makeItem(1, { name: 'Milk' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.click(screen.getByRole('button', { name: 'Select' }))
     expect(screen.getByRole('button', { name: 'Select all' })).toBeInTheDocument()
     act(() => client.setQueryData(queryKeys.bootstrap, bootstrap([])))
@@ -529,7 +529,7 @@ describe('review fixes', () => {
   it('after Delete selected, focus returns to the Select toggle and the selected count is announced', async () => {
     api.delete.mockResolvedValue({})
     const { user } = renderPage([makeItem(1, { name: 'Milk' }), makeItem(2, { name: 'Rice' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.click(screen.getByRole('button', { name: 'Select' }))
     await user.click(screen.getByRole('checkbox', { name: 'Select Milk' }))
     expect(screen.getByText('1 selected')).toBeInTheDocument()
@@ -543,7 +543,7 @@ describe('review fixes', () => {
       '/stock?group=category',
       1100,
     )
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     const table = screen.getByRole('table')
     expect(table).toHaveAttribute('aria-rowcount', '5') // header + 2 group headers + 2 items
     const indexes = within(table)
@@ -554,20 +554,20 @@ describe('review fixes', () => {
 
   it('the view she picked stays after she follows the Stock link again (not only the mount-time one)', async () => {
     const { user } = renderPage([makeItem(1, { name: 'Milk' })], '/stock', 800)
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.click(screen.getByRole('radio', { name: 'Table' }))
     expect(await screen.findByRole('table')).toBeInTheDocument()
   })
 
   it('a failed background refresh keeps the list and says it may be out of date, with Retry', async () => {
     const { user } = renderPage([makeItem(1, { name: 'Milk' })])
-    await screen.findByRole('button', { name: 'Open Milk' })
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
     api.get.mockRejectedValue(new Error('offline'))
     await act(async () => {
       await client.refetchQueries({ queryKey: queryKeys.bootstrap })
     })
     expect(await screen.findByText(/couldn't refresh/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open Milk' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
     expect(user).toBeDefined()
   })

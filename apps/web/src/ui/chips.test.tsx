@@ -75,8 +75,14 @@ describe('ExpiryChip', () => {
 })
 
 describe('Segmented', () => {
-  function Harness({ onChange }: { onChange: (v: string) => void }) {
-    const [value, setValue] = useState('week')
+  function Harness({
+    onChange,
+    initial = 'week',
+  }: {
+    onChange: (v: string) => void
+    initial?: string
+  }) {
+    const [value, setValue] = useState(initial)
     return (
       <Segmented
         label="View"
@@ -106,5 +112,18 @@ describe('Segmented', () => {
     // Selection follows focus, as with native radios (a11y review M5).
     expect(screen.getByRole('radio', { name: 'Week' })).toBeChecked()
     expect(onChange).toHaveBeenLastCalledWith('week')
+  })
+
+  it('7.0.33b: tabbing into the group does not change the selection; the arrows still move focus', async () => {
+    const onChange = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onChange={onChange} initial="month" />)
+    await user.tab() // into the group: focus alone must not select anything
+    expect(screen.getByRole('radio', { name: 'Week' })).toHaveFocus() // the first option, not the selected one
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByRole('radio', { name: 'Month' })).toBeChecked()
+    await user.keyboard('{ArrowRight}') // arrows still pick (Month is already selected: no change)
+    expect(screen.getByRole('radio', { name: 'Month' })).toHaveFocus()
+    expect(onChange).not.toHaveBeenCalled()
   })
 })

@@ -96,7 +96,10 @@ test('F-SL-01 / F-SL-02 / F-SL-08: quick add and tick reach the server, counts f
   await expect(page.getByText(/1 pending · 0 purchased/)).toBeVisible()
   await expect.poll(async () => (await serverList(account)).map((r) => r.name)).toEqual(['Eggs'])
 
-  await page.getByRole('checkbox', { name: 'Eggs' }).check()
+  // The new row keeps a temporary id (and a guarded checkbox) until the server's answer replaces it.
+  await expect(page.getByText('Saving…')).toHaveCount(0)
+  await page.getByRole('checkbox', { name: 'Eggs' }).click()
+  await expect(page.getByRole('checkbox', { name: 'Eggs' })).toBeChecked()
   await expect(page.getByText(/0 pending · 1 purchased/)).toBeVisible()
   await expect.poll(async () => (await serverList(account))[0]?.isPurchased).toBe(true)
   await page.reload()
