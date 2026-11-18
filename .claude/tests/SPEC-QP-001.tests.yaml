@@ -1,0 +1,88 @@
+spec_id: SPEC-QP-001
+generated_at: 2026-11-18T00:26:04.715Z
+cases:
+  - id: T-SPEC-QP-001-AC-F_QP_01
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-01
+    assertion: given the panel open on an item at 40%, when she drags the big slider up to 70% and releases, then it saves on release (up and down both allowed), with an Undo toast that restores 40%
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_02
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-02
+    assertion: given an item at 60% of its full amount, when she taps Used 10% · Used 25% · Used half · Used it all, then the item goes to 50%, 35%, 10% or 0% respectively (points of the full amount, clamped at 0), each saved with Undo
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_03
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-03
+    assertion: given an item of 500 g with 300 g left, when she enters Used 100 g or Left 150 g with an optional note, then current becomes 200 g or 150 g, and the note is stored in usage_history.notes
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_04
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-04
+    assertion: given an item Butter, 250 g full, 15% left, category Dairy, when she taps Add to shopping list, then a row "Butter" with quantity "250 g", note "Low stock (15% left)" and the item's category is added; if an unpurchased "butter" is already listed, nothing is added and she sees "Already on your list"
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_05
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-05
+    assertion: given an item with per-unit price 0.40 and 6 units left, when she taps Move to waste, then the item disappears at once, a toast shows the value 2.40 with Undo, and mark_item_wasted runs only after the 5 s window (or immediately on pagehide via keepalive)
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_06
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-06
+    assertion: given an item with full amount 1 L at 10%, when she opens Restock, keeps the pre-filled 1 L, optionally sets a new expiry (AI suggestion available) and a total price, and confirms, then the same item becomes 1 of 1 L (100%), price is stored per unit, and no second item exists; Undo restores the previous values
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_07
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-07
+    assertion: given an item in Fridge, when she picks Pantry under Stored in, then it moves column immediately and saves, with Undo
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_08
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-08
+    assertion: given an item with usage history, when the panel opens, then it shows "~N days left at your pace" from item_consumption and the last 5 usage entries, newest first, read-only
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_09
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-09
+    assertion: given an item expiring within 3 days that matches recipe ingredients, when the panel opens, then a Recipes that use this list shows the matching recipes from SPEC-MP-001 F-MP-12
+    invariant: false
+  - id: T-SPEC-QP-001-AC-F_QP_10
+    kind: acceptance
+    traces_to: SPEC-QP-001#F-QP-10
+    assertion: given the panel, when she taps Edit all details or Delete, then Edit opens the item form in edit mode; Delete hides the item with a hold-until-close Undo
+    invariant: false
+  - id: T-SPEC-QP-001-FORBID-commit_now_action_IDLE_SAVED
+    kind: forbidden-transition
+    traces_to: SPEC-QP-001#commit_now_action:IDLE->SAVED
+    assertion: "[commit_now_action] transition IDLE -> SAVED MUST be rejected (The UI always updates first (AR-WRITE-PATTERN))"
+    invariant: true
+  - id: T-SPEC-QP-001-FORBID-hold_until_close_action_UNDONE_SENDING
+    kind: forbidden-transition
+    traces_to: SPEC-QP-001#hold_until_close_action:UNDONE->SENDING
+    assertion: "[hold_until_close_action] transition UNDONE -> SENDING MUST be rejected (An undone waste/delete must never reach the server)"
+    invariant: true
+  - id: T-SPEC-QP-001-FORBID-hold_until_close_action_DONE_UNDONE
+    kind: forbidden-transition
+    traces_to: SPEC-QP-001#hold_until_close_action:DONE->UNDONE
+    assertion: "[hold_until_close_action] transition DONE -> UNDONE MUST be rejected (After the window closes the server row is gone; there is nothing to undo)"
+    invariant: true
+  - id: T-SPEC-QP-001-NC-NC_QP_NO_DUPLICATE_SHOPPING
+    kind: negative-constraint
+    traces_to: SPEC-QP-001#NC-QP-NO-DUPLICATE-SHOPPING
+    assertion: Add to shopping list MUST NOT create a second unpurchased row with the same name (case- and space-insensitive)
+    invariant: true
+  - id: T-SPEC-QP-001-NC-NC_QP_NO_SECOND_ITEM
+    kind: negative-constraint
+    traces_to: SPEC-QP-001#NC-QP-NO-SECOND-ITEM
+    assertion: Restock MUST NOT create a new inventory item; it refills the same row
+    invariant: true
+  - id: T-SPEC-QP-001-NC-NC_QP_NO_EARLY_SEND
+    kind: negative-constraint
+    traces_to: SPEC-QP-001#NC-QP-NO-EARLY-SEND
+    assertion: Move to waste and Delete MUST NOT call the server before the 5 s Undo window closes (or pagehide)
+    invariant: true
+  - id: T-SPEC-QP-001-NC-NC_QP_NO_LOST_ACTION
+    kind: negative-constraint
+    traces_to: SPEC-QP-001#NC-QP-NO-LOST-ACTION
+    assertion: A held action MUST NOT be lost when the app is hidden or closed during the Undo window; it is flushed with fetch keepalive
+    invariant: true

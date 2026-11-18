@@ -37,6 +37,7 @@ export const routes: RouteObject[] = [
                   { path: 'more', element: <MorePage /> },
                   // Targets of the board's links until their steps land (5.3 item form, 5.10 receipt scan).
                   { path: 'stock/new', element: <PendingPage title="Add item" icon="plus" /> },
+                  { path: 'stock/:id/edit', element: <PendingPage title="Edit item" icon="box" /> },
                   { path: 'scan', element: <PendingPage title="Scan receipt" icon="scan" /> },
                   { path: '*', element: <NotFoundPage /> },
                 ],

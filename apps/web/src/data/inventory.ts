@@ -139,7 +139,11 @@ export const logUsage = defineWrite<UsageInput, UsageLogResult, UsageUndo>({
     patchItem(client, itemId, { currentQuantity })
     return { itemId, before: { currentQuantity: item.currentQuantity } }
   },
-  reconcile: (client, result) => replaceItem(client, result.item),
+  reconcile: (client, result) => {
+    replaceItem(client, result.item)
+    // The usage list (panel history and run-out sentence) has a new entry.
+    void client.invalidateQueries({ queryKey: queryKeys.usage(result.itemId) })
+  },
   rollback: (client, { itemId, before }) => {
     if (before) patchItem(client, itemId, before)
   },
@@ -168,7 +172,10 @@ export const undoUsage = defineWrite<UndoUsageInput, InventoryItem, UsageUndo>({
     patchItem(client, itemId, { currentQuantity: restoreTo })
     return { itemId, before: { currentQuantity: item.currentQuantity } }
   },
-  reconcile: (client, item) => replaceItem(client, item),
+  reconcile: (client, item, _undo, input) => {
+    replaceItem(client, item)
+    void client.invalidateQueries({ queryKey: queryKeys.usage(input.itemId) })
+  },
   rollback: (client, { itemId, before }) => {
     if (before) patchItem(client, itemId, before)
   },
@@ -204,7 +211,10 @@ export const restock = defineWrite<
     })
     return { id, before }
   },
-  reconcile: (client, item) => replaceItem(client, item),
+  reconcile: (client, item, _undo, input) => {
+    replaceItem(client, item)
+    void client.invalidateQueries({ queryKey: queryKeys.usage(input.id) })
+  },
   rollback: (client, { id, before }) => {
     if (before) patchItem(client, id, before)
   },

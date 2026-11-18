@@ -8,9 +8,12 @@ import {
   filterItems,
   todayLocalDateString,
 } from '@chatchiu/domain'
+import { lazy, Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { useToast } from '../../core/toast-context'
 import { useBootstrapQuery } from '../../data/inventory'
 import { PageTitle } from '../../shell/PageTitle'
+import { PanelLoadBoundary } from '../item-panel/PanelLoadBoundary'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
 import { BoardFilters } from './BoardFilters'
@@ -20,6 +23,9 @@ import { BoardLoadError, BoardLoading } from './BoardStates'
 import { LocationColumn } from './LocationColumn'
 import { useBoardActions } from './use-board-actions'
 
+// The panel is its own chunk, fetched only when an item is opened (?item=).
+const ItemPanelHost = lazy(() => import('../item-panel/ItemPanelHost'))
+
 const DATE_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' }
 
 export default function KitchenBoardPage() {
@@ -27,6 +33,7 @@ export default function KitchenBoardPage() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const { logUse } = useBoardActions()
+  const toasts = useToast()
   const data = query.data
 
   const text = params.get('q') ?? ''
@@ -41,6 +48,15 @@ export default function KitchenBoardPage() {
       },
       { replace },
     )
+
+  // The panel's chunk could not load (offline, or removed by a deploy): keep the board, say so.
+  const panelFailed = () => {
+    toasts.show({
+      message: "Couldn't open the item. Check your connection and try again.",
+      tone: 'error',
+    })
+    setParam('item', null, true)
+  }
 
   const title = <PageTitle>Kitchen</PageTitle>
   if (!data) {
@@ -120,6 +136,13 @@ export default function KitchenBoardPage() {
             />
           ))}
         </div>
+      )}
+      {params.has('item') && (
+        <PanelLoadBoundary key={params.get('item')} onError={panelFailed}>
+          <Suspense fallback={null}>
+            <ItemPanelHost />
+          </Suspense>
+        </PanelLoadBoundary>
       )}
     </Frame>
   )

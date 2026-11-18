@@ -29,6 +29,8 @@ export function ResponsivePanel({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       isDismissable
+      // The toast region sits outside the modal: pressing Undo (or Retry) there must not dismiss the panel (7.0.21a).
+      shouldCloseOnInteractOutside={(element) => !element.closest('[data-live-announcer]')}
       className={cx(
         'fixed inset-0 z-40 bg-scrim',
         'data-entering:animate-[fade-in_var(--duration-fast)_ease-out]',

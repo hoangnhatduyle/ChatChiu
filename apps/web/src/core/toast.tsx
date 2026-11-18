@@ -72,6 +72,8 @@ function ToastRegion({ store }: { store: ToastStore }) {
   return (
     <div
       data-live-announcer="true"
+      // Marked as a top layer so the open panel's focus containment lets Alt+Shift+T move focus here (7.0.21b).
+      data-react-aria-top-layer="true"
       className="pointer-events-none fixed inset-x-3 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+12px)] z-[60] flex flex-col items-center gap-2 md:bottom-6"
     >
       <div role="status" className="sr-only">
