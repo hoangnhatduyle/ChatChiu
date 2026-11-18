@@ -27,6 +27,15 @@ for (const theme of THEMES) {
         serviceWorkers: 'block',
       })
 
+      // The preview server has no API: an empty kitchen keeps the Kitchen page (and its snapshot) fixed.
+      test.beforeEach(async ({ context }) => {
+        await context.route('**/api/bootstrap', (route) =>
+          route.fulfill({
+            json: { data: { items: [], locations: [], categories: [], summary: {} } },
+          }),
+        )
+      })
+
       test(`F-AP-02: ${size.name === 'phone' ? 'bottom bar' : '84 px rail'} reaches every destination`, async ({
         page,
       }) => {
@@ -71,7 +80,10 @@ for (const theme of THEMES) {
         await page.goto('/')
         await expect(page.getByRole('heading', { level: 1, name: 'Kitchen' })).toBeVisible()
         await page.evaluate(() => document.fonts.ready)
-        await expect(page).toHaveScreenshot(`shell-${theme}-${size.width}.png`)
+        // The Kitchen subtitle shows today's date, which changes daily: mask it.
+        await expect(page).toHaveScreenshot(`shell-${theme}-${size.width}.png`, {
+          mask: [page.getByText(/· \d+ items?$/)],
+        })
       })
     })
   }

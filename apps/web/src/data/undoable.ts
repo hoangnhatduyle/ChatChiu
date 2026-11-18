@@ -9,9 +9,19 @@
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useToast, useUndo } from '../core/toast-context'
+import type { ToastAction } from '../core/toast-store'
 import type { UndoHandle, UndoManager } from '../core/undo'
 import { newRequestId } from './query-client'
 import { applyWrite, startWrite, type WriteDefinition, type WriteHandle } from './write'
+
+export type CommitOptions<TData> = {
+  message: string
+  reverse: Reverse<TData>
+  /** Buttons shown before Undo in the toast (the used-up toast). */
+  extraActions?: ReadonlyArray<ToastAction>
+  /** Called when Undo is pressed, before the reverse is sent. */
+  onUndo?: () => void
+}
 
 export type Reverse<TData> = {
   /** Builds the reverse change from what the server answered (e.g. the usage row id). */
@@ -24,12 +34,14 @@ export function commitWrite<TInput, TData, TUndo>(
   undo: UndoManager,
   def: WriteDefinition<TInput, TData, TUndo>,
   input: TInput,
-  options: { message: string; reverse: Reverse<TData> },
+  options: CommitOptions<TData>,
 ): WriteHandle<TData> {
   const handle = startWrite(client, def, input)
-  undo.commit({
+  const committed = undo.commit({
     message: options.message,
+    extraActions: options.extraActions,
     reverse: async () => {
+      options.onUndo?.()
       if (handle.cancel()) return // still waiting: nothing was sent, nothing to reverse
       const first = await handle.result
       // A refused first write was rolled back and reported already; a failed reverse is reported the same way.
@@ -42,6 +54,11 @@ export function commitWrite<TInput, TData, TUndo>(
       // A refusal is reported by the failed-write toast; one that never started has no toast, so say it here.
       if (second.status === 'failed' && second.blocked) throw second.error
     },
+  })
+  // A refused (or blocked) first write was rolled back: the toast must not keep offering Undo, or the
+  // used-up actions, for a change that never happened.
+  void handle.result.then((first) => {
+    if (first.status !== 'saved') committed.retract()
   })
   return handle
 }
@@ -85,7 +102,7 @@ export function useCommittedWrite<TInput, TData, TUndo>(
   const client = useQueryClient()
   const undo = useUndo()
   return useCallback(
-    (input: TInput, options: { message: string; reverse: Reverse<TData> }) =>
+    (input: TInput, options: CommitOptions<TData>) =>
       commitWrite(client, undo, def, input, options),
     [client, undo, def],
   )

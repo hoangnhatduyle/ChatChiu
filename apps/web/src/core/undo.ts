@@ -11,12 +11,14 @@
 //
 // This file knows nothing about the API or the cache: the caller passes what to do. data/undoable.ts
 // connects it to the write hooks.
-import type { ToastStore } from './toast-store'
+import type { ToastAction, ToastStore } from './toast-store'
 
 export type SendOptions = { keepalive: boolean }
 
 export type CommitSpec = {
   message: string
+  /** Buttons shown before Undo (the used-up toast: Add to shopping list, Remove). */
+  extraActions?: ReadonlyArray<ToastAction>
   /** Sends the reverse change. A failure is reported with Retry. */
   reverse: () => Promise<unknown> | void
 }
@@ -31,13 +33,19 @@ export type HoldSpec = {
   send: (options: SendOptions) => Promise<unknown> | void
 }
 
+/** What `commit` returns: Undo, and a way to take the toast back when the change was refused. */
+export interface CommitHandle extends UndoHandle {
+  /** The change never happened (its write was refused): drop the toast and the Undo for it. */
+  retract: () => void
+}
+
 export interface UndoHandle {
   /** Runs the undo; false if it is no longer possible (already undone, or already sent). */
   undo: () => Promise<boolean>
 }
 
 export interface UndoManager {
-  commit: (spec: CommitSpec) => UndoHandle
+  commit: (spec: CommitSpec) => CommitHandle
   hold: (spec: HoldSpec) => UndoHandle
   canUndoLast: () => boolean
   undoLast: () => Promise<boolean>
@@ -80,8 +88,8 @@ export function createUndoManager({
     })
   }
 
-  function commit({ message, reverse }: CommitSpec): UndoHandle {
-    let state: 'saved' | 'reversing' | 'reversed' = 'saved'
+  function commit({ message, reverse, extraActions = [] }: CommitSpec): CommitHandle {
+    let state: 'saved' | 'reversing' | 'reversed' | 'retracted' = 'saved'
     let toastId: number | null = null
 
     const run = async (): Promise<boolean> => {
@@ -100,8 +108,16 @@ export function createUndoManager({
     }
     const entry: Entry = { message, undo: run, isUndoable: () => state === 'saved' }
     remember(entry)
-    toastId = toasts.show({ message, actions: [{ label: 'Undo', onPress: () => void run() }] })
-    return { undo: run }
+    toastId = toasts.show({
+      message,
+      actions: [...extraActions, { label: 'Undo', onPress: () => void run() }],
+    })
+    const retract = () => {
+      if (state !== 'saved') return
+      state = 'retracted'
+      if (toastId !== null) toasts.dismiss(toastId)
+    }
+    return { undo: run, retract }
   }
 
   function hold({ message, hide, restore, send }: HoldSpec): UndoHandle {

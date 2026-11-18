@@ -1,5 +1,5 @@
 spec_id: SPEC-KB-001
-generated_at: 2026-11-17T03:51:08.934Z
+generated_at: 2026-11-17T22:15:05.784Z
 cases:
   - id: T-SPEC-KB-001-AC-F_KB_01
     kind: acceptance

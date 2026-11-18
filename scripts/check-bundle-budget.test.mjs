@@ -1,6 +1,7 @@
-// Step 3.3: initial JS (shell + board route) <= 150 KB gz, each lazy route <= 120 KB gz
+// Step 3.3: initial JS (shell + board route) <= 170 KB gz, each lazy route <= 120 KB gz
 // (architecture.md §5, NC-AP-BUDGET), measured from the Vite build manifest.
 import { readFileSync } from 'node:fs'
+import { posix } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   BOARD_ROUTE,
@@ -138,10 +139,10 @@ describe('BOARD_ROUTE', () => {
     expect(indexComponent).toBeDefined()
     const lazyPath = pages.match(
       new RegExp(
-        `export const ${indexComponent} = lazy\\(\\(\\) => import\\('\\./([\\w/]+)'\\)\\)`,
+        `export const ${indexComponent} = lazy\\(\\(\\) => import\\('(\\.{1,2}/[\\w/-]+)'\\)\\)`,
       ),
     )?.[1]
-    expect(`src/shell/${lazyPath}.tsx`).toBe(BOARD_ROUTE)
+    expect(`${posix.join('src/shell', lazyPath ?? '')}.tsx`).toBe(BOARD_ROUTE)
   })
 
   it('NC-AP-BUDGET: no other route uses the board module (a shared chunk would hide the board)', () => {

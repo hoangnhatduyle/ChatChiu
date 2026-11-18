@@ -1,5 +1,5 @@
 // Route table (architecture.md §2). Every page is a React.lazy chunk, checked against the budgets
-// in scripts/check-bundle-budget.mjs (initial JS incl. the board route <= 150 KB gz, each other
+// in scripts/check-bundle-budget.mjs (initial JS incl. the board route <= 170 KB gz, each other
 // route <= 120 KB gz). Phase 5 swaps each PendingPage for its feature page.
 import type { RouteObject } from 'react-router'
 import { LOGIN_PATH, RESET_PASSWORD_PATH } from './core/auth-paths'
@@ -35,6 +35,9 @@ export const routes: RouteObject[] = [
                     element: <PendingPage title={d.title} icon={d.icon} />,
                   })),
                   { path: 'more', element: <MorePage /> },
+                  // Targets of the board's links until their steps land (5.3 item form, 5.10 receipt scan).
+                  { path: 'stock/new', element: <PendingPage title="Add item" icon="plus" /> },
+                  { path: 'scan', element: <PendingPage title="Scan receipt" icon="scan" /> },
                   { path: '*', element: <NotFoundPage /> },
                 ],
               },

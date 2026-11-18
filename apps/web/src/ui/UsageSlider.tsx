@@ -34,6 +34,8 @@ export type UsageSliderProps = {
   tone?: 'normal' | 'low'
   /** `row` on the board, `big` in the panel. */
   size?: 'row' | 'big'
+  /** A row that is still being saved cannot change yet (7.0.20); the bar is drawn dimmed. */
+  isDisabled?: boolean
   className?: string
 }
 
@@ -50,6 +52,7 @@ export function UsageSlider({
   description,
   tone = 'normal',
   size = 'row',
+  isDisabled = false,
   className,
 }: UsageSliderProps) {
   const [draft, setDraft] = useState<number | null>(null)
@@ -79,7 +82,7 @@ export function UsageSlider({
   const handleChangeEnd = (next: number) => {
     const g = gesture.current
     gesture.current = null
-    const final = snapPercent(clamp(next))
+    const final = clamp(snapPercent(next))
     if (g) {
       if (g.cancelled || g.moved < TAP_GUARD_PX) setDraft(null)
       else commit(final)
@@ -132,6 +135,7 @@ export function UsageSlider({
     >
       <Slider
         aria-label={label}
+        isDisabled={isDisabled}
         value={shown}
         minValue={0}
         maxValue={100}
@@ -143,7 +147,10 @@ export function UsageSlider({
         <SliderTrack
           data-usage-track
           data-tone={tone}
-          className="relative h-touch w-full cursor-ew-resize touch-pan-y"
+          className={cx(
+            'relative h-touch w-full touch-pan-y',
+            isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-ew-resize',
+          )}
         >
           <span
             aria-hidden="true"

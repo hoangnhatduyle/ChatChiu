@@ -49,6 +49,32 @@ describe('commit now, reverse on Undo', () => {
     expect(store.getItems().some((i) => i.message === 'Moved to Pantry')).toBe(false)
   })
 
+  it('F-KB-08: a commit can carry extra actions, shown before Undo (the used-up toast)', () => {
+    const { store, manager } = make()
+    const onAdd = vi.fn()
+    manager.commit({
+      message: 'Milk used up',
+      reverse: vi.fn(),
+      extraActions: [{ label: 'Add to shopping list', onPress: onAdd }],
+    })
+    expect(store.getItems()[0]?.actions?.map((a) => a.label)).toEqual([
+      'Add to shopping list',
+      'Undo',
+    ])
+    press(store, 'Add to shopping list')
+    expect(onAdd).toHaveBeenCalledTimes(1)
+  })
+
+  it('a commit can be retracted (its first write was refused): the toast goes and Undo is gone', async () => {
+    const { store, manager } = make()
+    const handle = manager.commit({ message: 'Used 1', reverse: vi.fn() })
+    expect(store.getItems()).toHaveLength(1)
+    handle.retract()
+    expect(store.getItems()).toHaveLength(0)
+    expect(manager.canUndoLast()).toBe(false)
+    expect(await handle.undo()).toBe(false)
+  })
+
   it('Undo cannot be used twice', async () => {
     const { store, manager } = make()
     const reverse = vi.fn().mockResolvedValue(undefined)

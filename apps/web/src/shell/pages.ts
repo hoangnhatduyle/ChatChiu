@@ -2,7 +2,7 @@
 // route table (fast refresh).
 import { lazy } from 'react'
 
-export const KitchenPage = lazy(() => import('./KitchenPage'))
+export const KitchenPage = lazy(() => import('../features/kitchen-board/KitchenBoardPage'))
 export const PendingPage = lazy(() => import('./PendingPage'))
 export const MorePage = lazy(() => import('./MorePage'))
 export const NotFoundPage = lazy(() => import('./NotFoundPage'))

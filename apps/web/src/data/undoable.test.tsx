@@ -89,6 +89,35 @@ describe('commit now, reverse on Undo', () => {
     await vi.waitFor(() => expect(items(client)[0]?.currentQuantity).toBe(4))
   })
 
+  it('silent-failure review: a refused first write retracts the Undo toast (nothing to undo, nothing to offer)', async () => {
+    api.post.mockRejectedValueOnce(
+      new ApiClientError({ status: 400, code: 'BAD_REQUEST', message: 'nope' }),
+    )
+    const handle = commitWrite(client, undo, inventory.logUsage, usage, {
+      message: 'Used 1',
+      reverse,
+      extraActions: [{ label: 'Remove', onPress: vi.fn() }],
+    })
+    await handle.result
+    await vi.advanceTimersByTimeAsync(10)
+    expect(store.getItems().some((t) => t.message === 'Used 1')).toBe(false)
+    expect(undo.canUndoLast()).toBe(false)
+  })
+
+  it('board review: onUndo runs when Undo is pressed, before the reverse is sent', async () => {
+    api.post.mockResolvedValueOnce({ id: 55, item: item(1, 3) })
+    api.post.mockResolvedValueOnce(item(1, 4))
+    const onUndo = vi.fn()
+    const handle = commitWrite(client, undo, inventory.logUsage, usage, {
+      message: 'Used 1',
+      reverse,
+      onUndo,
+    })
+    await handle.result
+    press(store, 'Undo')
+    expect(onUndo).toHaveBeenCalledTimes(1)
+  })
+
   it('SPEC-KB-001 QUEUED_OFFLINE -> UNDONE: Undo of a use made offline cancels it: nothing is ever sent', async () => {
     onlineManager.setOnline(false)
     commitWrite(client, undo, inventory.logUsage, usage, { message: 'Used 1', reverse })
@@ -193,8 +222,10 @@ describe('review fixes', () => {
         },
       },
     )
+    // Undo is pressed while the write is still in flight; only then is there a toast to undo from.
+    const undone = undo.undoLast()
     await handle.result
-    await undo.undoLast()
+    await undone
     expect(
       client
         .getMutationCache()

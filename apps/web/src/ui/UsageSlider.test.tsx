@@ -54,6 +54,27 @@ function setup(props: Partial<UsageSliderProps> = {}) {
 
 const xAt = (percent: number) => (percent / 100) * TRACK_WIDTH
 
+describe('UsageSlider off-grid values (board review)', () => {
+  it('NC-KB-NO-UP-DRAG: a bar at 98% never snaps up to 100% (the amount can only go down)', async () => {
+    const { onCommit, slider } = setup({ value: 98 })
+    slider.focus()
+    await userEvent.setup().keyboard('{ArrowRight}')
+    await new Promise((resolve) => setTimeout(resolve, KEYBOARD_COMMIT_DELAY_MS + 100))
+    expect(onCommit).not.toHaveBeenCalled()
+  })
+})
+
+describe('UsageSlider isDisabled', () => {
+  it('7.0.20: a disabled bar cannot be moved and says so to assistive tech', async () => {
+    const { onCommit, slider } = setup({ isDisabled: true })
+    expect(slider).toBeDisabled()
+    slider.focus()
+    await userEvent.setup().keyboard('{ArrowLeft}')
+    await new Promise((resolve) => setTimeout(resolve, KEYBOARD_COMMIT_DELAY_MS + 100))
+    expect(onCommit).not.toHaveBeenCalled()
+  })
+})
+
 describe('UsageSlider', () => {
   it('CS-ACCESSIBLE-UI: names the slider and speaks the amount left', () => {
     const { slider } = setup()

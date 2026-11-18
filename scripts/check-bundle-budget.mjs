@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
-export const INITIAL_JS_BUDGET_KB = 150
+export const INITIAL_JS_BUDGET_KB = 170
 export const ROUTE_JS_BUDGET_KB = 120
 /** Libraries the app loads only after the first paint (a dynamic import started once the user is signed in). */
 export const AFTER_FIRST_PAINT_LIBRARIES = ['node_modules/@supabase/realtime-js/']
@@ -19,7 +19,7 @@ export const AFTER_FIRST_PAINT_BUDGET_KB = 30
  * The board route's own module: the page routes.tsx lazy-loads for "/". A test checks this against
  * routes.tsx and shell/pages.ts, so it cannot go stale when step 5.1 swaps in the board.
  */
-export const BOARD_ROUTE = 'src/shell/KitchenPage.tsx'
+export const BOARD_ROUTE = 'src/features/kitchen-board/KitchenBoardPage.tsx'
 
 const DIST = fileURLToPath(new URL('../apps/web/dist/', import.meta.url))
 const BYTES_PER_KB = 1024

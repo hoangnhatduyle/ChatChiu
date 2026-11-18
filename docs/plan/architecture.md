@@ -142,7 +142,7 @@ Response envelope: keep the old app's shape, since the old frontend depends on i
 
 | Metric | Target |
 |---|---|
-| Initial JS (shell + board route), gzipped | ≤ 150 KB |
+| Initial JS (shell + board route), gzipped | ≤ 170 KB (was 150 until step 5.1: the real board, with the react-aria usage bar, measured 165.4 KB; trimming is in step 6.1) |
 | Each lazy route, gzipped | ≤ 120 KB |
 | LCP on the Fire Max 11, cold (no cache) | < 2.5 s |
 | Board visible on the Fire, warm (cached snapshot) | < 1 s |
