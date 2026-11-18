@@ -12,8 +12,15 @@ import { gzipSync } from 'node:zlib'
 
 export const INITIAL_JS_BUDGET_KB = 200
 export const ROUTE_JS_BUDGET_KB = 120
-/** Libraries the app loads only after the first paint (a dynamic import started once the user is signed in). */
-export const AFTER_FIRST_PAINT_LIBRARIES = ['node_modules/@supabase/realtime-js/']
+/**
+ * Libraries the app loads only after the first paint (a dynamic import started once the user is signed in), or only inside
+ * the Fire shell (the Capacitor plugins, step 5.9: a browser never fetches them).
+ */
+export const AFTER_FIRST_PAINT_LIBRARIES = [
+  'node_modules/@supabase/realtime-js/',
+  'node_modules/@capacitor/',
+  'node_modules/@capgo/',
+]
 export const AFTER_FIRST_PAINT_BUDGET_KB = 30
 /**
  * The board route's own module: the page routes.tsx lazy-loads for "/". A test checks this against

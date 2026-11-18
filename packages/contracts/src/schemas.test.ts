@@ -11,6 +11,7 @@ import {
   preferencesQuery,
   preferencesUpdate,
   pushSubscribe,
+  pushSubscribeLocal,
   receiptScanRequest,
   recipeUpdate,
   shoppingItemCreate,
@@ -172,5 +173,16 @@ describe('preferences', () => {
     const sub = { endpoint: 'https://web.push.apple.com/x', keys: { p256dh: 'p', auth: 'a' } }
     expect(pushSubscribe.safeParse(sub).success).toBe(true)
     expect(pushSubscribe.safeParse({ ...sub, keys: { p256dh: 'p' } }).success).toBe(false)
+  })
+
+  it('SPEC-NT-001: a Fire shell registers as a local device with a uuid and no push keys', () => {
+    const deviceId = '8d0f3a7e-0c3e-4a58-9d2b-1d9a6a6a4f11'
+    expect(pushSubscribeLocal.safeParse({ channel: 'local', deviceId }).success).toBe(true)
+    expect(pushSubscribeLocal.safeParse({ channel: 'local', deviceId: 'not-a-uuid' }).success).toBe(
+      false,
+    )
+    expect(pushSubscribeLocal.safeParse({ channel: 'web-push', deviceId }).success).toBe(false)
+    // A web-push body is still the old shape and is not a local one.
+    expect(pushSubscribe.safeParse({ channel: 'local', deviceId }).success).toBe(false)
   })
 })

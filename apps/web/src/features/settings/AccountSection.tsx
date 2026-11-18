@@ -23,6 +23,18 @@ export function AccountSection({ notifications }: { notifications: DeviceNotific
         return
       }
     }
+    if (!turnOffNotifications) {
+      // "Sign out anyway": the server may still list this device, but it must stop showing reminders for this account.
+      try {
+        await notifications.forgetLocally()
+      } catch {
+        setError(
+          "Couldn't stop this tablet's reminders. Turn them off in Settings first, or try again.",
+        )
+        setBusy(false)
+        return
+      }
+    }
     const result = await signOut()
     // A signed-out screen replaces this page; only a failure stays here.
     if (!result.success) {

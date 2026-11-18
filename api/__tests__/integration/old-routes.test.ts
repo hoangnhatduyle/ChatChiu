@@ -417,6 +417,28 @@ describe('AC-DATA-02: every old route behaves as before on the migrated database
     expect((await callApi('POST', 'push/test', { user, body: {} })).status).toBe(400);
   });
 
+  it('SPEC-NT-001: a Fire shell registers as a local device (no push keys), is never sent a web push, and can remove itself', async () => {
+    const deviceId = '8d0f3a7e-0c3e-4a58-9d2b-1d9a6a6a4f11';
+    const endpoint = `local:${deviceId}`;
+    await ok(envelope(z.looseObject({ id: num })), 'POST', 'push/subscribe', {
+      user,
+      body: { channel: 'local', deviceId },
+    });
+    const { data } = await admin
+      .from('push_subscriptions')
+      .select('channel, endpoint')
+      .eq('user_id', user.id)
+      .eq('endpoint', endpoint)
+      .single();
+    expect(data).toEqual({ channel: 'local', endpoint });
+    // The test push only goes to web-push devices: a local-only account has nobody to send to.
+    expect((await callApi('POST', 'push/test', { user, body: {} })).status).toBe(400);
+    expect(
+      (await callApi('POST', 'push/subscribe', { user, body: { channel: 'local', deviceId: 'nope' } })).status,
+    ).toBe(400);
+    await ok(Deleted, 'DELETE', 'push/subscribe', { user, query: { endpoint } });
+  });
+
   it('AC-API-02: hidden barcode and image routes still answer (D3)', async () => {
     const mapping = await ok(envelope(OldBarcode), 'POST', 'barcode-mappings', {
       user,

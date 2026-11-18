@@ -2,7 +2,7 @@ import { authedHandler, assertMethod } from '../../_lib/handler.js';
 import { ApiError } from '../../_lib/errors.js';
 import { parseBody } from '../../_lib/validation.js';
 import { env } from '../../_lib/env.js';
-import { pushSubscribe as subscribeSchema } from '../../_lib/schemas.js';
+import { pushSubscribeBody } from '../../_lib/schemas.js';
 
 function assertVapidConfigured(): void {
   if (!env.vapidPublicKey || !env.vapidPrivateKey) {
@@ -30,20 +30,20 @@ export default authedHandler(async ({ user, client }, req) => {
     return { deleted: true };
   }
 
-  assertVapidConfigured();
-  const body = parseBody(req, subscribeSchema);
+  const body = parseBody(req, pushSubscribeBody);
   const userAgent = req.headers['user-agent'] ?? null;
+
+  // A Fire shell schedules its reminders on the device: it only registers itself (no push keys, no VAPID needed).
+  const row =
+    'channel' in body
+      ? { endpoint: `local:${body.deviceId}`, p256dh: 'local', auth: 'local', channel: 'local' }
+      : { endpoint: body.endpoint, p256dh: body.keys.p256dh, auth: body.keys.auth, channel: 'web-push' };
+  if (row.channel === 'web-push') assertVapidConfigured();
 
   const { data, error } = await client
     .from('push_subscriptions')
     .upsert(
-      {
-        user_id: user.id,
-        endpoint: body.endpoint,
-        p256dh: body.keys.p256dh,
-        auth: body.keys.auth,
-        user_agent: userAgent,
-      },
+      { user_id: user.id, ...row, user_agent: userAgent },
       { onConflict: 'user_id,endpoint' },
     )
     .select('id')

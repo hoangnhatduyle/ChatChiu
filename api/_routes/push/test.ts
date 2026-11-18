@@ -20,7 +20,9 @@ export default authedHandler(async ({ user, client }, req) => {
   let query = client
     .from('push_subscriptions')
     .select('endpoint, p256dh, auth')
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    // A Fire shell notifies itself: only web-push devices can be sent a push.
+    .eq('channel', 'web-push');
   if (endpoint) query = query.eq('endpoint', endpoint);
   const { data: subs, error } = await query;
 

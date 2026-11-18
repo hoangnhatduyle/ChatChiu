@@ -6,3 +6,7 @@ supabase/migrations/
 docs/
 .claude/
 api/
+
+# Generated Android project and local build tools (roadmap 5.9)
+apps/fire-shell/android/
+.toolchain/

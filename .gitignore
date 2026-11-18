@@ -31,3 +31,9 @@ test-results/
 
 # Lighthouse temp profiles created under WSL (Windows-style path names)
 C:*
+
+# Local Android build toolchain (JDK, Android SDK, Gradle cache): never committed
+.toolchain/
+
+# The built Fire APK
+apps/fire-shell/*.apk

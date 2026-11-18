@@ -5,9 +5,14 @@ import tailwindcss from '@tailwindcss/vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { buildVersion, liveUpdatePlugin } from './scripts/live-update-plugin.mjs'
+
+// One version per build: the shell compares it with the bundle it runs (core/native/live-update.ts).
+const APP_VERSION = buildVersion()
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION) },
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] }),
@@ -38,6 +43,7 @@ export default defineConfig({
       },
       devOptions: { enabled: false },
     }),
+    liveUpdatePlugin(APP_VERSION),
   ],
   // The budget gate (scripts/check-bundle-budget.mjs) reads chunk sizes from the manifest.
   build: { manifest: true },

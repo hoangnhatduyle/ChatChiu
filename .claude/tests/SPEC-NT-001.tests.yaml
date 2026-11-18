@@ -1,0 +1,58 @@
+spec_id: SPEC-NT-001
+generated_at: 2026-11-18T19:00:01.431Z
+cases:
+  - id: T-SPEC-NT-001-AC-F_NT_01
+    kind: acceptance
+    traces_to: SPEC-NT-001#F-NT-01
+    assertion: given three items within their days-before window on her subscribed iPhone (Home Screen app), when her notify hour arrives, then one grouped push "3 items expiring soon" arrives, at most once that local day, and tapping it opens the inventory filtered to expiring; on the Fire (outcome B) the shell shows the same reminder with the app closed and after a reboot
+    invariant: false
+  - id: T-SPEC-NT-001-AC-F_NT_02
+    kind: acceptance
+    traces_to: SPEC-NT-001#F-NT-02
+    assertion: given timezone America/Toronto and notify hour 9, when the hourly schedule runs around local midnight and at 9:00, then "today" is her local date (no off-by-one near midnight) and the reminder is sent in the 9:00 local run
+    invariant: false
+  - id: T-SPEC-NT-001-AC-F_NT_03
+    kind: acceptance
+    traces_to: SPEC-NT-001#F-NT-03
+    assertion: given Butter drops to 15% (threshold 20) on the tablet, when the save returns crossedLowStock, then "Butter is running low (15%)" is shown once on that device and once by push to web-push devices, and not again until Butter is restocked
+    invariant: false
+  - id: T-SPEC-NT-001-AC-F_NT_04
+    kind: acceptance
+    traces_to: SPEC-NT-001#F-NT-04
+    assertion: "given the Notifications section on a device, when she taps Send test, then this device gets a test notification and the status reads \"This device: notifications on ✓\" (or the exact reason it isn't: needs Home Screen, permission denied, unsupported)"
+    invariant: false
+  - id: T-SPEC-NT-001-FORBID-device_notifications_KEY_MISMATCH_KEY_MISMATCH
+    kind: forbidden-transition
+    traces_to: SPEC-NT-001#device_notifications:KEY_MISMATCH->KEY_MISMATCH
+    assertion: "[device_notifications] transition KEY_MISMATCH -> KEY_MISMATCH MUST be rejected (A mismatched subscription is never kept across an app start (the D17 root cause))"
+    invariant: true
+  - id: T-SPEC-NT-001-FORBID-device_notifications_NEEDS_HOME_SCREEN_ON
+    kind: forbidden-transition
+    traces_to: SPEC-NT-001#device_notifications:NEEDS_HOME_SCREEN->ON
+    assertion: "[device_notifications] transition NEEDS_HOME_SCREEN -> ON MUST be rejected (iOS only allows push from the Home Screen app)"
+    invariant: true
+  - id: T-SPEC-NT-001-NC-NC_NT_NO_HARDCODED_VAPID
+    kind: negative-constraint
+    traces_to: SPEC-NT-001#NC-NT-NO-HARDCODED-VAPID
+    assertion: The VAPID public key MUST NOT be hard-coded in source; it comes from VITE_VAPID_PUBLIC_KEY
+    invariant: true
+  - id: T-SPEC-NT-001-NC-NC_NT_NO_SILENT_FAILURE
+    kind: negative-constraint
+    traces_to: SPEC-NT-001#NC-NT-NO-SILENT-FAILURE
+    assertion: Push failures MUST NOT be swallowed; dead subscriptions (404/410) are deleted and failures are recorded readably
+    invariant: true
+  - id: T-SPEC-NT-001-NC-NC_NT_NO_DUPLICATES
+    kind: negative-constraint
+    traces_to: SPEC-NT-001#NC-NT-NO-DUPLICATES
+    assertion: A device MUST NOT get the same reminder from both web push and local notifications, nor more than one expiry reminder per local day
+    invariant: true
+  - id: T-SPEC-NT-001-NC-NC_NT_ONE_SENDER
+    kind: negative-constraint
+    traces_to: SPEC-NT-001#NC-NT-ONE-SENDER
+    assertion: The old and new apps MUST NOT both send scheduled pushes; the new send job stays off until cutover step 4
+    invariant: true
+  - id: T-SPEC-NT-001-NC-NC_NT_NO_PROD_ENV_WITHOUT_ASK
+    kind: negative-constraint
+    traces_to: SPEC-NT-001#NC-NT-NO-PROD-ENV-WITHOUT-ASK
+    assertion: VAPID keys, CRON_SECRET and schedule settings in production MUST NOT be changed without the user's go-ahead
+    invariant: true

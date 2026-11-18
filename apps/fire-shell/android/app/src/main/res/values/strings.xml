@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Chắt Chiu</string>
+    <string name="title_activity_main">Chắt Chiu</string>
+    <string name="package_name">app.chatchiu.fire</string>
+    <string name="custom_url_scheme">app.chatchiu.fire</string>
+</resources>

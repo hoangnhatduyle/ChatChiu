@@ -3,6 +3,7 @@
 import { BrowserRouter } from 'react-router'
 import { AppRoutes } from './AppRoutes'
 import { AuthProvider } from './core/auth'
+import { LiveUpdateCheck } from './core/native/LiveUpdateCheck'
 import { ToastProvider } from './core/toast'
 import { AppErrorBoundary } from './shell/RouteErrorBoundary'
 
@@ -14,6 +15,7 @@ export default function App() {
           <BrowserRouter>
             <AppRoutes />
           </BrowserRouter>
+          <LiveUpdateCheck />
         </ToastProvider>
         {import.meta.env.VITE_ENABLE_DIAGNOSTICS === 'true' && (
           <a

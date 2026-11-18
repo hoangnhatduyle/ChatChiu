@@ -8,6 +8,7 @@ import type {
   InventoryItem,
   InventoryItemCreate,
   InventoryItemUpdate,
+  Preferences,
   Restock,
   UsageEntry,
   UsageLog,
@@ -16,6 +17,7 @@ import type {
 import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { api } from '../core/api-client'
 import { queryKeys, useApiQuery } from './query'
+import { onLowStockCrossed, onRestocked } from './local-low-stock'
 import { defineResource, deleteRow, tempGuard, type ListStore } from './resource'
 import { defineWrite } from './write'
 
@@ -148,6 +150,9 @@ export const logUsage = defineWrite<UsageInput, UsageLogResult, UsageUndo>({
   },
   reconcile: (client, result) => {
     replaceItem(client, result.item)
+    if (result.crossedLowStock) {
+      void onLowStockCrossed(result.item, client.getQueryData<Preferences>(queryKeys.preferences))
+    }
     // The usage list (panel history and run-out sentence) has a new entry.
     void client.invalidateQueries({ queryKey: queryKeys.usage(result.itemId) })
   },
@@ -220,6 +225,7 @@ export const restock = defineWrite<
   },
   reconcile: (client, item, _undo, input) => {
     replaceItem(client, item)
+    onRestocked(input.id)
     void client.invalidateQueries({ queryKey: queryKeys.usage(input.id) })
   },
   rollback: (client, { id, before }) => {

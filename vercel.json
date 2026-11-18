@@ -61,6 +61,13 @@
       ]
     },
     {
+      "source": "/version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Access-Control-Allow-Origin", "value": "https://localhost" }
+      ]
+    },
+    {
       "source": "/sw-push.js",
       "headers": [
         {

@@ -2,6 +2,19 @@
 // core/notify/webPush.ts; saving and removing the subscription go through the data layer's writes.
 import { useCallback, useEffect, useState } from 'react'
 import { userMessage } from '../../core/errors'
+import { useSession } from '../../core/session-context'
+import {
+  disableLocal,
+  enableLocal,
+  forgetLocal,
+  isNativeShell,
+  isRegistered,
+  loadLocalPlugin,
+  localDeviceId,
+  readLocalState,
+  REMINDERS_CHANGED,
+  sendLocalTest,
+} from '../../core/notify/localNotify'
 import {
   defaultPushEnv,
   disableDevice,
@@ -27,6 +40,8 @@ export type DeviceNotifications = {
   sendTest: () => Promise<boolean>
   /** True when something may be subscribed here that sign-out must remove first. */
   needsRemovalOnSignOut: boolean
+  /** Leaving without the server (Sign out anyway): on the Fire, stop this tablet's reminders at least. */
+  forgetLocally: () => Promise<void>
 }
 
 /** Waits for a write and throws its error, so the browser-side helpers see a failed save as a failure. */
@@ -41,22 +56,41 @@ export function useDeviceNotifications(): DeviceNotifications {
   const remove = useWrite(removePushSubscription)
   const test = useWrite(sendTestPush)
   const [device, setDevice] = useState<DeviceState | null>(null)
+  const native = isNativeShell()
+  const userId = useSession().user?.id ?? ''
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let current = true
-    readDeviceState(defaultPushEnv(), VAPID_PUBLIC_KEY)
-      .then((state) => current && setDevice(state))
-      .catch(() => {
-        if (!current) return
-        setDevice({ state: 'UNKNOWN' })
-        setError("Couldn't check notifications on this device.")
-      })
+    const check = () => {
+      // On the Fire the browser has no push: reminders are scheduled on the device itself (localNotify.ts).
+      const read = native
+        ? loadLocalPlugin().then((plugin) =>
+            readLocalState(
+              plugin,
+              localDeviceId(window.localStorage),
+              isRegistered(window.localStorage, userId),
+            ),
+          )
+        : readDeviceState(defaultPushEnv(), VAPID_PUBLIC_KEY)
+      read
+        .then((state) => current && setDevice(state))
+        .catch(() => {
+          if (!current) return
+          setDevice({ state: 'UNKNOWN' })
+          setError("Couldn't check notifications on this device.")
+        })
+    }
+    check()
+    // Coming back from the tablet's settings (permission allowed or revoked there): read the state again.
+    const onVisible = () => document.visibilityState === 'visible' && native && check()
+    document.addEventListener('visibilitychange', onVisible)
     return () => {
       current = false
+      document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [])
+  }, [native, userId])
 
   const run = useCallback(
     async <T>(
@@ -79,39 +113,57 @@ export function useDeviceNotifications(): DeviceNotifications {
   )
 
   const enable = useCallback(async () => {
-    const result = await run(
-      () =>
-        enableDevice(defaultPushEnv(), VAPID_PUBLIC_KEY, (sub) =>
-          saved(save(sub)).then(() => undefined),
-        ),
-      "Couldn't turn on notifications.",
-    )
+    const result = await run(async () => {
+      const register = (sub: Parameters<typeof save>[0]) => saved(save(sub)).then(() => undefined)
+      if (!native) return enableDevice(defaultPushEnv(), VAPID_PUBLIC_KEY, register)
+      const state = await enableLocal(
+        await loadLocalPlugin(),
+        localDeviceId(window.localStorage),
+        register,
+        window.localStorage,
+        userId,
+      )
+      // The schedule is built from the items as soon as this device is registered.
+      window.dispatchEvent(new Event(REMINDERS_CHANGED))
+      return state
+    }, "Couldn't turn on notifications.")
     if ('value' in result) setDevice(result.value)
-  }, [run, save])
+  }, [run, save, native, userId])
 
   const disable = useCallback(async () => {
-    const result = await run(
-      () =>
-        disableDevice(defaultPushEnv(), (endpoint) =>
-          saved(remove({ endpoint })).then(() => undefined),
-        ),
-      "Couldn't turn off notifications.",
-    )
+    const result = await run(async () => {
+      const forget = (endpoint: string) => saved(remove({ endpoint })).then(() => undefined)
+      if (native)
+        await disableLocal(
+          await loadLocalPlugin(),
+          localDeviceId(window.localStorage),
+          forget,
+          window.localStorage,
+        )
+      else await disableDevice(defaultPushEnv(), forget)
+    }, "Couldn't turn off notifications.")
     if ('message' in result) return result.message
     setDevice({ state: 'OFF' })
     return null
-  }, [run, remove])
+  }, [run, remove, native])
 
   const endpoint = device?.state === 'ON' ? device.endpoint : null
   const sendTest = useCallback(async () => {
     if (!endpoint) return false
-    const result = await run(() => saved(test({ endpoint })), "Couldn't send the test.")
+    const result = await run(
+      async () => (native ? sendLocalTest(await loadLocalPlugin()) : saved(test({ endpoint }))),
+      "Couldn't send the test.",
+    )
     return 'value' in result
-  }, [run, test, endpoint])
+  }, [run, test, endpoint, native])
 
   // Still checking, failed to check, a stale key or on: all may hold a subscription the server knows.
   const state = device?.state ?? 'UNKNOWN'
   const needsRemovalOnSignOut = state === 'ON' || state === 'KEY_MISMATCH' || state === 'UNKNOWN'
 
-  return { device, busy, error, enable, disable, sendTest, needsRemovalOnSignOut }
+  const forgetLocally = useCallback(async () => {
+    if (native) await forgetLocal(await loadLocalPlugin(), window.localStorage)
+  }, [native])
+
+  return { device, busy, error, enable, disable, sendTest, needsRemovalOnSignOut, forgetLocally }
 }

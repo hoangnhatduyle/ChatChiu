@@ -88,6 +88,19 @@ export const pushSubscribe = z.object({
 })
 export type PushSubscribe = z.infer<typeof pushSubscribe>
 
+/**
+ * A Fire tablet shell notifies itself on the device (architecture.md §6.4): it registers as a `local` device, so the
+ * server knows it exists and never pushes to it. `deviceId` is made once on the device.
+ */
+export const pushSubscribeLocal = z.object({
+  channel: z.literal('local'),
+  deviceId: z.string().uuid(),
+})
+export type PushSubscribeLocal = z.infer<typeof pushSubscribeLocal>
+
+/** POST /api/push/subscribe takes either shape. */
+export const pushSubscribeBody = z.union([pushSubscribeLocal, pushSubscribe])
+
 /** POST /api/push/test: the device that pressed the button names itself; without an endpoint every device gets it. */
 export const pushTest = z.object({
   endpoint: z

@@ -4,7 +4,10 @@
 import { api } from '../core/api-client'
 import { defineWrite } from './write'
 
-export const savePushSubscription = defineWrite<PushSubscriptionJSON, { id: number }>({
+/** A browser's push subscription, or a Fire shell registering itself as a local device (SPEC-NT-001). */
+export type DeviceRegistration = PushSubscriptionJSON | { channel: 'local'; deviceId: string }
+
+export const savePushSubscription = defineWrite<DeviceRegistration, { id: number }>({
   key: 'push/subscribe',
   label: 'Turn on notifications',
   persist: false,

@@ -20,6 +20,7 @@ import { useUndo } from '../core/toast-context'
 import './register'
 import { ThemeSync } from './ThemeSync'
 import { FailedWriteToasts } from './failed-write-toasts'
+import { LocalReminderSync } from './LocalReminderSync'
 import { PushKeyCheck } from './PushKeyCheck'
 import { RealtimeSync } from './RealtimeSync'
 import { createLeadership } from './leadership'
@@ -115,6 +116,7 @@ function UserData({ userId }: { userId: string }) {
       <RealtimeSync />
       <ThemeSync />
       <PushKeyCheck />
+      <LocalReminderSync />
       <Outlet />
     </PersistQueryClientProvider>
   )

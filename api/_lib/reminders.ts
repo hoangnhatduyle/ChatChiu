@@ -1,5 +1,14 @@
 import { DEFAULT_NOTIFY_HOUR, DEFAULT_TIMEZONE } from '@chatchiu/contracts';
-import { daysLeft, isLowStock, localHourInTimeZone, todayInTimeZone } from '@chatchiu/domain';
+import {
+  cleanName as cleanNameText,
+  daysLeft,
+  expiryReminder,
+  isLowStock,
+  localHourInTimeZone,
+  lowStockReminder,
+  nameList as nameListText,
+  todayInTimeZone,
+} from '@chatchiu/domain';
 import type { PushPayload } from './push.js';
 
 // Pure planning for the scheduled send job (architecture.md §6.5, AC-API-18/19).
@@ -38,8 +47,6 @@ export interface UserPlan {
 }
 
 const DEFAULT_DAYS_BEFORE = 3;
-const MAX_NAME = 60;
-const MAX_NAMES = 3;
 
 /** A user with no preferences row: UTC, notify hour 9, alerts on (decided 2026-11-16). */
 export const DEFAULT_REMINDER_PREFS: ReminderPrefs = {
@@ -89,37 +96,22 @@ export function planForUser(
   };
 }
 
-/** Item names as plain, short text: control characters removed, at most 60 characters. */
-export function cleanName(name: string): string {
-  // eslint-disable-next-line no-control-regex
-  const plain = name.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
-  return plain.length > MAX_NAME ? `${plain.slice(0, MAX_NAME - 1)}…` : plain;
-}
+/** Item names as plain, short text (shared wording: packages/domain reminder-text). */
+export const cleanName = cleanNameText;
 
 /** "A, B, C and 2 more": bounded, so a payload always fits Web Push's ~4 KB. */
 export function nameList(items: readonly ReminderItem[]): string {
-  const names = items.slice(0, MAX_NAMES).map((i) => cleanName(i.name));
-  const more = items.length - names.length;
-  return more > 0 ? `${names.join(', ')} and ${more} more` : names.join(', ');
+  return nameListText(items.map((i) => i.name));
 }
 
 /** Same wording as the old job; the tag no longer carries the user id. */
 export function expiryPayload(items: readonly ReminderItem[], localToday: string): PushPayload {
-  const count = items.length;
-  return {
-    title: count === 1 ? 'Item expiring soon' : `${count} items expiring soon`,
-    body: count === 1 ? `${cleanName(items[0]?.name ?? '')} expires soon` : nameList(items),
-    url: '/stock?status=expiring',
-    tag: `expiring-${localToday}`,
-  };
+  return expiryReminder(
+    items.map((i) => i.name),
+    localToday,
+  );
 }
 
 export function lowStockPayload(items: readonly ReminderItem[]): PushPayload {
-  const count = items.length;
-  return {
-    title: count === 1 ? 'Running low' : `${count} items running low`,
-    body: count === 1 ? `${cleanName(items[0]?.name ?? '')} is running low` : nameList(items),
-    url: '/',
-    tag: 'low-stock',
-  };
+  return lowStockReminder(items.map((i) => i.name));
 }
