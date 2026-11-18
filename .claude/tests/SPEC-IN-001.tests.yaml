@@ -1,0 +1,83 @@
+spec_id: SPEC-IN-001
+generated_at: 2026-11-18T02:41:33.397Z
+cases:
+  - id: T-SPEC-IN-001-AC-F_IN_01
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-01
+    assertion: given items with "oat" in the name of one and in the notes of another, and one whose barcode contains "oat", when she searches "oat", then the first two match and the barcode-only one does not
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_02
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-02
+    assertion: given filters category Dairy, location Fridge, status expiring, when she applies them, then only matching items show and the URL holds the filters, so Back and refresh keep them; status expiring means within 3 days
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_03
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-03
+    assertion: given the sort control, when she picks expiry, name, quantity or recently added, then the list orders accordingly (ported applyFilters semantics)
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_04
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-04
+    assertion: given the group control, when she picks none, category or location, then items are grouped with headers accordingly
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_05
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-05
+    assertion: given widths 1023 px and 1024 px, when the page renders with no override, then cards below 1024 px and the table from 1024 px; a manual override is remembered on this device
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_06
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-06
+    assertion: given 300 items, when she scrolls, then rows are virtualised and there are no page controls
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_07
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-07
+    assertion: given 2 expired and 3 expiring items, when the page renders, then counters show 2 and 3, and tapping one applies that status filter
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_08
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-08
+    assertion: given a card's usage bar, when she drags it down and releases, then it behaves as F-KB-04 (save on release, Undo, no confirm)
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_09
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-09
+    assertion: given a row or card, when she taps it, then the quick-action panel opens (Edit, usage, restock, waste, delete live there); no View image action exists (D3)
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_10
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-10
+    assertion: given select mode with 4 items selected, when she taps Delete selected, then the 4 disappear with an Undo toast, and one DELETE /api/inventory/bulk is sent after the window; select all / none work
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_11
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-11
+    assertion: given an item with per-unit price 0.40 and 6 left, when she moves it to waste, then the waste toast and log show value 2.40
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_12
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-12
+    assertion: given the inventory page, when it renders, then no barcode scan control is present (hidden by D3) and barcode_mappings / inventory_items.barcode are never written by the new app
+    invariant: true
+  - id: T-SPEC-IN-001-AC-F_IN_13
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-13
+    assertion: given the inventory page, when she taps Scan receipt, then the receipt scan flow (SPEC-RS-001) opens
+    invariant: false
+  - id: T-SPEC-IN-001-AC-F_IN_14
+    kind: acceptance
+    traces_to: SPEC-IN-001#F-IN-14
+    assertion: given filters set on a previous visit, when she opens the inventory page from the nav without URL params, then the last-used filters are restored into the URL
+    invariant: false
+  - id: T-SPEC-IN-001-FORBID-bulk_delete_UNDONE_SENT
+    kind: forbidden-transition
+    traces_to: SPEC-IN-001#bulk_delete:UNDONE->SENT
+    assertion: "[bulk_delete] transition UNDONE -> SENT MUST be rejected (An undone bulk delete must never reach the server)"
+    invariant: true
+  - id: T-SPEC-IN-001-NC-NC_IN_NO_BARCODE_UI
+    kind: negative-constraint
+    traces_to: SPEC-IN-001#NC-IN-NO-BARCODE-UI
+    assertion: No barcode scan button or image viewer may be rendered (D3), and the new app MUST NOT modify barcode or image data
+    invariant: true

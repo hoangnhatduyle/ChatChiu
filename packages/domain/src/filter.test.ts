@@ -71,6 +71,18 @@ describe('inventory filters (ported applyFilters, F-IN-01…03, F-IN-07)', () =>
     expect(filterItems(items, { sort: 'recent' }, today).map((i) => i.id)).toEqual([4, 3, 2, 1])
   })
 
+  it('ties in name or quantity sort fall back to the id, whatever order the list arrives in', () => {
+    const twins = [
+      { ...items[0]!, id: 9, name: 'Twin' },
+      { ...items[0]!, id: 3, name: 'Twin' },
+      { ...items[0]!, id: 5, name: 'Twin' },
+    ]
+    for (const sort of ['name', 'quantity'] as const) {
+      expect(filterItems(twins, { sort }, today).map((i) => i.id)).toEqual([3, 5, 9])
+      expect(filterItems([...twins].reverse(), { sort }, today).map((i) => i.id)).toEqual([3, 5, 9])
+    }
+  })
+
   it('does not mutate its input', () => {
     const copy = [...items]
     filterItems(items, { sort: 'name' }, today)

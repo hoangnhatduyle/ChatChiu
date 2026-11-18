@@ -42,8 +42,9 @@ export function compareByExpiryThenName(a: FilterableItem, b: FilterableItem): n
 
 const COMPARATORS: Record<SortKey, (a: FilterableItem, b: FilterableItem) => number> = {
   expiry: compareByExpiryThenName,
-  name: (a, b) => a.name.localeCompare(b.name),
-  quantity: (a, b) => getRemainingQuantity(a) - getRemainingQuantity(b),
+  // Ties fall back to the id, so the order never depends on how the list happened to arrive.
+  name: (a, b) => a.name.localeCompare(b.name) || a.id - b.id,
+  quantity: (a, b) => getRemainingQuantity(a) - getRemainingQuantity(b) || a.id - b.id,
   recent: (a, b) => b.id - a.id,
 }
 

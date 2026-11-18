@@ -89,6 +89,10 @@ function renderForm(
 }
 type User = ReturnType<typeof userEvent.setup>
 
+/** A toast in the visible region (its text is also in the screen-reader live region, after a short delay). */
+const inToasts = (text: string | RegExp) =>
+  within(screen.getByRole('region', { name: 'Notifications' })).getByText(text)
+
 const textbox = (name: RegExp) => screen.getByRole('textbox', { name })
 async function pick(user: User, label: RegExp, option: string) {
   await user.click(screen.getByRole('button', { name: label }))
@@ -458,7 +462,7 @@ describe('F-IF-16 save returns to the board', () => {
     // Still being saved (the server has not answered): the row is on the board without an Open button.
     expect(await screen.findByText('Butter')).toBeInTheDocument()
     expect(screen.getByText('Saving…')).toBeInTheDocument()
-    expect(screen.getByText(/Adding Butter/)).toBeInTheDocument()
+    expect(inToasts(/Adding Butter/)).toBeInTheDocument()
   })
 
   it('an edit saves with a toast and returns to the board showing the new name', async () => {
@@ -470,7 +474,7 @@ describe('F-IF-16 save returns to the board', () => {
     await save(user)
     await waitFor(() => expect(location()).toBe('/'))
     expect(await screen.findByRole('button', { name: 'Open Oat milk' })).toBeInTheDocument()
-    expect(screen.getByText(/Saving Oat milk/)).toBeInTheDocument()
+    expect(inToasts(/Saving Oat milk/)).toBeInTheDocument()
     expect(api.patch).toHaveBeenCalledWith(
       '/api/inventory/5',
       { name: 'Oat milk' },
@@ -592,6 +596,6 @@ describe('review fixes', () => {
     await screen.findByRole('textbox', { name: /^Name/ })
     await fillValid(user)
     await save(user)
-    expect(await screen.findByText('Added Butter')).toBeInTheDocument()
+    await waitFor(() => expect(inToasts('Added Butter')).toBeInTheDocument())
   })
 })

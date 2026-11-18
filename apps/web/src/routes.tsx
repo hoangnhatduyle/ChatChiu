@@ -10,7 +10,14 @@ import { LoginPage, RegisterPage, ResetPasswordPage } from './features/auth/page
 import { AppShell } from './shell/AppShell'
 import { DESTINATIONS } from './shell/nav'
 import { RoutePageBoundary } from './shell/RouteErrorBoundary'
-import { ItemFormPage, KitchenPage, MorePage, NotFoundPage, PendingPage } from './shell/pages'
+import {
+  InventoryPage,
+  ItemFormPage,
+  KitchenPage,
+  MorePage,
+  NotFoundPage,
+  PendingPage,
+} from './shell/pages'
 
 export const routes: RouteObject[] = [
   {
@@ -30,11 +37,14 @@ export const routes: RouteObject[] = [
                 element: <RoutePageBoundary />,
                 children: [
                   { index: true, element: <KitchenPage /> },
-                  ...DESTINATIONS.filter((d) => d.path !== '/').map((d): RouteObject => ({
-                    path: d.path.slice(1),
-                    element: <PendingPage title={d.title} icon={d.icon} />,
-                  })),
+                  ...DESTINATIONS.filter((d) => d.path !== '/' && d.path !== '/stock').map(
+                    (d): RouteObject => ({
+                      path: d.path.slice(1),
+                      element: <PendingPage title={d.title} icon={d.icon} />,
+                    }),
+                  ),
                   { path: 'more', element: <MorePage /> },
+                  { path: 'stock', element: <InventoryPage /> },
                   // The item form (5.3); the receipt scan (5.10) is a stand-in until its step lands.
                   { path: 'stock/new', element: <ItemFormPage /> },
                   { path: 'stock/:id/edit', element: <ItemFormPage /> },
