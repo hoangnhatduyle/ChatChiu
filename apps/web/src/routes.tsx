@@ -10,7 +10,7 @@ import { LoginPage, RegisterPage, ResetPasswordPage } from './features/auth/page
 import { AppShell } from './shell/AppShell'
 import { DESTINATIONS } from './shell/nav'
 import { RoutePageBoundary } from './shell/RouteErrorBoundary'
-import { KitchenPage, MorePage, NotFoundPage, PendingPage } from './shell/pages'
+import { ItemFormPage, KitchenPage, MorePage, NotFoundPage, PendingPage } from './shell/pages'
 
 export const routes: RouteObject[] = [
   {
@@ -35,9 +35,9 @@ export const routes: RouteObject[] = [
                     element: <PendingPage title={d.title} icon={d.icon} />,
                   })),
                   { path: 'more', element: <MorePage /> },
-                  // Targets of the board's links until their steps land (5.3 item form, 5.10 receipt scan).
-                  { path: 'stock/new', element: <PendingPage title="Add item" icon="plus" /> },
-                  { path: 'stock/:id/edit', element: <PendingPage title="Edit item" icon="box" /> },
+                  // The item form (5.3); the receipt scan (5.10) is a stand-in until its step lands.
+                  { path: 'stock/new', element: <ItemFormPage /> },
+                  { path: 'stock/:id/edit', element: <ItemFormPage /> },
                   { path: 'scan', element: <PendingPage title="Scan receipt" icon="scan" /> },
                   { path: '*', element: <NotFoundPage /> },
                 ],

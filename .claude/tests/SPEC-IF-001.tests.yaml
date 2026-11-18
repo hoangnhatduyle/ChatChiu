@@ -1,5 +1,5 @@
 spec_id: SPEC-IF-001
-generated_at: 2026-11-17T03:51:09.538Z
+generated_at: 2026-11-18T01:25:23.346Z
 cases:
   - id: T-SPEC-IF-001-AC-F_IF_01
     kind: acceptance

@@ -72,8 +72,12 @@ async function seed(account: Account): Promise<Seeded> {
 async function routeApi(context: BrowserContext) {
   await context.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
-    const response = await route.fetch({ url: `${api.baseUrl}${url.pathname}${url.search}` })
-    await route.fulfill({ response })
+    try {
+      const response = await route.fetch({ url: `${api.baseUrl}${url.pathname}${url.search}` })
+      await route.fulfill({ response })
+    } catch {
+      // The test ended while this request was still in flight: nothing is left to answer.
+    }
   })
 }
 
@@ -147,7 +151,9 @@ test('F-QP-05 / 7.0.21c: Move to waste is sent when the tab is hidden, and the w
   const { milkId } = await seed(account)
   const panel = await openPanel(page, milkId, 'Milk', app.url)
   await panel.getByRole('button', { name: 'Move to waste' }).click()
-  await expect(page.getByText(/moved to waste \(3\.00\)/)).toBeVisible()
+  await expect(
+    page.getByRole('region', { name: 'Notifications' }).getByText(/moved to waste \(3\.00\)/),
+  ).toBeVisible()
   await page.goto('about:blank') // leaving the page fires pagehide, as closing the tab does
   await expect
     .poll(
