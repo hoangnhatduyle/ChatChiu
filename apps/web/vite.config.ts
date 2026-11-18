@@ -27,6 +27,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,woff2,ico,png,svg,webmanifest}'],
         globIgnores: [
           '**/sw-diagnostics.js',
+          '**/sw-push.js',
           'chac-chiu-icon.png',
           'icons/icon-{72x72,128x128,144x144,152x152,192x192,384x384,512x512}.png',
           'icons/icon-maskable-*.png',

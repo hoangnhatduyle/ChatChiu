@@ -87,3 +87,13 @@ export const pushSubscribe = z.object({
   }),
 })
 export type PushSubscribe = z.infer<typeof pushSubscribe>
+
+/** POST /api/push/test: the device that pressed the button names itself; without an endpoint every device gets it. */
+export const pushTest = z.object({
+  endpoint: z
+    .string()
+    .url()
+    .max(2000)
+    .refine(isAllowedPushEndpoint, 'Unknown push service')
+    .optional(),
+})

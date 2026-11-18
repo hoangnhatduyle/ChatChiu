@@ -58,7 +58,7 @@ describe('manifest.webmanifest', () => {
 
 describe('index.html', () => {
   it('F-AP-01: the theme-color meta tags follow the light and dark page tokens', () => {
-    const meta = [...html.matchAll(/<meta name="theme-color"([^>]*)>/g)].map((m) => m[1] ?? '')
+    const meta = [...html.matchAll(/<meta\s+name="theme-color"([^>]*)>/g)].map((m) => m[1] ?? '')
     const light = meta.find((m) => /prefers-color-scheme: light/.test(m))
     const dark = meta.find((m) => /prefers-color-scheme: dark/.test(m))
     expect(light).toMatch(new RegExp(`content="${themes.light.accent}"`, 'i'))

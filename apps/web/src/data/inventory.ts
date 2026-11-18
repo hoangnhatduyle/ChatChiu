@@ -93,6 +93,13 @@ export const locationWrites = defineResource<
   noun: 'a location',
   path: '/api/locations',
   store: bootstrapStore('locations'),
+  // The server moves a deleted location's items to "No location"; the cache says so too.
+  onRemoved: (client, id) =>
+    itemsStore.write(
+      client,
+      itemsStore.read(client).map((i) => (i.locationId === id ? { ...i, locationId: null } : i)),
+      { cancelFetch: false },
+    ),
   draft: (body, id) => ({
     id,
     userId: '',

@@ -82,6 +82,8 @@ export type ResourceOptions<T extends Row, TCreate> = {
   draft: (body: TCreate, tempId: number) => T
   /** Runs after a create, update or delete is saved: refresh anything computed from these rows (e.g. statistics). */
   onSaved?: (client: QueryClient) => void
+  /** Runs after a delete is saved, with the id that went (e.g. items lose a deleted location). */
+  onRemoved?: (client: QueryClient, id: number) => void
 }
 
 export type Resource<T extends Row, TCreate, TUpdate> = {
@@ -186,7 +188,10 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
       )
       return { row, index }
     },
-    reconcile: (client) => o.onSaved?.(client),
+    reconcile: (client, _data, _undo, { id }) => {
+      o.onSaved?.(client)
+      o.onRemoved?.(client, id)
+    },
     rollback: (client, undo) => {
       if (!undo) return
       const rows = o.store.read(client).filter((r) => r.id !== undo.row.id)

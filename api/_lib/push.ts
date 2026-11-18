@@ -52,7 +52,7 @@ export async function sendPushToMany(
       sent++;
     } catch (err) {
       failed++;
-      console.warn('[push] delivery failed', sub.endpoint, err);
+      console.warn('[push] delivery failed', hostOf(sub.endpoint), err instanceof Error ? err.name : 'error');
     }
   }
   return { sent, failed };

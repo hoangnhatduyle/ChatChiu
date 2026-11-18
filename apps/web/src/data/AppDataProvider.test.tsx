@@ -28,6 +28,8 @@ import {
 } from './query-client'
 import { usePendingWrites, useSyncSummary } from './sync-status'
 
+// The theme follower reads preferences over the network; this file is about the saved cache and queue.
+vi.mock('./ThemeSync', () => ({ ThemeSync: () => null }))
 vi.mock('../core/supabase.client', async () => (await import('../test/fake-auth')).fakeAuthModule())
 
 // Lets one test make IndexedDB reads fail; every other test uses the real (fake) implementation.

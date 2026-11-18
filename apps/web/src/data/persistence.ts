@@ -158,7 +158,8 @@ export function createIdbPersister(
 /** Removes one user's saved cache, queue and the copies kept aside ("Reset app cache", step 5.8). */
 export async function deletePersistedCache(userId: string, store: CacheStore = defaultStore()) {
   const key = `${KEY_PREFIX}${userId}`
+  // A key that cannot be removed is an error: "Reset app cache" must not reload into the cache it meant to drop.
   for (const k of [key, `${key}${CORRUPT_SUFFIX}`, `${key}${DISCARDED_SUFFIX}`]) {
-    await store.removeItem(k).catch(() => undefined)
+    await store.removeItem(k)
   }
 }

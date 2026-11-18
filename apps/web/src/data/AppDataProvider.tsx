@@ -18,7 +18,9 @@ import { getConnectivity } from '../core/connectivity'
 import { useSession } from '../core/session-context'
 import { useUndo } from '../core/toast-context'
 import './register'
+import { ThemeSync } from './ThemeSync'
 import { FailedWriteToasts } from './failed-write-toasts'
+import { PushKeyCheck } from './PushKeyCheck'
 import { RealtimeSync } from './RealtimeSync'
 import { createLeadership } from './leadership'
 import { createIdbPersister } from './persistence'
@@ -111,6 +113,8 @@ function UserData({ userId }: { userId: string }) {
     >
       <FailedWriteToasts />
       <RealtimeSync />
+      <ThemeSync />
+      <PushKeyCheck />
       <Outlet />
     </PersistQueryClientProvider>
   )

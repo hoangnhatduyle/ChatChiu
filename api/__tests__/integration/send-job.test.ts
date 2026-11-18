@@ -226,7 +226,7 @@ describe('scheduled send job', () => {
     expect(JSON.parse(ok[0]?.[1] ?? '{}')).toMatchObject({
       title: '2 items expiring soon',
       body: 'Milk, Yoghurt',
-      url: '/inventory',
+      url: '/stock?status=expiring',
     });
     expect(pushesTo('carol-fire', /./)).toHaveLength(0);
     expect(pushesTo('carol', /low|running/i)).toHaveLength(0); // still marked from the 8:00 run

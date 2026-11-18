@@ -1,6 +1,6 @@
 // Route table (architecture.md §2). Every page is a React.lazy chunk, checked against the budgets
 // in scripts/check-bundle-budget.mjs (initial JS incl. the board route <= 200 KB gz, each other
-// route <= 120 KB gz). Phase 5 swaps each PendingPage for its feature page.
+// route <= 120 KB gz). The scan route stays a PendingPage until step 5.10.
 import type { RouteObject } from 'react-router'
 import { LOGIN_PATH, RESET_PASSWORD_PATH } from './core/auth-paths'
 import { PublicRoute } from './core/PublicRoute'
@@ -8,7 +8,6 @@ import { RequireAuth } from './core/RequireAuth'
 import { AppDataProvider } from './data/AppDataProvider'
 import { LoginPage, RegisterPage, ResetPasswordPage } from './features/auth/pages'
 import { AppShell } from './shell/AppShell'
-import { DESTINATIONS } from './shell/nav'
 import { RoutePageBoundary } from './shell/RouteErrorBoundary'
 import {
   InventoryPage,
@@ -18,6 +17,7 @@ import {
   MorePage,
   NotFoundPage,
   PendingPage,
+  SettingsPage,
   ShoppingPage,
   StatsPage,
 } from './shell/pages'
@@ -40,17 +40,7 @@ export const routes: RouteObject[] = [
                 element: <RoutePageBoundary />,
                 children: [
                   { index: true, element: <KitchenPage /> },
-                  ...DESTINATIONS.filter(
-                    (d) =>
-                      d.path !== '/' &&
-                      d.path !== '/stock' &&
-                      d.path !== '/shopping' &&
-                      d.path !== '/meals' &&
-                      d.path !== '/stats',
-                  ).map((d): RouteObject => ({
-                    path: d.path.slice(1),
-                    element: <PendingPage title={d.title} icon={d.icon} />,
-                  })),
+                  { path: 'settings', element: <SettingsPage /> },
                   { path: 'more', element: <MorePage /> },
                   { path: 'stock', element: <InventoryPage /> },
                   { path: 'shopping', element: <ShoppingPage /> },

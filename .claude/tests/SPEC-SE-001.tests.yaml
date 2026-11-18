@@ -1,0 +1,53 @@
+spec_id: SPEC-SE-001
+generated_at: 2026-11-18T17:06:46.991Z
+cases:
+  - id: T-SPEC-SE-001-AC-F_SE_01
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-01
+    assertion: given location Fridge with 7 items, when she deletes it, then she sees that 7 items will move to No location, the delete has Undo, and afterwards the 7 items are on the board under No location
+    invariant: false
+  - id: T-SPEC-SE-001-AC-F_SE_02
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-02
+    assertion: given her own categories and possibly some is_system ones, when she adds, edits (name, icon, colour) or deletes her own, then the changes save; is_system rows show read-only; with zero system categories the section still works; deleting a category still used by items shows a readable error
+    invariant: false
+  - id: T-SPEC-SE-001-AC-F_SE_03
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-03
+    assertion: given the Notifications section, when it renders, then it behaves as SPEC-NT-001 (status, enable/disable on this device, test, timezone, notify hour, toggles)
+    invariant: false
+  - id: T-SPEC-SE-001-AC-F_SE_04
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-04
+    assertion: given items in the inventory, when she taps Export CSV, then a CSV with the same columns as the old export downloads
+    invariant: false
+  - id: T-SPEC-SE-001-AC-F_SE_05
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-05
+    assertion: given a new deployment, when the service worker finds it, then a "New version — Reload" toast appears; Reset app cache clears caches after a confirm (irreversible)
+    invariant: false
+  - id: T-SPEC-SE-001-AC-F_SE_06
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-06
+    assertion: given the Appearance section, when she picks System, Light or Dark, then the theme applies at once (Fresh Ledger / Fresh Ledger Dark), System follows the device, and the choice persists
+    invariant: false
+  - id: T-SPEC-SE-001-AC-F_SE_07
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-07
+    assertion: given Settings, when she taps Sign out, then it behaves as F-AU-06
+    invariant: false
+  - id: T-SPEC-SE-001-FORBID-location_delete_DELETED_LISTED
+    kind: forbidden-transition
+    traces_to: SPEC-SE-001#location_delete:DELETED->LISTED
+    assertion: "[location_delete] transition DELETED -> LISTED MUST be rejected (A deleted location is not restored; its items stay under No location)"
+    invariant: true
+  - id: T-SPEC-SE-001-NC-NC_SE_NO_ORPHAN_SURPRISE
+    kind: negative-constraint
+    traces_to: SPEC-SE-001#NC-SE-NO-ORPHAN-SURPRISE
+    assertion: Deleting a location MUST NOT make items disappear; its items move to No location and the count is shown first
+    invariant: true
+  - id: T-SPEC-SE-001-NC-NC_SE_NO_SYSTEM_ASSUMPTION
+    kind: negative-constraint
+    traces_to: SPEC-SE-001#NC-SE-NO-SYSTEM-ASSUMPTION
+    assertion: The categories section MUST NOT assume system categories exist (production has none after 7.0.10)
+    invariant: true

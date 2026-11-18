@@ -33,5 +33,11 @@ export const updatePreferences = defineWrite<
   },
 })
 
+/**
+ * Her preferences. Before her first save the server answers with defaults; the device's time zone is sent so
+ * those defaults start in her zone rather than UTC (AC-API-17).
+ */
 export const usePreferencesQuery = () =>
-  useApiQuery<Preferences>(queryKeys.preferences, '/api/preferences')
+  useApiQuery<Preferences>(queryKeys.preferences, '/api/preferences', {
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  })

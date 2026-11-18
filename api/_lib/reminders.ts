@@ -109,7 +109,7 @@ export function expiryPayload(items: readonly ReminderItem[], localToday: string
   return {
     title: count === 1 ? 'Item expiring soon' : `${count} items expiring soon`,
     body: count === 1 ? `${cleanName(items[0]?.name ?? '')} expires soon` : nameList(items),
-    url: '/inventory',
+    url: '/stock?status=expiring',
     tag: `expiring-${localToday}`,
   };
 }
