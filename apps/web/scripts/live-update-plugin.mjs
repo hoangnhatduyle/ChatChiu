@@ -35,12 +35,6 @@ const signedText = (/** @type {{version: string, url: string, sha256: string}} *
   `${l.version}\n${l.url}\n${l.sha256}`
 
 /**
- * @param {string} outDir
- * @param {string} version
- * @param {string} [privateKeyPem] ECDSA P-256 key (PEM): when given, version.json is signed. A build without a key
- *   writes an unsigned list, which no shell accepts.
- */
-/**
  * A PEM as it arrives from a dashboard field: quotes around it, literal \n instead of line breaks, or every line
  * break turned into a space. The base64 body is taken out and wrapped again. Returns null when it is not a PEM.
  * @param {string} raw
@@ -58,7 +52,11 @@ export function normalizePem(raw) {
   return `-----BEGIN ${match[1]}-----\n${lines.join('\n')}\n-----END ${match[1]}-----\n`
 }
 
-/** @param {string} [privateKeyPem] */
+/**
+ * @param {string | undefined} privateKeyPem
+ * @param {{ version: string, url: string, sha256: string }} listing
+ * @returns {string | undefined}
+ */
 function signature(privateKeyPem, listing) {
   if (!privateKeyPem) return undefined
   const key = normalizePem(privateKeyPem)
@@ -78,6 +76,12 @@ function signature(privateKeyPem, listing) {
   }
 }
 
+/**
+ * @param {string} outDir
+ * @param {string} version
+ * @param {string} [privateKeyPem] ECDSA P-256 key (PEM): when given, version.json is signed. A build without a key
+ *   writes an unsigned list, which no shell accepts.
+ */
 export function writeLiveUpdate(outDir, version, privateKeyPem) {
   /** @type {Record<string, Uint8Array>} */
   const entries = {}

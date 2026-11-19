@@ -82,6 +82,7 @@ describe('writeLiveUpdate', () => {
 // A key pasted into a Vercel field arrives in many shapes: real line breaks, literal \n, quotes, or every
 // line break turned into a space. All must sign; a key that cannot be read must not fail the whole deploy.
 describe('writeLiveUpdate with a key pasted into a dashboard', () => {
+  /** @param {string} key */
   const build = (key) => {
     const out = mkdtempSync(join(tmpdir(), 'live-'))
     writeFileSync(join(out, 'index.html'), '<html></html>')
