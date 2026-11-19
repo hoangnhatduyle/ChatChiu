@@ -408,7 +408,15 @@ describe('review fixes', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Add 2 items' }))
     await alertText()
-    await user.type(screen.getByLabelText('Notes of Rice'), 'organic')
+    // The review form is editable again (the alert element is always in the page, so it alone proves nothing).
+    await waitFor(() => expect(screen.getByLabelText('Notes of Rice')).toBeEnabled())
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add 2 items' })).toBeEnabled())
+    // The page re-renders the review a moment after the failure; type again until the text sticks.
+    await waitFor(async () => {
+      await user.clear(screen.getByLabelText('Notes of Rice'))
+      await user.type(screen.getByLabelText('Notes of Rice'), 'organic')
+      expect(screen.getByLabelText('Notes of Rice')).toHaveValue('organic')
+    })
     await user.click(screen.getByRole('button', { name: 'Add 2 items' }))
     await waitFor(() => expect(bulkCalls()).toHaveLength(2))
     expect(keyOf(bulkCalls()[1]!)).not.toBe(keyOf(bulkCalls()[0]!))

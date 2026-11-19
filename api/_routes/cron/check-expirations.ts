@@ -22,8 +22,9 @@ import {
 } from '../../_lib/reminders.js';
 
 // GET /api/cron/check-expirations (CRON_SECRET bearer) - the scheduled send job.
-// Meant to run hourly from a Vercel Schedule (architecture.md §6.5); it stays
-// unscheduled until cutover step 4 (AR-ONE-SENDER). Per user:
+// Runs once a day from the cron in vercel.json (Hobby plan: one run per day, 14:00 UTC, which is 9:00 or 10:00 in
+// New York); on a plan with hourly schedules it can run hourly instead (architecture.md §6.5). Vercel sends the
+// CRON_SECRET as the bearer token. Per user:
 //   - expiry: at most one grouped reminder per local day, in the first run at or
 //     after her notify hour (user_preferences.last_expiry_reminder_on, AC-API-18)
 //   - low stock: one push per crossing; low_stock_notified_at stays set while the
