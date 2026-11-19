@@ -40,6 +40,44 @@ const signedText = (/** @type {{version: string, url: string, sha256: string}} *
  * @param {string} [privateKeyPem] ECDSA P-256 key (PEM): when given, version.json is signed. A build without a key
  *   writes an unsigned list, which no shell accepts.
  */
+/**
+ * A PEM as it arrives from a dashboard field: quotes around it, literal \n instead of line breaks, or every line
+ * break turned into a space. The base64 body is taken out and wrapped again. Returns null when it is not a PEM.
+ * @param {string} raw
+ */
+export function normalizePem(raw) {
+  const text = raw
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/\\n/g, '\n')
+  const match = /-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/.exec(text)
+  if (!match) return null
+  const body = (match[2] ?? '').replace(/\s+/g, '')
+  if (!body) return null
+  const lines = body.match(/.{1,64}/g) ?? []
+  return `-----BEGIN ${match[1]}-----\n${lines.join('\n')}\n-----END ${match[1]}-----\n`
+}
+
+/** @param {string} [privateKeyPem] */
+function signature(privateKeyPem, listing) {
+  if (!privateKeyPem) return undefined
+  const key = normalizePem(privateKeyPem)
+  try {
+    if (!key) throw new Error('it is not a PEM private key')
+    return sign('sha256', Buffer.from(signedText(listing)), {
+      key,
+      dsaEncoding: 'ieee-p1363',
+    }).toString('base64')
+  } catch (error) {
+    // A bad key must not stop every deploy of the website: the list goes out unsigned, which no shell accepts.
+    console.warn(
+      `Live update: LIVE_UPDATE_SIGNING_KEY could not be used (${error instanceof Error ? error.message : error}). ` +
+        'The version list is published UNSIGNED, so tablets will not update until the key is fixed.',
+    )
+    return undefined
+  }
+}
+
 export function writeLiveUpdate(outDir, version, privateKeyPem) {
   /** @type {Record<string, Uint8Array>} */
   const entries = {}
@@ -58,12 +96,7 @@ export function writeLiveUpdate(outDir, version, privateKeyPem) {
     url: `/live/${version}.zip`,
     sha256: createHash('sha256').update(zip).digest('hex'),
   }
-  const sig = privateKeyPem
-    ? sign('sha256', Buffer.from(signedText(listing)), {
-        key: privateKeyPem.replace(/\\n/g, '\n'),
-        dsaEncoding: 'ieee-p1363',
-      }).toString('base64')
-    : undefined
+  const sig = signature(privateKeyPem, listing)
   writeFileSync(
     join(outDir, 'version.json'),
     JSON.stringify({ ...listing, ...(sig ? { sig } : {}) }) + '\n',
