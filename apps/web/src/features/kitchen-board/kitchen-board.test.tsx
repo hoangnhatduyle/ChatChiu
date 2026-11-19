@@ -241,6 +241,22 @@ describe('F-KB-04 / NC-KB-NO-CONFIRM / NC-KB-NO-UP-DRAG the usage drag', () => {
     })
   })
 
+  it('F-KB-18: while the bar moves the percent and the amount follow it, before anything is saved', async () => {
+    const milk = makeItem(1, {
+      name: 'Milk',
+      quantity: 100,
+      initialQuantity: 100,
+      currentQuantity: 60,
+    })
+    api.post.mockReturnValue(new Promise(() => {}))
+    const { user } = renderBoard([milk])
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
+    await dragTo(user, 'Milk', 5)
+    expect(within(rowOf('Milk')).getByText('35%')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Open Milk, 35 of 100 L/ })).toBeInTheDocument()
+    expect(api.post).not.toHaveBeenCalled()
+  })
+
   it('NC-KB-NO-UP-DRAG: the board bar cannot go above the current amount', async () => {
     const { user } = renderBoard([makeItem(1, { name: 'Milk', currentQuantity: 0.6 })])
     await screen.findByRole('button', { name: /^Open Milk\b/ })
@@ -323,10 +339,15 @@ describe('board review fixes', () => {
     expect(screen.queryByRole('button', { name: 'Add to shopping list' })).toBeNull()
   })
 
-  it('F-KB-10: an unknown ?show= value (even a prototype key) falls back to All', async () => {
-    renderBoard([makeItem(1, { name: 'Milk' })], '/?show=constructor')
-    await screen.findByRole('button', { name: /^Open Milk\b/ })
-    expect(screen.getByRole('button', { name: /^All/ })).toHaveAttribute('aria-pressed', 'true')
+  it('F-KB-10: an unknown or old ?show= value (a prototype key, use-soon) filters nothing', async () => {
+    for (const value of ['constructor', 'use-soon']) {
+      const { unmount } = renderBoard([makeItem(1, { name: 'Milk' })], `/?show=${value}`)
+      await screen.findByRole('button', { name: /^Open Milk\b/ })
+      for (const tile of [/Expired/, /Use today/, /Running low/, /Fresh/]) {
+        expect(screen.getByRole('button', { name: tile })).toHaveAttribute('aria-pressed', 'false')
+      }
+      unmount()
+    }
   })
 
   it('F-KB-07 / NC-KB-NO-COLOUR-ONLY: "Very low" is drawn in the error text colour, not the red chip foreground (invisible on the card)', async () => {
@@ -418,16 +439,17 @@ describe('F-KB-08 / NC-KB-NO-AUTO-DELETE used up', () => {
     expect(api.delete).not.toHaveBeenCalled()
   })
 
-  it('NC-KB-NO-AUTO-DELETE: an item at 0% is on the board and in the Used up chip until she chooses', async () => {
+  it('NC-KB-NO-AUTO-DELETE: an item at 0% stays on its card, greyed, and in the Fresh tile, until she chooses', async () => {
     const { user } = renderBoard([makeItem(1, { name: 'Milk', currentQuantity: 0 })])
     await screen.findByRole('button', { name: /^Open Milk\b/ })
-    await user.click(screen.getByRole('button', { name: /^Used up/ }))
+    expect(rowOf('Milk')).toHaveAttribute('data-used-up', 'true')
+    await user.click(screen.getByRole('button', { name: /Fresh/ }))
     expect(rowOf('Milk')).toBeInTheDocument()
     expect(api.delete).not.toHaveBeenCalled()
   })
 })
 
-describe('F-KB-10 / F-KB-12 / F-KB-13 / F-KB-15 header, chips and search', () => {
+describe('F-KB-10 / F-KB-12 / F-KB-13 / F-KB-15 header, tiles and search', () => {
   const items = () => [
     makeItem(1, { name: 'Milk', expirationDate: inDays(1) }),
     makeItem(2, { name: 'Rice', locationId: 2 }),
@@ -435,22 +457,28 @@ describe('F-KB-10 / F-KB-12 / F-KB-13 / F-KB-15 header, chips and search', () =>
     makeItem(4, { name: 'Salt', currentQuantity: 0 }),
   ]
 
-  it('F-KB-12: shows the title, the date and item count, search, the four chips, Scan receipt and Add item', async () => {
+  it('F-KB-12: shows the title, the date, item and place count, search, the four tiles, Scan receipt and Add item', async () => {
     renderBoard(items())
     expect(await screen.findByRole('heading', { level: 1, name: 'Kitchen' })).toBeInTheDocument()
-    expect(screen.getByText(/· 4 items$/)).toBeInTheDocument()
+    expect(screen.getByText(/· 4 items in 2 places$/)).toBeInTheDocument()
     expect(screen.getByRole('searchbox', { name: /search the board/i })).toBeInTheDocument()
-    const group = screen.getByRole('group', { name: 'Show' })
+    // Milk is due in 1 day, Jam is low, Rice and Salt (used up) are the rest.
+    for (const [name, count] of [
+      [/Expired/, '0'],
+      [/Use today/, '1'],
+      [/Running low/, '1'],
+      [/Fresh/, '2'],
+    ] as const) {
+      expect(within(screen.getByRole('button', { name })).getByText(count)).toBeInTheDocument()
+    }
     expect(
-      within(group)
-        .getAllByRole('button')
-        .map((b) => b.textContent),
-    ).toEqual(['All4', 'Use soon1', 'Running low1', 'Used up1'])
+      screen.getByText(/Tap a card to see only those items, grouped by place\. Tap it again/),
+    ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Scan receipt' })).toHaveAttribute('href', '/scan')
     expect(screen.getByRole('link', { name: /Add item/ })).toHaveAttribute('href', '/stock/new')
   })
 
-  it('F-KB-12: each column has a + that opens the item form with that location', async () => {
+  it('F-KB-12: each card has a + that opens the item form with that location', async () => {
     renderBoard(items())
     expect(await screen.findByRole('link', { name: 'Add to Fridge - Top shelf' })).toHaveAttribute(
       'href',
@@ -462,25 +490,62 @@ describe('F-KB-10 / F-KB-12 / F-KB-13 / F-KB-15 header, chips and search', () =>
     )
   })
 
-  it('F-KB-10: Running low shows only items at or under their threshold (URL state ?show=)', async () => {
+  it('F-KB-10: Running low shows only low items, a second press shows everything again (URL state ?show=)', async () => {
     const { user, location } = renderBoard(items())
     await screen.findByRole('button', { name: /^Open Jam\b/ })
-    await user.click(screen.getByRole('button', { name: /^Running low/ }))
-    expect(location()).toBe('/?show=running-low')
-    expect(screen.getByRole('button', { name: /^Running low/ })).toHaveAttribute(
+    await user.click(screen.getByRole('button', { name: /Running low/ }))
+    expect(location()).toBe('/?show=low')
+    expect(screen.getByRole('button', { name: /Running low/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
     expect(screen.getByRole('button', { name: /^Open Jam\b/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Open Milk\b/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: /Running low/ }))
+    expect(location()).toBe('/')
+    expect(screen.getByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Running low/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   })
 
-  it('F-KB-12: Use soon shows items expiring within 3 days', async () => {
+  it('F-KB-12: there is no "Clear filter" bar; the live region says what is shown and where', async () => {
     const { user } = renderBoard(items())
     await screen.findByRole('button', { name: /^Open Milk\b/ })
-    await user.click(screen.getByRole('button', { name: /^Use soon/ }))
+    await user.click(screen.getByRole('button', { name: /Running low/ }))
+    expect(screen.queryByRole('button', { name: /clear filter/i })).toBeNull()
+    expect(screen.getByTestId('board-result-count')).toHaveTextContent(
+      'Showing 1 item running low in 1 place',
+    )
+  })
+
+  it('F-KB-12: Use today shows items due today through 3 days and leaves out places with nothing to show', async () => {
+    const { user } = renderBoard(items())
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
+    await user.click(screen.getByRole('button', { name: /Use today/ }))
     expect(screen.getByRole('button', { name: /^Open Milk\b/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Open Rice\b/ })).toBeNull()
+    expect(screen.queryByRole('heading', { level: 2, name: /Pantry/ })).toBeNull()
+  })
+
+  it('F-KB-12: the tiles together cover every item (Expired, Use today, Fresh and a low item far from its date)', async () => {
+    const { user } = renderBoard([
+      makeItem(1, { name: 'Old', expirationDate: inDays(-2) }),
+      makeItem(2, { name: 'Soon', expirationDate: inDays(3) }),
+      makeItem(3, { name: 'Low far', quantity: 100, initialQuantity: 100, currentQuantity: 10 }),
+      makeItem(4, { name: 'Plain' }),
+    ])
+    await screen.findByRole('button', { name: /^Open Old\b/ })
+    const seen = new Set<string>()
+    for (const tile of [/Expired/, /Use today/, /Running low/, /Fresh/]) {
+      await user.click(screen.getByRole('button', { name: tile }))
+      for (const b of screen.queryAllByRole('button', { name: /^Open / })) {
+        seen.add(b.getAttribute('aria-label')?.split(',')[0] ?? '')
+      }
+      await user.click(screen.getByRole('button', { name: tile }))
+    }
+    expect(seen).toEqual(new Set(['Open Old', 'Open Soon', 'Open Low far', 'Open Plain']))
   })
 
   it('F-KB-15: typing in search filters in place and keeps every location column (URL state ?q=)', async () => {
@@ -503,16 +568,76 @@ describe('F-KB-10 / F-KB-12 / F-KB-13 / F-KB-15 header, chips and search', () =>
   })
 })
 
-describe('F-KB-11 / F-KB-14 hint and empty state', () => {
-  it('F-KB-11: a first visit shows the drag hint; dismissing it is remembered on this device', async () => {
-    const { user, unmount } = renderBoard([makeItem(1, { name: 'Milk' })])
-    expect(await screen.findByText(/drag any bar down/i)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Got it' }))
-    expect(screen.queryByText(/drag any bar down/i)).toBeNull()
-    unmount()
+describe('F-KB-14 / F-KB-17 / F-KB-19 empty state, Show all and the place header', () => {
+  it('F-KB-11 removed: there is no drag tip and nothing to dismiss', async () => {
     renderBoard([makeItem(1, { name: 'Milk' })])
     await screen.findByRole('button', { name: /^Open Milk\b/ })
     expect(screen.queryByText(/drag any bar down/i)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull()
+  })
+
+  const crowded = () => [
+    ...[1, 2, 3, 4, 5, 6].map((n) =>
+      makeItem(n, { name: `Fresh ${n}`, expirationDate: inDays(20 + n) }),
+    ),
+    makeItem(7, { name: 'Gone', expirationDate: inDays(-2) }),
+  ]
+  const rowsIn = () =>
+    within(
+      screen.getByRole('heading', { level: 2, name: /Fridge/ }).closest('section')!,
+    ).getAllByRole('listitem')
+
+  it('F-KB-17: a card shows its 5 most urgent items; Show all 7 opens it in place and it is remembered', async () => {
+    const { user, unmount } = renderBoard(crowded())
+    await screen.findByRole('button', { name: /^Open Gone\b/ })
+    expect(rowsIn()).toHaveLength(5)
+    // The expired item is first even though it is last by name and id; the 6th and 7th by date are hidden.
+    expect(rowsIn()[0]).toContainElement(screen.getByRole('button', { name: /^Open Gone\b/ }))
+    expect(screen.queryByRole('button', { name: /^Open Fresh 6\b/ })).toBeNull()
+    const more = screen.getByRole('button', { name: 'Show all 7' })
+    expect(more).toHaveAttribute('aria-expanded', 'false')
+    await user.click(more)
+    expect(rowsIn()).toHaveLength(7)
+    expect(screen.getByRole('button', { name: 'Show fewer' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    unmount()
+    renderBoard(crowded())
+    await screen.findByRole('button', { name: /^Open Gone\b/ })
+    expect(rowsIn()).toHaveLength(7)
+  })
+
+  it('F-KB-17: a card with 5 or fewer items has no Show all button', async () => {
+    renderBoard([makeItem(1, { name: 'Milk' })])
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
+    expect(screen.queryByRole('button', { name: /^Show all/ })).toBeNull()
+  })
+
+  it('F-KB-19: a place with no icon or colour set takes them from its name', async () => {
+    renderBoard([makeItem(1, { name: 'Milk' })])
+    const fridge = (await screen.findByRole('heading', { level: 2, name: /Fridge/ })).closest(
+      'section',
+    )!
+    expect(fridge.querySelector('[data-location-color="mint"]')).not.toBeNull()
+    expect(fridge.querySelector('svg[data-icon="fridge"]')).not.toBeNull()
+    const pantry = screen.getByRole('heading', { level: 2, name: /Pantry/ }).closest('section')!
+    expect(pantry.querySelector('svg[data-icon="shelf"]')).not.toBeNull()
+  })
+
+  it('F-KB-19: a place with an icon and colour set shows them', async () => {
+    renderBoard([makeItem(1, { name: 'Milk' })])
+    client.setQueryData(queryKeys.bootstrap, {
+      ...bootstrap([makeItem(1, { name: 'Milk' })]),
+      locations: [{ ...locations[0], icon: 'bowl', color: 'lilac' }, locations[1]],
+    })
+    const fridge = (await screen.findByRole('heading', { level: 2, name: /Fridge/ })).closest(
+      'section',
+    )!
+    await waitFor(() =>
+      expect(fridge.querySelector('[data-location-color="lilac"]')).not.toBeNull(),
+    )
+    expect(fridge.querySelector('svg[data-icon="bowl"]')).not.toBeNull()
   })
 
   it('F-KB-14: with no items there is an empty state with Add first item', async () => {
@@ -525,11 +650,11 @@ describe('F-KB-11 / F-KB-14 hint and empty state', () => {
 
 describe('7.0.20 / F-KB-16 states the data layer leaves to the screen', () => {
   it('7.0.20(a): a row still being saved (temporary id) shows Saving…, cannot be dragged and cannot be opened', async () => {
-    renderBoard([makeItem(-5, { name: 'Fresh' })])
-    const row = (await screen.findByText('Fresh')).closest('li') as HTMLElement
+    renderBoard([makeItem(-5, { name: 'Brand new yogurt' })])
+    const row = (await screen.findByText('Brand new yogurt')).closest('li') as HTMLElement
     expect(within(row).getByText('Saving…')).toBeInTheDocument()
     expect(within(row).getByRole('slider')).toBeDisabled()
-    expect(screen.queryByRole('button', { name: /^Open Fresh\b/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Open Brand new yogurt\b/ })).toBeNull()
   })
 
   it('shows a loading state while the first load is pending, and no empty-state flash', async () => {

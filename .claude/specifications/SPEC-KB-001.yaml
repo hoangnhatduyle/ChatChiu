@@ -5,18 +5,19 @@ title: Kitchen board (feature.kitchen-board)
 status: active
 context_and_scope:
   in_scope:
-    - One column per location plus a No location column (F-KB-01)
-    - Expiry sort inside each column (F-KB-02)
+    - One card per location plus a No location card, each showing its 5 most urgent items with Show all N (F-KB-01, F-KB-17)
+    - Urgency order inside each card: expired, use today, running low, soonest (F-KB-02)
     - Expiry chip with words (F-KB-03)
     - Down-only usage drag that saves on release with Undo (F-KB-04)
     - Percent and remaining quantity; tapping the name opens the quick-action panel (F-KB-05, F-KB-06)
     - Low-stock bar colour from the item's own threshold (F-KB-07)
     - Used-up toast with Add to shopping list or Remove (F-KB-08, D8)
-    - Low-stock alert trigger (F-KB-09) and Running low chip with run-out (F-KB-10)
-    - First-use hint (F-KB-11), header with search, filter chips, Scan receipt, Add item and per-location add (F-KB-12, F-KB-15)
+    - Low-stock alert trigger (F-KB-09) and Running low tile with run-out (F-KB-10)
+    - Four clickable tiles Expired, Use today, Running low, Fresh (F-KB-12), header with search, Scan receipt, Add item and per-location add (F-KB-12, F-KB-15); the first-use hint was removed (F-KB-11)
+    - Live percentage while a bar is dragged (F-KB-18); a location's own icon and colour with a name-based fallback (F-KB-19)
     - Stats moved to Waste & Stats (F-KB-13), empty state (F-KB-14), live updates between devices (F-KB-16)
     - "Files: features/kitchen-board/{KitchenBoardPage, LocationColumn, BoardRow, BoardFilters}.tsx; prototype https://claude.ai/artifact/Hne1sPMHaXmxVYfs7A4rVJ is the visual reference"
-    - "Layout: up to 4 columns visible on the Fire in landscape with sideways snap scrolling; 2 in portrait"
+    - "Layout: from 1024 px (desktop, the Fire in landscape) a grid of cards and one page scroll; below 1024 px (phone, portrait tablet) a swipe row of cards, 1 or 2 visible"
   out_of_scope:
     - The old Board/Stats toggle and dashboard stats cards (moved to SPEC-ST-001, D7)
     - The old empty-item Refill dialog (dropped, D8)
@@ -128,7 +129,7 @@ negative_constraints:
     message: A board usage change MUST NOT open a confirm dialog; it saves on release with an Undo toast (D6)
     severity: high
   - id: NC-KB-NO-HIDDEN-ITEMS
-    message: "No item may be missing from the board: items whose location is null or deleted MUST appear in a No location column"
+    message: "No item may be missing from the board: items whose location is null or deleted MUST appear in a No location card, and every item of a card MUST be reachable (Show all N)"
     severity: high
   - id: NC-KB-NO-COLOUR-ONLY
     message: Expiry and low-stock status MUST NOT be conveyed by colour alone
@@ -146,12 +147,12 @@ acceptance_criteria:
   - id: F-KB-01
     given: locations Fridge (sub-location Top shelf) and Pantry, plus an item whose location was deleted
     when: the board renders
-    then: it shows columns "Fridge - Top shelf", "Pantry" and "No location", each listing every item stored there; No location is absent when no such item exists
+    then: it shows cards "Fridge - Top shelf", "Pantry" and "No location", each with every item stored there reachable (the 5 most urgent show, Show all N opens the rest); No location is absent when no such item exists
     invariant: true
   - id: F-KB-02
-    given: items in one location with different expiry dates and equal dates
-    when: the column renders
-    then: items are ordered soonest expiry first, then by name
+    given: items in one location that are expired, due today to 3 days, running low and fresh
+    when: the card renders
+    then: items are ordered expired first, then due today to 3 days, then running low, then the rest; inside each group soonest expiry first, then by name
     invariant: false
   - id: F-KB-03
     given: items expired, expiring today, in 2 days and in 3 months
@@ -181,7 +182,7 @@ acceptance_criteria:
   - id: F-KB-08
     given: she drags Milk to 0%
     when: the save lands
-    then: a toast reads "Milk used up · Add to shopping list · Remove"; Milk stays greyed at 0% until she chooses, and the Used up chip lists any left at 0%
+    then: a toast reads "Milk used up · Add to shopping list · Remove"; Milk stays on its card, greyed at 0%, until she chooses (it counts under the Fresh tile unless its date says otherwise)
     invariant: false
   - id: F-KB-09
     given: an item crossing its low-stock threshold on this device
@@ -190,18 +191,18 @@ acceptance_criteria:
     invariant: false
   - id: F-KB-10
     given: items at or below threshold with usage history
-    when: she taps the Running low chip
-    then: the board shows only those items, and each item's panel shows the predicted run-out ("~4 days left at your pace") from SQL usage stats with no AI call
+    when: she taps the Running low tile
+    then: the board shows only those items (still on their location cards; places with none are left out; a second tap shows everything), and each item's panel shows the predicted run-out ("~4 days left at your pace") from SQL usage stats with no AI call
     invariant: false
   - id: F-KB-11
     given: a first visit
     when: the board renders
-    then: an inline hint explains dragging the bar; dismissing it is remembered on this device
+    then: "REMOVED (2026-11-19, UI refresh): there is no drag tip and no stored dismissal flag"
     invariant: false
   - id: F-KB-12
     given: the board header
     when: it renders
-    then: it shows title and date, search, chips All · Use soon · Running low · Used up, Scan receipt and + Add item; each column's + opens the item form with that location pre-filled; Use soon = expiring within 3 days (Q7 default)
+    then: "it shows title, date, item and place count, search, Scan receipt and + Add item, and four clickable tiles with counts: Expired (past its date), Use today (today through 3 days, Q7 default), Running low (low and not used up; may overlap the others) and Fresh (the rest), so every item is on at least one tile; a tile is a toggle (aria-pressed), pressing it again shows everything, there is no Clear filter bar and a status line says \"Showing 7 expired items in 4 places\"; each card's + opens the item form with that location pre-filled"
     invariant: false
   - id: F-KB-13
     given: the board
@@ -216,12 +217,27 @@ acceptance_criteria:
   - id: F-KB-15
     given: a search term
     when: she types it
-    then: the board filters in place, keeping the location columns
+    then: the board filters in place, keeping the location cards
     invariant: false
   - id: F-KB-16
     given: the tablet and the phone signed in to the same account
     when: usage changes on the phone
     then: the tablet's board shows it within 3 seconds without a reload
+    invariant: false
+  - id: F-KB-17
+    given: a location with 7 items, one of them expired
+    when: the board renders and she presses Show all 7
+    then: the card first shows its 5 most urgent items (the expired one first), Show all 7 opens it in place (aria-expanded), and that choice is remembered on this device; a card with 5 or fewer items has no button
+    invariant: false
+  - id: F-KB-18
+    given: an item at 60%
+    when: she drags its bar down and has not released yet
+    then: the percent, the amount ("0.35 of 1 pcs") and the Low cue follow the bar; the save still happens once on release with one Undo
+    invariant: false
+  - id: F-KB-19
+    given: locations with and without a chosen icon and colour
+    when: the cards render
+    then: each header shows its own icon and tint, or a guess from its name (freezer, fridge, counter, shelf, ...) when none was chosen
     invariant: false
 depends_on:
   - SPEC-DATA-001

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { boardFilter, countByStatus, filterItems, groupItems } from './filter.js'
+import { addDays } from './dates.js'
+import {
+  BOARD_TILES,
+  boardTileFilter,
+  compareByUrgency,
+  countByStatus,
+  filterItems,
+  groupItems,
+} from './filter.js'
 
 const today = '2026-11-16'
 const base = { quantity: 1, initialQuantity: 1, currentQuantity: 1, lowStockThreshold: 20 }
@@ -105,15 +113,93 @@ describe('inventory filters (ported applyFilters, F-IN-01…03, F-IN-07)', () =>
   })
 })
 
-describe('board chips (F-KB-12: All · Use soon · Running low · Used up)', () => {
-  it('filters by chip', () => {
-    expect(boardFilter(items, 'all', today)).toHaveLength(4)
-    expect(boardFilter(items, 'use-soon', today).map((i) => i.id)).toEqual([2, 4])
-    expect(boardFilter(items, 'running-low', today).map((i) => i.id)).toEqual([2])
-    expect(boardFilter(items, 'used-up', today).map((i) => i.id)).toEqual([3])
+describe('board tiles (F-KB-12: Expired · Use today · Running low · Fresh)', () => {
+  // today = 2026-11-16: 1 expired yesterday, 2 is 2 days out and low, 3 is used up, 4 is 2 days out.
+  const ids = (tile: Parameters<typeof boardTileFilter>[1]) =>
+    boardTileFilter(items, tile, today).map((i) => i.id)
+
+  it('Expired is already past its date; Use today is today through 3 days; Running low is low and not used up', () => {
+    expect(ids('expired')).toEqual([1])
+    expect(ids('today')).toEqual([2, 4])
+    expect(ids('low')).toEqual([2])
   })
 
-  it('an unknown chip (e.g. from a URL) shows everything instead of undefined', () => {
-    expect(boardFilter(items, 'bogus' as 'all', today)).toHaveLength(4)
+  it('Fresh is the rest: not expired, not in the 3 days, not running low', () => {
+    expect(ids('fresh')).toEqual([3])
+  })
+
+  it('boundaries: -1 is expired, 0 and 3 are Use today, 4 is fresh', () => {
+    const day = (n: number, extra = {}) => ({
+      ...base,
+      id: 50 + n,
+      name: `d${n}`,
+      notes: null,
+      categoryId: 10,
+      locationId: 1,
+      expirationDate: addDays(today, n),
+      ...extra,
+    })
+    const edge = [day(-1), day(0), day(3), day(4)]
+    const pick = (tile: Parameters<typeof boardTileFilter>[1]) =>
+      boardTileFilter(edge, tile, today).map((i) => i.name)
+    expect(pick('expired')).toEqual(['d-1'])
+    expect(pick('today')).toEqual(['d0', 'd3'])
+    expect(pick('fresh')).toEqual(['d4'])
+  })
+
+  it('a low item can also be expired or in the 3 days (the tiles may overlap)', () => {
+    const lowExpired = { ...items[0]!, currentQuantity: 0.1 }
+    expect(boardTileFilter([lowExpired], 'expired', today)).toHaveLength(1)
+    expect(boardTileFilter([lowExpired], 'low', today)).toHaveLength(1)
+    expect(boardTileFilter([lowExpired], 'fresh', today)).toHaveLength(0)
+  })
+
+  it('a low item far from its date is Running low, not Fresh; a used-up one far from its date is Fresh', () => {
+    const lowFar = { ...items[0]!, expirationDate: '2027-06-01', currentQuantity: 0.1 }
+    const usedUpFar = { ...items[0]!, id: 9, expirationDate: '2027-06-01', currentQuantity: 0 }
+    expect(boardTileFilter([lowFar], 'fresh', today)).toHaveLength(0)
+    expect(boardTileFilter([lowFar], 'low', today)).toHaveLength(1)
+    expect(boardTileFilter([usedUpFar], 'low', today)).toHaveLength(0)
+    expect(boardTileFilter([usedUpFar], 'fresh', today)).toHaveLength(1)
+  })
+
+  it('the four tiles together cover every item', () => {
+    for (const set of [items, [{ ...items[0]!, currentQuantity: 0.1 }]]) {
+      const covered = new Set(
+        BOARD_TILES.flatMap((tile) => boardTileFilter(set, tile, today).map((i) => i.id)),
+      )
+      expect(covered.size).toBe(set.length)
+    }
+  })
+
+  it('an unknown tile (e.g. from a URL) shows everything instead of nothing', () => {
+    expect(boardTileFilter(items, 'bogus' as 'fresh', today)).toHaveLength(4)
+  })
+})
+
+describe('urgency order (F-KB-02: expired, then use today, then low, then soonest)', () => {
+  const mk = (id: number, days: number, extra = {}) => ({
+    ...base,
+    id,
+    name: `n${id}`,
+    notes: null,
+    categoryId: 10,
+    locationId: 1,
+    expirationDate: addDays(today, days),
+    ...extra,
+  })
+  it('orders by rank, then expiry, then name', () => {
+    const list = [
+      mk(1, 90),
+      mk(2, 40, { currentQuantity: 0.1 }),
+      mk(3, 2),
+      mk(4, -5),
+      mk(5, 0),
+      mk(6, 30),
+      mk(7, -1, { currentQuantity: 0.1 }),
+    ]
+    const sorted = [...list].sort(compareByUrgency(today)).map((i) => i.id)
+    // expired (-5, -1), use today (0, 2), low (40), the rest soonest first (30, 90)
+    expect(sorted).toEqual([4, 7, 5, 3, 2, 6, 1])
   })
 })

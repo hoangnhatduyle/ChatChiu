@@ -23,6 +23,15 @@ describe('ScrollFade', () => {
     expect(region).toHaveClass('scroll-quiet')
   })
 
+  it('is positioned, so hidden text inside it is clipped with it (it cannot widen the page)', () => {
+    render(
+      <ScrollFade label="List">
+        <p>row</p>
+      </ScrollFade>,
+    )
+    expect(screen.getByRole('region', { name: 'List' })).toHaveClass('relative')
+  })
+
   it('shows the end fade and the pill while more remains, and drops them at the end', () => {
     const { container } = render(
       <ScrollFade label="List" moreLabel="5 more">

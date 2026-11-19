@@ -18,7 +18,9 @@ export interface FilterableItem extends LowStockFields {
 export type StatusFilter = 'all' | ExpiryFilterStatus
 export type SortKey = 'expiry' | 'name' | 'quantity' | 'recent'
 export type GroupKey = 'none' | 'category' | 'location'
-export type BoardChip = 'all' | 'use-soon' | 'running-low' | 'used-up'
+/** The four tiles on the Kitchen board. They cover every item; Running low may overlap the others. */
+export type BoardTile = 'expired' | 'today' | 'low' | 'fresh'
+export const BOARD_TILES: readonly BoardTile[] = ['expired', 'today', 'low', 'fresh']
 
 export interface InventoryFilters {
   q?: string
@@ -88,26 +90,49 @@ export function groupItems<T extends FilterableItem>(
   return [...entries.filter((g) => g.key !== null), ...entries.filter((g) => g.key === null)]
 }
 
-/** Board chips: Use soon = expiring today through +3 days; Running low excludes used-up items. */
-export function boardFilter<T extends FilterableItem>(
+const isExpiredOn = (i: FilterableItem, today: string) =>
+  expiryStatus(i.expirationDate, today) === 'expired'
+/** Use today = today through USE_SOON_DAYS (3) days from now. */
+const isUseTodayOn = (i: FilterableItem, today: string) => {
+  const s = expiryStatus(i.expirationDate, today)
+  return s === 'today' || s === 'soon'
+}
+const isRunningLow = (i: FilterableItem) => !isUsedUp(i) && isLowStock(i)
+
+/**
+ * Board tiles (F-KB-12): Expired = past its date; Use today = today through 3 days; Running low = low and not
+ * used up (it can also be Expired or Use today); Fresh = the rest, so every item is on at least one tile.
+ */
+export function boardTileFilter<T extends FilterableItem>(
   items: readonly T[],
-  chip: BoardChip,
+  tile: BoardTile,
   today: string,
 ): T[] {
-  switch (chip) {
-    case 'all':
-      return [...items]
-    case 'use-soon':
-      return items.filter((i) => {
-        const s = expiryStatus(i.expirationDate, today)
-        return s === 'today' || s === 'soon'
-      })
-    case 'running-low':
-      return items.filter((i) => !isUsedUp(i) && isLowStock(i))
-    case 'used-up':
-      return items.filter((i) => isUsedUp(i))
+  switch (tile) {
+    case 'expired':
+      return items.filter((i) => isExpiredOn(i, today))
+    case 'today':
+      return items.filter((i) => isUseTodayOn(i, today))
+    case 'low':
+      return items.filter((i) => isRunningLow(i))
+    case 'fresh':
+      return items.filter(
+        (i) => !isExpiredOn(i, today) && !isUseTodayOn(i, today) && !isRunningLow(i),
+      )
     default:
-      // An unknown chip (e.g. a hand-edited URL) shows everything.
+      // An unknown tile (e.g. a hand-edited URL) shows everything.
       return [...items]
   }
+}
+
+/** Urgency rank: 0 expired, 1 use today, 2 running low, 3 the rest. */
+function urgencyRank(i: FilterableItem, today: string): number {
+  if (isExpiredOn(i, today)) return 0
+  if (isUseTodayOn(i, today)) return 1
+  return isRunningLow(i) ? 2 : 3
+}
+
+/** Most urgent first (F-KB-02): expired, then use today, then low, then soonest; ties by expiry, then name. */
+export function compareByUrgency(today: string): (a: FilterableItem, b: FilterableItem) => number {
+  return (a, b) => urgencyRank(a, today) - urgencyRank(b, today) || compareByExpiryThenName(a, b)
 }

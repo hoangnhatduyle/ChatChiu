@@ -66,7 +66,8 @@ export function ScrollFade({
         tabIndex={0}
         onScroll={measure}
         className={cx(
-          'scroll-quiet outline-offset-[-3px]',
+          // `relative`: sr-only text inside is positioned against the scroller, so it is clipped with it and can never widen the page.
+          'scroll-quiet relative outline-offset-[-3px]',
           vertical ? 'overflow-y-auto' : 'overflow-x-auto',
           scrollerClassName,
         )}

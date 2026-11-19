@@ -1,13 +1,40 @@
 // What a location looks like on the board: the icon and tint she chose, or a guess from its name for a
 // location that has none (an old row, or one made before she picked). Accepts missing fields on purpose, so it
 // works before and after the `icon` / `color` columns exist.
-import {
-  LOCATION_COLORS,
-  LOCATION_ICONS,
-  type LocationColor,
-  type LocationIcon,
-} from '@chatchiu/contracts'
 import type { IconName } from './Icon'
+
+// The same lists as `LOCATION_ICONS` / `LOCATION_COLORS` in packages/contracts (the API validates with those).
+// They are written out here because importing a VALUE from the contracts package pulls zod into the first load
+// (about 29 KB gzipped); location-style.test.ts fails if the two lists ever differ.
+export const LOCATION_ICONS = [
+  'counter',
+  'snow',
+  'fridge',
+  'shelf',
+  'refill',
+  'cookie',
+  'spice',
+  'jar',
+  'bowl',
+  'bag',
+  'bottle',
+  'leaf',
+  'bread',
+  'box',
+  'pin',
+] as const
+export type LocationIcon = (typeof LOCATION_ICONS)[number]
+export const LOCATION_COLORS = [
+  'sand',
+  'ice',
+  'mint',
+  'clay',
+  'teal',
+  'rose',
+  'saffron',
+  'lilac',
+] as const
+export type LocationColor = (typeof LOCATION_COLORS)[number]
 
 /** Compile-time: every location icon is a real icon (this fails to build if a list entry has no path). */
 type AllAreIcons = LocationIcon extends IconName ? true : never

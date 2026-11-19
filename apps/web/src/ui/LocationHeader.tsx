@@ -16,6 +16,8 @@ export type LocationHeaderProps = {
   count?: ReactNode
   /** The heading's id, for `aria-labelledby` on the card. */
   headingId?: string
+  /** The heading level: 2 where the card sits straight under the page's h1, else 3. */
+  level?: 2 | 3
   /** Something after the count, e.g. an add button. */
   trailing?: ReactNode
   className?: string
@@ -27,10 +29,12 @@ export function LocationHeader({
   status,
   count,
   headingId,
+  level = 3,
   trailing,
   className,
 }: LocationHeaderProps) {
   const { icon, color } = locationStyle(location)
+  const Heading = level === 2 ? 'h2' : 'h3'
   return (
     <div
       data-location-color={color}
@@ -40,12 +44,12 @@ export function LocationHeader({
         <Icon name={icon} size={22} />
       </span>
       <div className="min-w-0 flex-1">
-        <h3
+        <Heading
           id={headingId}
           className="truncate font-display text-lg leading-tight font-bold text-loc-ink"
         >
           {title}
-        </h3>
+        </Heading>
         {status && <p className="text-xs font-semibold text-loc-ink-soft">{status}</p>}
       </div>
       {count !== undefined && (

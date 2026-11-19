@@ -1,5 +1,18 @@
 // UI refresh foundation: the icon and tint a location shows, chosen or guessed from its name.
-import { locationStyle, guessLocationStyle } from './location-style'
+import * as contracts from '@chatchiu/contracts'
+import {
+  guessLocationStyle,
+  LOCATION_COLORS,
+  LOCATION_ICONS,
+  locationStyle,
+} from './location-style'
+
+describe('location lists', () => {
+  it('are the same as the contracts lists the API validates with', () => {
+    expect([...LOCATION_ICONS]).toEqual([...contracts.LOCATION_ICONS])
+    expect([...LOCATION_COLORS]).toEqual([...contracts.LOCATION_COLORS])
+  })
+})
 
 describe('locationStyle', () => {
   it.each([

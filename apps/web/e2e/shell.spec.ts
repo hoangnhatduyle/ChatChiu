@@ -84,6 +84,8 @@ for (const theme of THEMES) {
         // The Kitchen subtitle shows today's date, which changes daily: mask it.
         await expect(page).toHaveScreenshot(`shell-${theme}-${size.width}.png`, {
           mask: [page.getByText(/· \d+ items?$/)],
+          // The page colour, so the masked date does not show as a magenta bar in the picture.
+          maskColor: theme === 'light' ? '#fbf6ec' : '#17130e',
         })
       })
     })

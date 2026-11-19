@@ -1,8 +1,8 @@
 // SPEC-KB-001 board logic: columns per location, ordering, the amount text and the chip counts.
 import { describe, expect, it } from 'vitest'
 import {
-  boardChipCounts,
   boardColumns,
+  boardTileCounts,
   locationLabel,
   quantityLabel,
   type BoardItem,
@@ -35,7 +35,7 @@ describe('locationLabel', () => {
 
 describe('boardColumns', () => {
   it('F-KB-01: one column per location, in the order given, each with its items', () => {
-    const columns = boardColumns([item(1), item(2, { locationId: 2 })], [fridge, pantry])
+    const columns = boardColumns([item(1), item(2, { locationId: 2 })], [fridge, pantry], TODAY)
     expect(columns.map((c) => [c.key, c.name, c.items.map((i) => i.id)])).toEqual([
       [1, 'Fridge - Top shelf', [1]],
       [2, 'Pantry', [2]],
@@ -43,13 +43,14 @@ describe('boardColumns', () => {
   })
 
   it('F-KB-01: a location with no items still has its column (so its + works)', () => {
-    expect(boardColumns([], [fridge, pantry]).map((c) => c.items.length)).toEqual([0, 0])
+    expect(boardColumns([], [fridge, pantry], TODAY).map((c) => c.items.length)).toEqual([0, 0])
   })
 
   it('NC-KB-NO-HIDDEN-ITEMS: items with no location, or a deleted one, land in a last "No location" column', () => {
     const columns = boardColumns(
       [item(1), item(2, { locationId: null }), item(3, { locationId: 99 })],
       [fridge],
+      TODAY,
     )
     expect(columns.map((c) => c.name)).toEqual(['Fridge - Top shelf', 'No location'])
     expect(columns[1]?.key).toBeNull()
@@ -57,7 +58,9 @@ describe('boardColumns', () => {
   })
 
   it('F-KB-01: no "No location" column when every item has a location', () => {
-    expect(boardColumns([item(1)], [fridge]).map((c) => c.name)).toEqual(['Fridge - Top shelf'])
+    expect(boardColumns([item(1)], [fridge], TODAY).map((c) => c.name)).toEqual([
+      'Fridge - Top shelf',
+    ])
   })
 
   it('NC-KB-NO-HIDDEN-ITEMS: every item appears exactly once', () => {
@@ -67,11 +70,11 @@ describe('boardColumns', () => {
       item(3, { locationId: null }),
       item(4, { locationId: 7 }),
     ]
-    const ids = boardColumns(all, [fridge, pantry]).flatMap((c) => c.items.map((i) => i.id))
+    const ids = boardColumns(all, [fridge, pantry], TODAY).flatMap((c) => c.items.map((i) => i.id))
     expect(ids.sort()).toEqual([1, 2, 3, 4])
   })
 
-  it('F-KB-02: soonest expiry first, then by name', () => {
+  it('F-KB-02: with nothing urgent, soonest expiry first, then by name', () => {
     const columns = boardColumns(
       [
         item(1, { name: 'b', expirationDate: '2030-07-02' }),
@@ -79,13 +82,14 @@ describe('boardColumns', () => {
         item(3, { name: 'a', expirationDate: '2030-07-02' }),
       ],
       [fridge],
+      TODAY,
     )
     expect(columns[0]?.items.map((i) => i.name)).toEqual(['z', 'a', 'b'])
   })
 
   it('never changes the list it was given', () => {
     const items = [item(2, { expirationDate: '2030-08-01' }), item(1)]
-    boardColumns(items, [fridge])
+    boardColumns(items, [fridge], TODAY)
     expect(items.map((i) => i.id)).toEqual([2, 1])
   })
 })
@@ -103,19 +107,31 @@ describe('quantityLabel', () => {
   })
 })
 
-describe('boardChipCounts', () => {
-  it('F-KB-12: counts for All, Use soon, Running low and Used up', () => {
+describe('boardTileCounts', () => {
+  it('F-KB-12: counts for Expired, Use today, Running low and Fresh (low may overlap the others)', () => {
     const items = [
-      item(1, { expirationDate: TODAY }),
-      item(2, { expirationDate: '2030-06-12' }),
+      item(1, { expirationDate: '2030-06-09' }),
+      item(2, { expirationDate: '2030-06-12', currentQuantity: 0.15 }),
       item(3, { currentQuantity: 0.15 }),
       item(4, { currentQuantity: 0 }),
+      item(5),
     ]
-    expect(boardChipCounts(items, TODAY)).toEqual({
-      all: 4,
-      'use-soon': 2,
-      'running-low': 1,
-      'used-up': 1,
-    })
+    expect(boardTileCounts(items, TODAY)).toEqual({ expired: 1, today: 1, low: 2, fresh: 2 })
+  })
+})
+
+describe('boardColumns urgency (F-KB-02)', () => {
+  it('puts expired first, then the use-today window, then low, then the rest, inside each column', () => {
+    const cols = boardColumns(
+      [
+        item(1, { name: 'far', expirationDate: '2030-12-01' }),
+        item(2, { name: 'low', expirationDate: '2030-09-01', currentQuantity: 0.1 }),
+        item(3, { name: 'soon', expirationDate: '2030-06-11' }),
+        item(4, { name: 'gone', expirationDate: '2030-06-01' }),
+      ],
+      [fridge],
+      TODAY,
+    )
+    expect(cols[0]?.items.map((i) => i.name)).toEqual(['gone', 'soon', 'low', 'far'])
   })
 })

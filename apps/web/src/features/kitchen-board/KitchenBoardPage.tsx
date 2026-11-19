@@ -1,24 +1,27 @@
-// The kitchen board (SPEC-KB-001): one column per location, every item visible, the usage bar saved on
-// release with Undo. Reads and writes only through the data hooks (AR-NO-DIRECT-API); a change from
+// The kitchen board (SPEC-KB-001): four filter tiles, then one card per location with its 5 most urgent items
+// ("Show all N" opens it), the usage bar saved on release with Undo. Reads and writes only through the data hooks (AR-NO-DIRECT-API); a change from
 // another device arrives in the same cache, so the board updates itself (F-KB-16).
 import { DOWN_ONLY_HINT } from '../../ui/usage-slider-shared'
 import { lazyRetry } from '../../core/lazy-retry'
-import { boardChipCounts, boardColumns, boardFilter, filterItems } from '@chatchiu/domain'
+import { boardColumns, boardTileCounts, boardTileFilter, filterItems } from '@chatchiu/domain'
 import { Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useToday } from '../../core/use-today'
 import { useToast } from '../../core/toast-context'
 import { useBootstrapQuery } from '../../data/inventory'
-import { PageTitle } from '../../shell/PageTitle'
+import { PAGE_FRAME } from '../../shell/page-frame'
+import { PageHeader } from '../../shell/PageHeader'
 import { PanelLoadBoundary } from '../item-panel/PanelLoadBoundary'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
-import { BoardFilters } from './BoardFilters'
-import { parseChip } from './board-chips'
-import { BoardHint } from './BoardHint'
+import { ScrollFade } from '../../ui/ScrollFade'
+import { BoardHeader } from './BoardHeader'
+import { parseTile, tileAnnouncement } from './board-tiles'
+import { BoardTiles } from './BoardTiles'
 import { BoardLoadError, BoardLoading } from './BoardStates'
-import { LocationColumn } from './LocationColumn'
+import { LocationCard } from './LocationCard'
 import { useBoardActions } from './use-board-actions'
+import { useCardExpansion } from './use-card-expansion'
 
 // The panel is its own chunk, fetched only when an item is opened (?item=).
 const ItemPanelHost = lazyRetry(() => import('../item-panel/ItemPanelHost'))
@@ -34,7 +37,8 @@ export default function KitchenBoardPage() {
   const data = query.data
 
   const text = params.get('q') ?? ''
-  const chip = parseChip(params.get('show'))
+  const tile = parseTile(params.get('show'))
+  const expansion = useCardExpansion()
   const setParam = (key: string, value: string | null, replace = false) =>
     setParams(
       (prev) => {
@@ -56,42 +60,46 @@ export default function KitchenBoardPage() {
   }
 
   const today = useToday()
-  const title = <PageTitle>Kitchen</PageTitle>
   if (!data) {
     return (
-      <Frame>
-        <div className="px-4 pt-5 md:px-6 md:pt-6">{title}</div>
+      <div className={PAGE_FRAME}>
+        <PageHeader title="Kitchen" />
         {query.isError ? <BoardLoadError onRetry={() => void query.refetch()} /> : <BoardLoading />}
-      </Frame>
+      </div>
     )
   }
 
-  const counts = boardChipCounts(data.items, today)
-  const shown = boardFilter(filterItems(data.items, { q: text }, today), chip, today)
-  const columns = boardColumns(shown, data.locations)
+  const counts = boardTileCounts(data.items, today)
+  const searched = filterItems(data.items, { q: text }, today)
+  const shown = tile === null ? searched : boardTileFilter(searched, tile, today)
+  const columns = boardColumns(shown, data.locations, today)
+  // A tile leaves out the places with nothing to show; a search keeps every place (F-KB-15).
+  const visible = tile === null ? columns : columns.filter((column) => column.items.length > 0)
+  const placeCount = columns.filter((column) => column.items.length > 0).length
   const date = new Intl.DateTimeFormat('en', DATE_FORMAT).format(new Date())
   const total = data.items.length
   const shownCount = shown.length
+  const colours = new Map(data.categories.map((c) => [c.id, c.color]))
+  const locationOf = (key: number | null) => data.locations.find((l) => l.id === key)
+  const allPlaces = data.locations.length
 
   return (
-    <Frame>
-      <div className="flex flex-col gap-3 px-4 pt-5 md:px-6 md:pt-6">
-        <div>
-          {title}
-          <p className="text-md text-muted">
-            {date} · {total} {total === 1 ? 'item' : 'items'}
-          </p>
-        </div>
+    <div className={PAGE_FRAME}>
+      <PageHeader
+        title="Kitchen"
+        subtitle={`${date} · ${total} ${total === 1 ? 'item' : 'items'}${
+          total > 0 ? ` in ${allPlaces} ${allPlaces === 1 ? 'place' : 'places'}` : ''
+        }`}
+        actions={
+          total > 0 ? (
+            <BoardHeader query={text} onQuery={(value) => setParam('q', value, true)} />
+          ) : undefined
+        }
+      />
+      <div className="flex flex-col gap-4">
         {total > 0 && (
-          <BoardFilters
-            query={text}
-            onQuery={(value) => setParam('q', value, true)}
-            chip={chip}
-            onChip={(value) => setParam('show', value === 'all' ? null : value)}
-            counts={counts}
-          />
+          <BoardTiles tile={tile} counts={counts} onPick={(value) => setParam('show', value)} />
         )}
-        {total > 0 && <BoardHint />}
         {query.isError && (
           <div
             role="alert"
@@ -105,36 +113,49 @@ export default function KitchenBoardPage() {
             </Button>
           </div>
         )}
-        {/* Announces how many items the chip and search leave on the board (WCAG 4.1.3). */}
+        {/* Announces what the tile and search leave on the board (WCAG 4.1.3). */}
         <p className="sr-only">{DOWN_ONLY_HINT}</p>
         <p role="status" data-testid="board-result-count" className="sr-only">
-          {shownCount} {shownCount === 1 ? 'item' : 'items'} shown
+          {tile === null
+            ? `${shownCount} ${shownCount === 1 ? 'item' : 'items'} shown`
+            : tileAnnouncement(tile, shownCount, placeCount)}
         </p>
+        {total === 0 ? (
+          <EmptyState
+            icon="home"
+            brand
+            title="No items yet"
+            action={{ label: 'Add first item', onPress: () => void navigate('/stock/new') }}
+          >
+            Add what is in your kitchen and it shows up here, by where it is kept.
+          </EmptyState>
+        ) : (
+          // One page scroll on a wide screen (a grid of cards); a swipe row on a phone and a portrait tablet.
+          <ScrollFade
+            label="Places"
+            axis="x"
+            tone="bg"
+            scrollerClassName="snap-x snap-mandatory scroll-px-5 grid grid-flow-col auto-cols-[86%] items-start gap-3.5 -mx-1.5 -mt-1.5 -mb-6 px-1.5 pt-1.5 pb-8 md:auto-cols-[calc((100%-0.875rem)/2)] lg:grid-flow-row lg:auto-cols-auto lg:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] lg:gap-4"
+          >
+            {visible.map((column) => (
+              <LocationCard
+                key={column.key ?? 'none'}
+                locationId={column.key}
+                name={column.name}
+                location={locationOf(column.key) ?? { name: column.name }}
+                items={column.items}
+                filtered={text !== '' || tile !== null}
+                today={today}
+                expanded={expansion.isOpen(String(column.key ?? 'none'))}
+                onToggle={() => expansion.toggle(String(column.key ?? 'none'))}
+                categoryColour={(id) => colours.get(id) ?? null}
+                onOpen={(id) => setParam('item', String(id))}
+                onUse={logUse}
+              />
+            ))}
+          </ScrollFade>
+        )}
       </div>
-      {total === 0 ? (
-        <EmptyState
-          icon="home"
-          title="No items yet"
-          action={{ label: 'Add first item', onPress: () => void navigate('/stock/new') }}
-        >
-          Add what is in your kitchen and it shows up here, by where it is kept.
-        </EmptyState>
-      ) : (
-        <div className="relative grid min-h-72 flex-1 snap-x snap-mandatory scroll-px-4 auto-cols-[86%] md:scroll-px-6 grid-flow-col gap-3.5 overflow-x-auto px-4 pt-3 pb-4 md:auto-cols-[calc((100%-0.875rem)/2)] md:px-6 lg:auto-cols-[calc((100%-2.625rem)/4)]">
-          {columns.map((column) => (
-            <LocationColumn
-              key={column.key ?? 'none'}
-              locationId={column.key}
-              name={column.name}
-              items={column.items}
-              filtered={text !== '' || chip !== 'all'}
-              today={today}
-              onOpen={(id) => setParam('item', String(id))}
-              onUse={logUse}
-            />
-          ))}
-        </div>
-      )}
       {params.has('item') && (
         <PanelLoadBoundary
           key={params.get('item')}
@@ -146,15 +167,6 @@ export default function KitchenBoardPage() {
           </Suspense>
         </PanelLoadBoundary>
       )}
-    </Frame>
-  )
-}
-
-/** The page's height: the screen minus the phone's bottom bar, so each column scrolls on its own. */
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex h-[calc(100dvh-var(--spacing-nav)-env(safe-area-inset-bottom))] flex-col md:h-dvh">
-      {children}
     </div>
   )
 }

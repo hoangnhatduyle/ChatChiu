@@ -36,9 +36,15 @@ export function UsageSliderImpl({
   tone = 'normal',
   size = 'row',
   isDisabled = false,
+  onDraft,
   className,
 }: UsageSliderProps) {
-  const [draft, setDraft] = useState<number | null>(null)
+  const [draft, setDraftState] = useState<number | null>(null)
+  // The draft is also told to the row, so it can show the number and amount while the bar moves.
+  const setDraft = (next: number | null) => {
+    setDraftState(next)
+    onDraft?.(next)
+  }
   const gesture = useRef<Gesture | null>(null)
   const pendingKey = useRef<PendingKey | null>(null)
   const descriptionId = useId()

@@ -26,6 +26,11 @@ export type UsageSliderProps = {
   tone?: 'normal' | 'low'
   /** `row` on the board, `big` in the panel. */
   size?: 'row' | 'big'
+  /**
+   * Called with the value under the finger on every step of a drag (or a key press that has not saved yet), and
+   * with null when the gesture ends or is cancelled. For showing the number live; it never saves anything.
+   */
+  onDraft?: (percent: number | null) => void
   /** A row that is still being saved cannot change yet (7.0.20); the bar is drawn dimmed. */
   isDisabled?: boolean
   className?: string

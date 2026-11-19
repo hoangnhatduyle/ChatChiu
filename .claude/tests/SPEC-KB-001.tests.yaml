@@ -4,12 +4,12 @@ cases:
   - id: T-SPEC-KB-001-AC-F_KB_01
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-01
-    assertion: given locations Fridge (sub-location Top shelf) and Pantry, plus an item whose location was deleted, when the board renders, then it shows columns "Fridge - Top shelf", "Pantry" and "No location", each listing every item stored there; No location is absent when no such item exists
+    assertion: given locations Fridge (sub-location Top shelf) and Pantry, plus an item whose location was deleted, when the board renders, then it shows cards "Fridge - Top shelf", "Pantry" and "No location", each with every item stored there reachable (the 5 most urgent show, Show all N opens the rest); No location is absent when no such item exists
     invariant: true
   - id: T-SPEC-KB-001-AC-F_KB_02
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-02
-    assertion: given items in one location with different expiry dates and equal dates, when the column renders, then items are ordered soonest expiry first, then by name
+    assertion: given items in one location that are expired, due today to 3 days, running low and fresh, when the card renders, then items are ordered expired first, then due today to 3 days, then running low, then the rest; inside each group soonest expiry first, then by name
     invariant: false
   - id: T-SPEC-KB-001-AC-F_KB_03
     kind: acceptance
@@ -39,7 +39,7 @@ cases:
   - id: T-SPEC-KB-001-AC-F_KB_08
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-08
-    assertion: given she drags Milk to 0%, when the save lands, then a toast reads "Milk used up · Add to shopping list · Remove"; Milk stays greyed at 0% until she chooses, and the Used up chip lists any left at 0%
+    assertion: given she drags Milk to 0%, when the save lands, then a toast reads "Milk used up · Add to shopping list · Remove"; Milk stays on its card, greyed at 0%, until she chooses (it counts under the Fresh tile unless its date says otherwise)
     invariant: false
   - id: T-SPEC-KB-001-AC-F_KB_09
     kind: acceptance
@@ -49,17 +49,17 @@ cases:
   - id: T-SPEC-KB-001-AC-F_KB_10
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-10
-    assertion: given items at or below threshold with usage history, when she taps the Running low chip, then the board shows only those items, and each item's panel shows the predicted run-out ("~4 days left at your pace") from SQL usage stats with no AI call
+    assertion: given items at or below threshold with usage history, when she taps the Running low tile, then the board shows only those items (still on their location cards; places with none are left out; a second tap shows everything), and each item's panel shows the predicted run-out ("~4 days left at your pace") from SQL usage stats with no AI call
     invariant: false
   - id: T-SPEC-KB-001-AC-F_KB_11
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-11
-    assertion: given a first visit, when the board renders, then an inline hint explains dragging the bar; dismissing it is remembered on this device
+    assertion: "given a first visit, when the board renders, then REMOVED (2026-11-19, UI refresh): there is no drag tip and no stored dismissal flag"
     invariant: false
   - id: T-SPEC-KB-001-AC-F_KB_12
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-12
-    assertion: given the board header, when it renders, then it shows title and date, search, chips All · Use soon · Running low · Used up, Scan receipt and + Add item; each column's + opens the item form with that location pre-filled; Use soon = expiring within 3 days (Q7 default)
+    assertion: "given the board header, when it renders, then it shows title, date, item and place count, search, Scan receipt and + Add item, and four clickable tiles with counts: Expired (past its date), Use today (today through 3 days, Q7 default), Running low (low and not used up; may overlap the others) and Fresh (the rest), so every item is on at least one tile; a tile is a toggle (aria-pressed), pressing it again shows everything, there is no Clear filter bar and a status line says \"Showing 7 expired items in 4 places\"; each card's + opens the item form with that location pre-filled"
     invariant: false
   - id: T-SPEC-KB-001-AC-F_KB_13
     kind: acceptance
@@ -74,12 +74,27 @@ cases:
   - id: T-SPEC-KB-001-AC-F_KB_15
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-15
-    assertion: given a search term, when she types it, then the board filters in place, keeping the location columns
+    assertion: given a search term, when she types it, then the board filters in place, keeping the location cards
     invariant: false
   - id: T-SPEC-KB-001-AC-F_KB_16
     kind: acceptance
     traces_to: SPEC-KB-001#F-KB-16
     assertion: given the tablet and the phone signed in to the same account, when usage changes on the phone, then the tablet's board shows it within 3 seconds without a reload
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_17
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-17
+    assertion: given a location with 7 items, one of them expired, when the board renders and she presses Show all 7, then the card first shows its 5 most urgent items (the expired one first), Show all 7 opens it in place (aria-expanded), and that choice is remembered on this device; a card with 5 or fewer items has no button
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_18
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-18
+    assertion: given an item at 60%, when she drags its bar down and has not released yet, then the percent, the amount ("0.35 of 1 pcs") and the Low cue follow the bar; the save still happens once on release with one Undo
+    invariant: false
+  - id: T-SPEC-KB-001-AC-F_KB_19
+    kind: acceptance
+    traces_to: SPEC-KB-001#F-KB-19
+    assertion: given locations with and without a chosen icon and colour, when the cards render, then each header shows its own icon and tint, or a guess from its name (freezer, fridge, counter, shelf, ...) when none was chosen
     invariant: false
   - id: T-SPEC-KB-001-FORBID-board_usage_change_DRAGGING_SAVED
     kind: forbidden-transition

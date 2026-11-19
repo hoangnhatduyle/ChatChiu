@@ -2,9 +2,10 @@
 // amount text and the chip counts. Pure; the filters and the expiry/low-stock rules it builds on live
 // in filter.ts, expiry.ts and low-stock.ts (AR-ONE-DEFINITION).
 import {
-  boardFilter,
-  compareByExpiryThenName,
-  type BoardChip,
+  BOARD_TILES,
+  boardTileFilter,
+  compareByUrgency,
+  type BoardTile,
   type FilterableItem,
 } from './filter.js'
 import {
@@ -41,23 +42,23 @@ export function locationLabel(location: Pick<BoardLocation, 'name' | 'subLocatio
 }
 
 /**
- * One column per location, in the order given, each sorted soonest expiry first then by name (F-KB-02).
+ * One column per location, in the order given, each sorted most urgent first (F-KB-02, `compareByUrgency`).
  * Items with no location, or one that no longer exists, go to a last "No location" column that exists
  * only when needed, so no item is ever missing from the board (NC-KB-NO-HIDDEN-ITEMS).
  */
 export function boardColumns<T extends FilterableItem>(
   items: readonly T[],
   locations: readonly BoardLocation[],
+  today: string,
 ): BoardColumn<T>[] {
+  const order = compareByUrgency(today)
   const known = new Set(locations.map((l) => l.id))
   const columns: BoardColumn<T>[] = locations.map((location) => ({
     key: location.id,
     name: locationLabel(location),
-    items: items.filter((i) => i.locationId === location.id).sort(compareByExpiryThenName),
+    items: items.filter((i) => i.locationId === location.id).sort(order),
   }))
-  const orphans = items
-    .filter((i) => i.locationId === null || !known.has(i.locationId))
-    .sort(compareByExpiryThenName)
+  const orphans = items.filter((i) => i.locationId === null || !known.has(i.locationId)).sort(order)
   return orphans.length > 0
     ? [...columns, { key: null, name: NO_LOCATION_NAME, items: orphans }]
     : columns
@@ -73,21 +74,12 @@ export function quantityLabel(
   return `${fmt(getRemainingQuantity(item))} of ${fmt(getFullQuantity(item))} ${unit}`
 }
 
-const CHIPS: readonly BoardChip[] = ['all', 'use-soon', 'running-low', 'used-up']
-
-/** How many items each header chip would show (F-KB-12). */
-export function boardChipCounts<T extends FilterableItem>(
+/** How many items each tile would show (F-KB-12). The numbers can add up to more than the total: Running low overlaps. */
+export function boardTileCounts<T extends FilterableItem>(
   items: readonly T[],
   today: string,
-): Record<BoardChip, number> {
-  const counts: Record<BoardChip, number> = {
-    all: 0,
-    'use-soon': 0,
-    'running-low': 0,
-    'used-up': 0,
-  }
-  for (const chip of CHIPS) counts[chip] = boardFilter(items, chip, today).length
+): Record<BoardTile, number> {
+  const counts: Record<BoardTile, number> = { expired: 0, today: 0, low: 0, fresh: 0 }
+  for (const tile of BOARD_TILES) counts[tile] = boardTileFilter(items, tile, today).length
   return counts
 }
-
-export { CHIPS as BOARD_CHIPS }

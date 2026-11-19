@@ -198,3 +198,32 @@ describe('UsageSlider', () => {
     expect(document.querySelector('[data-usage-track]')).toHaveAttribute('data-tone', 'low')
   })
 })
+
+describe('UsageSlider onDraft (F-KB-18: the number follows the finger)', () => {
+  it('F-KB-18: reports each snapped value while dragging, null on release, and still commits once', () => {
+    const onDraft = vi.fn()
+    const { track, onCommit } = setup({ onDraft }) // 60 % left
+    const ev = { pointerId: 1, isPrimary: true, pointerType: 'mouse', clientY: 10 }
+    fireEvent.pointerDown(track, { ...ev, clientX: xAt(64), button: 0 })
+    fireEvent.pointerMove(track, { ...ev, clientX: xAt(50) })
+    fireEvent.pointerMove(track, { ...ev, clientX: xAt(30) })
+    const seen = onDraft.mock.calls.map((c) => c[0] as number | null)
+    expect(seen.some((v) => typeof v === 'number' && v < 60)).toBe(true)
+    expect(onCommit).not.toHaveBeenCalled()
+    fireEvent.pointerUp(track, { ...ev, clientX: xAt(30) })
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    expect(onDraft.mock.calls.at(-1)?.[0]).toBeNull()
+  })
+
+  it('F-KB-18: a cancelled gesture clears the draft and saves nothing', () => {
+    const onDraft = vi.fn()
+    const { track, onCommit } = setup({ onDraft })
+    const ev = { pointerId: 1, isPrimary: true, pointerType: 'touch', clientY: 10 }
+    fireEvent.pointerDown(track, { ...ev, clientX: xAt(60), button: 0 })
+    fireEvent.pointerMove(track, { ...ev, clientX: xAt(30) })
+    fireEvent.pointerCancel(track, { ...ev, clientX: xAt(30) })
+    fireEvent.pointerUp(track, { ...ev, clientX: xAt(30) })
+    expect(onCommit).not.toHaveBeenCalled()
+    expect(onDraft.mock.calls.at(-1)?.[0]).toBeNull()
+  })
+})

@@ -129,11 +129,13 @@ test('F-KB-01 / F-KB-12: the board shows her items by location, with the header 
   await expect(page.getByRole('button', { name: 'Open Milk' })).toBeVisible()
   await expect(page.getByRole('searchbox', { name: /search the board/i })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Scan receipt' })).toBeVisible()
-  // WCAG 1.4.10: the page itself never scrolls sideways (only the columns do); a wider page would also
+  // WCAG 1.4.10: the page itself never scrolls sideways (only the swipe row does); a wider page would also
   // push the fixed bottom bar and the toasts off a phone screen.
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  )
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true)
   await page.getByRole('searchbox').fill('rice')
   await expect(page.getByRole('button', { name: 'Open Milk' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Open Rice' })).toBeVisible()
@@ -203,6 +205,8 @@ test('7.0.18: with no network, reloading still shows the board; a drag made offl
   await expect(page.locator('li', { hasText: 'Milk' }).getByText('60%')).toBeVisible({
     timeout: KEYBOARD_SAVE_MS,
   })
+  // The number follows the keys at once (F-KB-18); the save is the Undo toast, so wait for that before reloading.
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible()
   await page.waitForTimeout(500)
   await page.reload()
   await expect(page.locator('li', { hasText: 'Milk' }).getByText('60%')).toBeVisible()
@@ -211,4 +215,102 @@ test('7.0.18: with no network, reloading still shows the board; a drag made offl
   await expect.poll(() => serverMilk(account, milkId), { timeout: 15_000 }).toBeCloseTo(6, 0)
   const usage = await call<unknown[]>(account, 'GET', `/api/inventory/${milkId}/usage`)
   expect(usage).toHaveLength(1)
+})
+
+test('F-KB-12 / F-KB-17: a tile filters the cards, Show all opens a card and it is remembered after a reload', async ({
+  page,
+  context,
+  account,
+}) => {
+  test.setTimeout(60_000) // seeds 6 extra items one request at a time
+  await seed(account)
+  const fridge = (
+    await call<{ id: number; name: string }[]>(account, 'GET', '/api/locations')
+  ).find((l) => l.name === 'Fridge')!
+  const cat = (await call<{ categoryId: number }[]>(account, 'GET', '/api/inventory'))[0]!
+    .categoryId
+  for (let n = 1; n <= 6; n++) {
+    await call(account, 'POST', '/api/inventory', {
+      categoryId: cat,
+      unit: 'L',
+      quantity: 1,
+      initialQuantity: 1,
+      currentQuantity: 1,
+      name: `Extra ${n}`,
+      locationId: fridge.id,
+      expirationDate: isoDay(40 + n),
+    })
+  }
+  await routeApi(context)
+  await page.goto('/')
+  const card = () =>
+    page
+      .getByRole('heading', { level: 2, name: /Fridge - Top shelf/ })
+      .locator('xpath=ancestor::section[1]')
+  await expect(page.getByRole('button', { name: 'Open Milk' })).toBeVisible()
+  // 7 items in the Fridge: the 5 most urgent show, the rest wait behind Show all.
+  await expect(card().getByRole('listitem')).toHaveCount(5)
+  await page.getByRole('button', { name: 'Show all 7' }).click()
+  await expect(card().getByRole('listitem')).toHaveCount(7)
+  await page.reload()
+  await expect(card().getByRole('listitem')).toHaveCount(7)
+
+  // A tile keeps the items in their cards and leaves out places with nothing to show.
+  await page.getByRole('button', { name: /Use today/ }).click()
+  await expect(page).toHaveURL(/show=today/)
+  await expect(page.getByRole('button', { name: 'Open Milk' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: /Pantry/ })).toHaveCount(0)
+  await expect(page.getByTestId('board-result-count')).toHaveText(
+    'Showing 1 item to use today in 1 place',
+  )
+  await page.getByRole('button', { name: /Use today/ }).click()
+  await expect(page).not.toHaveURL(/show=/)
+  await expect(page.getByRole('heading', { level: 2, name: /Pantry/ })).toBeVisible()
+})
+
+test('F-KB-18: the percent follows the finger while dragging, and is saved once on release', async ({
+  page,
+  context,
+  account,
+}) => {
+  await seed(account)
+  await routeApi(context)
+  await page.goto('/')
+  const row = page.getByRole('button', { name: 'Open Milk' }).locator('xpath=ancestor::li[1]')
+  await expect(row).toBeVisible()
+  const track = row.getByRole('slider').locator('xpath=ancestor::*[@data-usage-track]')
+  const t = (await track.boundingBox())!
+  const y = t.y + t.height / 2
+  await page.mouse.move(t.x + t.width - 4, y)
+  await page.mouse.down()
+  await page.mouse.move(t.x + t.width * 0.5, y, { steps: 8 })
+  // Still dragging: nothing is saved, yet the number already reads the new level.
+  await expect(row.getByText(/^(5|4)\d%$/)).toBeVisible()
+  await page.mouse.up()
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible()
+})
+
+test('one page scroll on a wide screen: no inner scroll area takes over, and nothing scrolls sideways', async ({
+  page,
+  context,
+  account,
+}) => {
+  await seed(account)
+  await routeApi(context)
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Open Milk' })).toBeVisible()
+  const nested = await page.evaluate(
+    () =>
+      [...document.querySelectorAll<HTMLElement>('main *')].filter((el) => {
+        const s = getComputedStyle(el)
+        return /(auto|scroll)/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 1
+      }).length,
+  )
+  expect(nested).toBe(0)
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true)
 })
