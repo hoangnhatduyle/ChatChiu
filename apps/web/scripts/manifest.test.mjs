@@ -82,8 +82,8 @@ describe('brand assets (roadmap 3.4)', () => {
   })
 
   it('F-AP-05: the rail logo uses a small icon, not the 1.5 MB artwork', () => {
-    const rail = readFileSync(join(web, 'src/shell/NavRail.tsx'), 'utf8')
-    const src = rail.match(/BRAND_ICON = '\/([^']+)'/)?.[1]
+    const brand = readFileSync(join(web, 'src/ui/brand.ts'), 'utf8')
+    const src = brand.match(/BRAND_ICON_SMALL = '\/([^']+)'/)?.[1]
     expect(src).toBe('icons/icon-96x96.png')
     expect(existsSync(join(pub, src ?? ''))).toBe(true)
   })

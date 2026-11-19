@@ -59,7 +59,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-card border border-line bg-surface p-3">
       <dt className="text-sm font-semibold text-muted">{label}</dt>
-      <dd className="font-mono text-2xl font-extrabold text-ink tabular">{value}</dd>
+      <dd className=" text-2xl font-extrabold text-ink tabular">{value}</dd>
     </div>
   )
 }
@@ -90,7 +90,7 @@ export function WasteFigures({ waste }: { waste: StatsOverview['waste'] }) {
           {rows.map((row) => (
             <li key={row.itemName} className="flex justify-between text-base">
               <span className="font-semibold text-ink">{row.itemName}</span>
-              <span className="font-mono text-muted tabular">
+              <span className=" text-muted tabular">
                 {by === 'count' ? `×${row.timesWasted}` : money(row.totalValue)}
               </span>
             </li>

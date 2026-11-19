@@ -5,7 +5,7 @@ import { applyTheme } from './apply-theme'
 beforeEach(() => {
   document.head.innerHTML =
     '<meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#0b6e75">' +
-    '<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#0d1312">'
+    '<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#17130e">'
 })
 afterEach(() => document.documentElement.removeAttribute('data-theme'))
 
@@ -28,7 +28,7 @@ describe('applyTheme', () => {
   })
   it('7.0.16: Dark on a light device leaves only the dark browser-bar colour; System restores both', () => {
     applyTheme('dark')
-    expect(bar().map((m) => m.getAttribute('content'))).toEqual(['#0d1312'])
+    expect(bar().map((m) => m.getAttribute('content'))).toEqual(['#17130e'])
     applyTheme('system')
     expect(bar()).toHaveLength(2)
     expect(bar()[0]!.getAttribute('media')).toBe('(prefers-color-scheme: light)')

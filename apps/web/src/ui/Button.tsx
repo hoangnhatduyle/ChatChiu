@@ -21,7 +21,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   secondary:
     'border border-field-line bg-surface text-ink data-hovered:bg-hover data-pressed:bg-pressed',
   ghost: 'bg-transparent text-ink data-hovered:bg-hover data-pressed:bg-pressed',
-  danger: 'bg-status-expired-bg text-status-expired-fg',
+  danger: 'bg-danger text-danger-ink',
 }
 
 const SIZES: Record<ButtonSize, string> = {

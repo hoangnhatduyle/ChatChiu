@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stats</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.hero{display:flex;align-items:center;gap:20px;background:linear-gradient(120deg,#fff4dc,#fde0d4);border-radius:26px;padding:22px 28px;margin-bottom:18px}
+.hero img{border-radius:22%;object-fit:cover;width:88px;height:88px;flex:none}
+.hero h2{font-size:34px;font-weight:800;line-height:1.1}
+.hero p{margin:8px 0 0;font-size:16px;color:#5d4a38;line-height:1.5}
+.hero p b{color:#8f2d1f}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.s7{grid-column:span 7}.s5{grid-column:span 5}.s12{grid-column:span 12}.s6{grid-column:span 6}
+@media (max-width:1100px){.s7,.s5,.s6{grid-column:span 12}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px 22px;box-sizing:border-box;box-shadow:0 8px 22px rgba(43,34,24,.05)}
+.panel h3{font-size:21px;font-weight:700}
+.panel .lead{margin:3px 0 14px;color:var(--muted);font-size:13.5px}
+.donut{display:flex;flex-wrap:wrap;gap:22px;align-items:center}
+.ring{width:236px;height:236px;border-radius:50%;display:grid;place-items:center;flex:none;transition:background .25s}
+.hole{width:148px;height:148px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.hole b{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:28px;line-height:1.1}
+.hole span{font-size:13px;font-weight:600;color:var(--muted);margin-top:3px;padding:0 10px}
+.lg{flex:1 1 220px;display:flex;flex-direction:column;gap:2px}
+.lg button{display:flex;align-items:center;gap:10px;min-height:44px;border:0;background:transparent;border-radius:12px;padding:0 10px;font-size:14.5px;color:var(--ink);text-align:left}
+.lg button:hover{background:#f4ecdc}
+.lg button.on{background:#f4ecdc;font-weight:700}
+.lg .v{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600}
+.run{display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid var(--line)}
+.run:first-of-type{border-top:0}
+.run .t{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+.run .t b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--low)}
+.run small{font-size:12.5px;color:var(--muted)}
+.pl{display:flex;align-items:center;gap:12px;padding:5px 0;font-size:14.5px}
+.pl span.n{width:118px;font-weight:600}
+.pl .bar{flex:1;height:14px;background:#f0e9dc}
+.pl b{width:28px;text-align:right;font-variant-numeric:tabular-nums}
+.strip{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:6px}
+.dayc{border-radius:12px;background:#f7f1e4;min-height:84px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);font-weight:600}
+.dayc.t{background:var(--amber-soft);color:var(--amber)}
+.dayc .d{width:14px;height:14px;border-radius:50%}
+.rl{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14.5px}
+.rl:first-of-type{border-top:0}
+.rl span{color:var(--muted);font-size:13px}
+.seg{display:inline-flex;background:#f4ecdc;border-radius:999px;padding:3px;gap:2px}
+.seg span{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.seg span.on{background:var(--ink);color:#fff}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l3 12h10l2-8H6"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></symbol>
+<symbol id="i-set" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+</defs></svg>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><img class="logo" src="/_blob/daeaa752bdab15a444775460975dd675" alt=""><div><b>Chắt Chiu</b><small>Keep what you buy</small></div></div>
+    <nav class="nav" aria-label="Main">
+      <a href="Main.dc.html"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Kitchen</a>
+      <a href="Stock.dc.html"><svg class="i" aria-hidden="true"><use href="#i-box"/></svg>Stock<span class="badge">7</span></a>
+      <a href="Shopping.dc.html"><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg>Shopping</a>
+      <a href="Meals.dc.html"><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg>Meals</a>
+      <a href="Stats.dc.html" class="on"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg>Stats</a>
+      <a href="#"><svg class="i" aria-hidden="true"><use href="#i-set"/></svg>Settings</a>
+    </nav>
+    <div class="today"><b>Today</b>3 things to use up, 7 past their date. Start with the Freezer.</div>
+  </aside>
+  <main class="main">
+    <header class="head">
+      <div class="grow"><h1>Stats</h1><p>How your kitchen is doing</p></div>
+      <div class="seg" role="group" aria-label="Range"><span>Week</span><span>Month</span><span>Year</span><span class="on">All</span></div>
+    </header>
+
+    <section class="hero">
+      <img class="mascot" src="/_blob/daeaa752bdab15a444775460975dd675" alt="">
+      <div><h2>7 things are past their date, 3 more need using this week.</h2><p>You have <b>$289.56</b> in the kitchen across 71 items. Over time you have thrown away <b>16 items ($16.96)</b>, but only 4 in the last 30 days, and none of them cost anything. Nice.</p></div>
+    </section>
+
+    <section class="tiles" aria-label="Numbers">
+      <div class="tile green"><span class="n">71</span><span class="l">Items</span></div>
+      <div class="tile amber"><span class="n">3</span><span class="l">Expiring in 7 days</span></div>
+      <div class="tile red"><span class="n">7</span><span class="l">Past their date</span></div>
+      <div class="tile orange"><span class="n">6</span><span class="l">Running low</span></div>
+    </section>
+
+    <div class="grid">
+      <section class="panel s7">
+        <h3>Where the money is</h3>
+        <p class="lead">Stock value by kind of food. Tap a row to look closer.</p>
+        <div class="donut">
+          <div class="ring" role="img" aria-label="Stock value by category" style="background: {{gradient}}">
+            <div class="hole"><b>{{centerValue}}</b><span>{{centerLabel}}</span></div>
+          </div>
+          <div class="lg">
+            <sc-for list="{{legend}}" as="l" hint-placeholder-count="8">
+              <button class="{{l.cls}}" onClick="{{l.pick}}"><span class="dot" style="background: {{l.color}}"></span>{{l.name}}<span class="v">{{l.count}} · {{l.value}}</span></button>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel s5">
+        <h3>Running low</h3>
+        <p class="lead">With how long it should last at your pace.</p>
+        <sc-for list="{{low}}" as="r" hint-placeholder-count="5">
+          <div class="run"><div class="t"><span class="dot" style="background:#c2570c"></span>{{r.name}}<b>{{r.pct}}% left</b></div><small>{{r.note}}</small></div>
+        </sc-for>
+      </section>
+
+      <section class="panel s7">
+        <h3>The next two weeks</h3>
+        <p class="lead">One dot for each item that runs out of date. Today is highlighted.</p>
+        <div class="strip">
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="14">
+            <div class="dayc {{d.cls}}"><span>{{d.label}}</span><span style="font-size:13px;color:var(--ink)">{{d.n}}</span><sc-for list="{{d.dots}}" as="x" hint-placeholder-count="1"><span class="d" style="background: {{x.c}}"></span></sc-for></div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section class="panel s5">
+        <h3>Where it lives</h3>
+        <p class="lead">Items by place.</p>
+        <sc-for list="{{places}}" as="p" hint-placeholder-count="8">
+          <div class="pl"><span class="n">{{p.name}}</span><div class="bar"><i style="width: {{p.w}}%; background: {{p.color}}"></i></div><b>{{p.n}}</b></div>
+        </sc-for>
+      </section>
+
+      <section class="panel s12">
+        <h3>Recently added</h3>
+        <p class="lead">Last things that came in.</p>
+        <div class="rl">Chicken thighs<span>3 of 3 pcs · added 14 Nov 2026</span></div>
+        <div class="rl">Chicken thighs<span>3 of 3 pcs · added 14 Nov 2026</span></div>
+        <div class="rl">CRYSTAL SUGAR<span>1 of 1 pcs · added 14 Nov 2026</span></div>
+        <div class="rl">CHEESE FISH TOFU<span>0.7 of 1 pcs · added 14 Nov 2026</span></div>
+        <div class="rl">Shanghai Choy<span>2.87 of 2.87 pcs · added 14 Nov 2026</span></div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1380}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: null }; }
+  renderVals() {
+    // [name, items, value, colour]
+    const C = [['Other', 21, 120.27, '#6e6a63'], ['Pantry', 30, 97.06, '#b27a1a'], ['Condiments', 7, 22.65, '#8b4e9c'], ['Produce', 5, 19.96, '#3e8e4f'], ['Meat', 4, 18.29, '#b7432f'], ['Bakery', 1, 4.99, '#a8703a'], ['Dairy', 2, 4.26, '#3b71b5'], ['Snacks', 1, 2.1, '#d0663a']];
+    const total = C.reduce((s, c) => s + c[2], 0);
+    const sel = this.state.sel;
+    const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };
+    let acc = 0;
+    const stops = C.map((c) => { const from = (acc / total) * 100; acc += c[2]; const to = (acc / total) * 100; const col = sel && sel !== c[0] ? rgba(c[3], 0.28) : c[3]; return col + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%'; });
+    const gradient = 'conic-gradient(' + stops.join(', ') + ')';
+    const money = (v) => '$' + v.toFixed(2);
+    const pick = C.find((c) => c[0] === sel);
+    const places = [['Pantry', 25, '#f1c9ad'], ['Refills', 13, '#b9e0dd'], ['Freezer', 11, '#b7d6ef'], ['Fridge', 10, '#b5e1d3'], ['Counter', 4, '#f0d9a3'], ['Open Shelf', 3, '#e2d2b4'], ['Snacks & Drinks', 3, '#efbfca'], ['Spices', 2, '#eed08a']];
+    const days = [];
+    const hit = { 0: ['#b27a1a', '#b7432f', '#3b71b5'], 8: ['#3e8e4f'], 12: ['#8b4e9c'] };
+    const lab = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'];
+    for (let i = 0; i < 14; i++) { const dots = (hit[i] || []).map((c) => ({ c })); days.push({ label: lab[i] + ' ' + (19 + i <= 30 ? 19 + i : 19 + i - 30), cls: i === 0 ? 't' : '', n: dots.length ? String(dots.length) : '·', dots }); }
+    return {
+      gradient, centerValue: pick ? money(pick[2]) : money(total), centerLabel: pick ? pick[0] + ' · ' + pick[1] + ' items' : 'in stock',
+      legend: C.map((c) => ({ name: c[0], color: c[3], count: c[1], value: money(c[2]), cls: sel === c[0] ? 'on' : '', pick: () => this.setState({ sel: sel === c[0] ? null : c[0] }) })),
+      low: [{ name: 'Ruốc sấy', pct: 5, note: '0.01 piece a day · runs out Sat 28 Nov' }, { name: 'Ground pork (3 lb pack)', pct: 20, note: '0.02 piece a day · runs out Mon 30 Nov' }, { name: 'Kirkland Signature Brats', pct: 20, note: '0.02 piece a day · runs out Sun 29 Nov' }, { name: 'Hành phi', pct: 20, note: 'No usage history yet' }, { name: 'Nấm mèo khô', pct: 20, note: 'No usage history yet' }],
+      days, places: places.map((p) => ({ name: p[0], n: p[1], color: p[2], w: Math.round((p[1] / 25) * 100) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

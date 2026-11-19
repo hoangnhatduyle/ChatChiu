@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Palette, type and shared pieces</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.wrap{max-width:1344px;margin:0 auto;padding:36px 40px 56px;box-sizing:border-box}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:22px;margin-top:22px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px 24px;box-sizing:border-box}
+.panel h2{font-size:22px;font-weight:700;margin-bottom:4px}
+.panel p.lead{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.sw div{border-radius:14px;padding:12px;min-height:72px;font-size:13px;font-weight:600;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;border:1px solid rgba(43,34,24,.08)}
+.sw small{font-weight:500;opacity:.85;font-size:12px}
+.cat{display:flex;align-items:center;gap:10px}
+.cat .dot{width:14px;height:14px}
+.spec{display:flex;flex-direction:column;gap:14px}
+.big{font-family:'Bricolage Grotesque',sans-serif;font-size:56px;font-weight:800;line-height:1}
+.pill{display:inline-block;background:#ece6da;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;color:#4a3f31}
+.shelfhead{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:14px;font-weight:700;font-size:16px;font-family:'Bricolage Grotesque',sans-serif;color:#3a3024}
+.shelfhead i{margin-left:auto;font-style:normal;font-weight:800}
+.demo{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.empty{display:flex;align-items:center;gap:16px;background:#f4ecdc;border-radius:18px;padding:16px 18px}
+.empty img{border-radius:22%;object-fit:cover;width:72px;height:72px;flex:none}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:14px;line-height:1.45}
+.cmp b{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cmp div.now{color:#5d5040}
+.cmp div.new{font-weight:600}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></symbol>
+</defs></svg>
+<div class="wrap">
+  <h1 class="display" style="font-size:44px;font-weight:800">Look and feel: “Market stall”</h1>
+  <p style="margin:8px 0 0;color:var(--muted);font-size:16px;max-width:760px;line-height:1.5">Warm paper instead of cold grey, one colour for each kind of food, shelf labels for places, and your own Chắt Chiu icon for the moments when there is nothing to show. Every pair below keeps the 4.5:1 contrast the app already checks.</p>
+
+  <div class="cols">
+    <section class="panel">
+      <h2>Surfaces and brand</h2>
+      <p class="lead">Teal stays: it is her logo and the main action colour.</p>
+      <div class="sw">
+        <div style="background:#fbf6ec;color:#2b2218">Paper<small>#FBF6EC · page</small></div>
+        <div style="background:#fffdf9;color:#2b2218">Card<small>#FFFDF9</small></div>
+        <div style="background:#f4ecdc;color:#2b2218">Sidebar<small>#F4ECDC</small></div>
+        <div style="background:#2b2218;color:#fffdf9">Ink<small>#2B2218</small></div>
+        <div style="background:#0b6e75;color:#ffffff">Teal<small>#0B6E75 · actions</small></div>
+        <div style="background:#ddf0ef;color:#0a4f54">Teal soft<small>#DDF0EF</small></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Status</h2>
+      <p class="lead">Always colour plus a word or icon, never colour alone.</p>
+      <div class="sw">
+        <div style="background:#f8ddd6;color:#8f2d1f">Expired<small>#8F2D1F on #F8DDD6</small></div>
+        <div style="background:#fce7c2;color:#8a4b00">Today<small>#8A4B00 on #FCE7C2</small></div>
+        <div style="background:#fbe3d3;color:#8f3d06">Running low<small>#8F3D06 on #FBE3D3</small></div>
+        <div style="background:#ddeedc;color:#2f6b3a">Fresh<small>#2F6B3A on #DDEEDC</small></div>
+      </div>
+    </section>
+
+    <section class="panel" style="grid-column:1/-1">
+      <h2>One colour per kind of food</h2>
+      <p class="lead">The same colour on the board bars, stock rows, shopping groups and the stats charts, so it can be learned once. Colours that sit next to each other also differ in lightness.</p>
+      <div class="sw" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">
+        <div style="background:#e1f1de;color:#1f4d27"><span class="cat"><span class="dot" style="background:#3e8e4f"></span>Produce</span><small>leaves, fruit, veg</small></div>
+        <div style="background:#f8e0da;color:#7a2a1c"><span class="cat"><span class="dot" style="background:#b7432f"></span>Meat</span><small>meat, fish, eggs</small></div>
+        <div style="background:#dfeaf7;color:#20446f"><span class="cat"><span class="dot" style="background:#3b71b5"></span>Dairy</span><small>milk, yogurt, butter</small></div>
+        <div style="background:#f6e8c9;color:#5e4108"><span class="cat"><span class="dot" style="background:#b27a1a"></span>Pantry</span><small>dry goods, cans</small></div>
+        <div style="background:#eee0f3;color:#552f63"><span class="cat"><span class="dot" style="background:#8b4e9c"></span>Condiments</span><small>sauces, oils, spices</small></div>
+        <div style="background:#fbe3d6;color:#7a3515"><span class="cat"><span class="dot" style="background:#d0663a"></span>Snacks</span><small>snacks, drinks</small></div>
+        <div style="background:#f3e4d2;color:#62401a"><span class="cat"><span class="dot" style="background:#a8703a"></span>Bakery</span><small>bread, baking</small></div>
+        <div style="background:#ece8e1;color:#47433c"><span class="cat"><span class="dot" style="background:#6e6a63"></span>Other</span><small>everything else</small></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Type</h2>
+      <p class="lead">Two families, both with full Vietnamese support: <b>Bricolage Grotesque</b> for titles and big numbers, <b>Inter Tight</b> for everything you read. The mono font goes; numbers use tabular figures instead.</p>
+      <div class="spec">
+        <div class="big">$289.56</div>
+        <div class="display" style="font-size:26px;font-weight:700">Gỏi cuốn thịt luộc · Cá chiên sốt cô ba Bình Dương</div>
+        <div style="font-size:16px;line-height:1.5">Body text in Inter Tight is calm and easy to scan: <span class="num">0.75 of 1 pcs · 100% · 24d</span></div>
+        <div class="demo"><span class="pill">Aa 12 px</span><span style="font-size:14px">Small labels stay above 12 px and 4.5:1.</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Shared pieces</h2>
+      <p class="lead">Built once in the app’s <b>ui/</b> folder, reused by every screen.</p>
+      <div class="demo" style="margin-bottom:16px"><a class="btn primary" href="#"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add item</a><a class="btn" href="#">Scan receipt</a><span class="chip x">Expired</span><span class="chip t">Today</span><span class="chip s">3d</span><span class="chip n">2 mo</span><span class="lowtag">LOW</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        <div class="bar"><i style="width:100%;background:#3e8e4f"></i></div>
+        <div class="bar"><i style="width:62%;background:#3b71b5"></i></div>
+        <div class="bar"><i style="width:18%;background:#c2570c"></i></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="shelfhead" style="background:#dcebf7"><svg class="i" aria-hidden="true"><use href="#i-snow"/></svg>Freezer<i>11</i></div>
+        <div class="shelfhead" style="background:#ddf0ea">Fridge<i>10</i></div>
+        <div class="shelfhead" style="background:#f4dfd0">Pantry<i>25</i></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Your icon, when there is nothing to show</h2>
+      <p class="lead">Empty lists stop looking like an error.</p>
+      <div class="empty"><img class="mascot" src="/_blob/daeaa752bdab15a444775460975dd675" alt=""><div><div class="display" style="font-size:20px;font-weight:700">Your list is empty</div><div style="font-size:14px;color:var(--muted);margin-top:4px;line-height:1.45">Add what you need, or pull in what is running low from the side.</div></div></div>
+    </section>
+
+    <section class="panel">
+      <h2>What changes</h2>
+      <p class="lead">Nothing about how the app works. Only how it looks.</p>
+      <div class="cmp">
+        <b>Today</b><b>Proposed</b>
+        <div class="now">Cold grey page, white cards</div><div class="new">Warm paper, soft shadows that lift on hover</div>
+        <div class="now">One teal for everything</div><div class="new">Teal for actions, a colour per food kind</div>
+        <div class="now">Icon-only rail on desktop</div><div class="new">Labelled sidebar with counts and a “Today” note</div>
+        <div class="now">Plain empty states</div><div class="new">Your icon and a friendly line</div>
+        <div class="now">Mono numbers</div><div class="new">Tabular figures in the body font</div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 // Step 3.1: self-hosted fonts with Vietnamese diacritics (F-AP-05, CSP font-src 'self').
-import plexRanges from '@fontsource/ibm-plex-mono/unicode.json'
+import bricolageRanges from '@fontsource/bricolage-grotesque/unicode.json'
 import interRanges from '@fontsource/inter-tight/unicode.json'
 import fontsCss from './fonts.css?raw'
 
@@ -45,7 +45,7 @@ const VIETNAMESE =
 // breve / circumflex / horn are not in any @fontsource subset, and input is not typed that way.
 const COMBINING_TONES = 'â\u0301 ơ\u0300 ư\u0303 ă\u0309 ê\u0323 a\u0301'
 const UI_WEIGHTS = [400, 500, 600, 700, 800]
-const MONO_WEIGHTS = [500, 600]
+const DISPLAY_WEIGHTS = [700, 800]
 
 describe('fonts.css', () => {
   it.each(UI_WEIGHTS)(
@@ -56,9 +56,14 @@ describe('fonts.css', () => {
     },
   )
 
-  it.each(MONO_WEIGHTS)('F-AP-05: IBM Plex Mono %i covers numbers and Vietnamese', (weight) => {
-    expect(covers('IBM Plex Mono', weight, `0123456789 %.,/ ${VIETNAMESE}`)).toEqual([])
-  })
+  it.each(DISPLAY_WEIGHTS)(
+    'F-AP-05: Bricolage Grotesque %i covers "Chắt Chiu", numbers and Vietnamese',
+    (weight) => {
+      expect(
+        covers('Bricolage Grotesque', weight, `${BRAND} 0123456789 %.,/ ${VIETNAMESE}`),
+      ).toEqual([])
+    },
+  )
 
   it("F-AP-05: every face is self-hosted woff2 from @fontsource (CSP font-src 'self')", () => {
     expect(faces.length).toBeGreaterThan(0)
@@ -78,7 +83,7 @@ describe('fonts.css', () => {
   it("F-AP-05: unicode-range matches @fontsource's subset ranges (no drift)", () => {
     const expected: Record<string, Record<string, string>> = {
       'Inter Tight': interRanges,
-      'IBM Plex Mono': plexRanges,
+      'Bricolage Grotesque': bricolageRanges,
     }
     for (const face of faces) {
       const subset = face.src.match(/-(latin|vietnamese)-\d{3}-normal\.woff2/)?.[1] ?? ''
@@ -90,7 +95,7 @@ describe('fonts.css', () => {
     const keys = faces.map((f) => `${f.family} ${f.weight}`).sort()
     const want = [
       ...UI_WEIGHTS.map((w) => `Inter Tight ${w}`),
-      ...MONO_WEIGHTS.map((w) => `IBM Plex Mono ${w}`),
+      ...DISPLAY_WEIGHTS.map((w) => `Bricolage Grotesque ${w}`),
     ].flatMap((k) => [k, k])
     expect(keys).toEqual(want.sort())
   })

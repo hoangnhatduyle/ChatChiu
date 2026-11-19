@@ -6,6 +6,7 @@ import { Outlet, useLocation } from 'react-router'
 import { Skeleton } from '../ui/Skeleton'
 import { BottomNav } from './BottomNav'
 import { NavRail } from './NavRail'
+import { PAGE_FRAME } from './page-frame'
 import { PwaUpdatePrompt } from './UpdatePrompt'
 
 export function AppShell({ banner }: { banner?: ReactNode }) {
@@ -53,7 +54,7 @@ export function AppShell({ banner }: { banner?: ReactNode }) {
 /** Shown while a page's code loads: the page header and a few rows, in their final positions. */
 export function PageSkeleton() {
   return (
-    <div className="flex flex-col gap-3 px-4 pt-5 md:px-6 md:pt-6">
+    <div className={`${PAGE_FRAME} flex flex-col gap-3`}>
       <Skeleton className="h-8 w-40" />
       <Skeleton className="mt-3 h-11 w-full" />
       <Skeleton className="h-11 w-full" />

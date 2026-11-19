@@ -1,10 +1,8 @@
 /* Design tokens (architecture.md §4, CS-TOKENS). Components read colours, spacing, radius and type
- * only from here. Light = Fresh Ledger from the approved prototype
- * (https://claude.ai/artifact/Hne1sPMHaXmxVYfs7A4rVJ, "Kitchen board" row); prototype colours that
- * missed WCAG 2.2 AA moved to the nearest passing shade (decision fe559130). Dark = Fresh Ledger
- * Dark, the same design inverted: the same cool green-grey neutrals and teal accent, near-white ink
- * where light uses near-black (selected chip, toast), and the rail on its own surface. It replaced
- * the Night Kitchen palette at the user's request in step 3.3 (README D5).
+ * only from here. Style A "Market stall" (UI refresh, plan docs/plan/ui-refresh/00-foundation.md):
+ * warm paper, one colour per kind of food, teal as the action colour. Light is from the approved
+ * prototype (docs/plan/ui-refresh/prototype/shared.css); Dark is the same palette after dark (warm
+ * near-black, the teal accent lifted), derived for this plan and checked by the contrast gate.
  *
  * Dark applies when the device prefers it (unless Settings forces light) or when Settings sets
  * [data-theme='dark'] (SPEC-SE-001 F-SE-06). The two dark blocks must stay identical; the contrast
@@ -13,153 +11,225 @@
 :root {
   color-scheme: light;
 
-  /* Surfaces and text */
-  --bg: #f6f7f4;
-  --surface: #ffffff;
-  --ink: #14201e;
-  --muted: #56635f;
-  --line: #dce1dc; /* decorative dividers and card edges */
-  --hair: #eef1ed; /* row separators */
-  --field-line: #7d8a85; /* input and control borders: 3:1 (WCAG 1.4.11) */
-  --scrim: rgb(20 32 30 / 0.3);
-
-  /* Brand and actions */
+  --bg: #fbf6ec;
+  --surface: #fffdf9;
+  --ink: #2b2218;
+  --muted: #6b5e4e;
+  --line: #e8dfcf;
+  --hair: #efe6d6;
+  --field-line: #8a7d6b;
+  --scrim: rgb(43 34 24 / 0.32);
   --accent: #0b6e75;
   --accent-ink: #ffffff;
   --focus: #0b6e75;
-  --chip-on: #14201e;
+  --chip-on: #2b2218;
   --chip-on-ink: #ffffff;
-
-  /* Usage bar */
-  --track: #e6eae5;
+  --track: #ece6da;
   --fill: #0b6e75;
-  --low: #af5110;
-
-  /* Navigation */
-  --rail: #ffffff;
-  --rail-ink: #3d4a46;
-  --rail-on: #e3f1ef;
-  --rail-on-ink: #074b50;
-  --icon-bg: #e3f1ef;
-  --icon-ink: #074b50;
-
-  /* Toast */
-  --toast: #14201e;
-  --toast-ink: #ffffff;
+  --low: #a84708;
+  --rail: #f4ecdc;
+  --rail-ink: #4a3f31;
+  --rail-on: #ddf0ef;
+  --rail-on-ink: #0a4f54;
+  --icon-bg: #ddf0ef;
+  --icon-ink: #0a4f54;
+  --sidebar-on: #0b6e75;
+  --sidebar-on-ink: #ffffff;
+  --toast: #2b2218;
+  --toast-ink: #fffdf9;
   --toast-act: #8fe0d7;
-
-  /* Expiry status: always paired with a text label (CS-ACCESSIBLE-UI) */
-  --status-expired-bg: #a3341a;
-  --status-expired-fg: #ffffff;
-  --status-today-bg: #fcebd3;
-  --status-today-fg: #6b3a00;
-  --status-soon-bg: #fff3e2;
-  --status-soon-fg: #7a4200;
-  --status-ok-bg: #e3f1ef;
-  --status-ok-fg: #074b50;
-
-  /* Interaction states: opaque, so the contrast gate can check them (a11y review H3, M1) */
-  --hover: #f3f4f4;
-  --pressed: #eef0ee;
+  --status-expired-bg: #f8ddd6;
+  --status-expired-fg: #8f2d1f;
+  --status-today-bg: #fce7c2;
+  --status-today-fg: #8a4b00;
+  --status-soon-bg: #fdf1dc;
+  --status-soon-fg: #8a4b00;
+  --status-ok-bg: #ece6da;
+  --status-ok-fg: #4a3f31;
+  --tint-red: #f8ddd6;
+  --tint-red-ink: #8f2d1f;
+  --tint-amber: #fce7c2;
+  --tint-amber-ink: #8a4b00;
+  --tint-orange: #fbe3d3;
+  --tint-orange-ink: #8f3d06;
+  --tint-green: #ddeedc;
+  --tint-green-ink: #2f6b3a;
+  --tint-teal: #ddf0ef;
+  --tint-teal-ink: #0a4f54;
+  --tint-neutral: #ece6da;
+  --tint-neutral-ink: #4a3f31;
+  --tint-indigo: #e3e6f7;
+  --tint-indigo-ink: #2b3478;
+  --hover: #f6efe2;
+  --pressed: #efe6d6;
   --accent-hover: #095c62;
-  --disabled-bg: #f1f2f2;
-  --disabled-ink: #6f7c77;
+  --disabled-bg: #efe9dd;
+  --disabled-ink: #7a6f60;
   --error: #a3341a;
-
-  /* Elevation */
-  --shadow-card: 0 1px 2px rgb(20 32 30 / 0.06);
-  --shadow-pop: 0 8px 24px rgb(20 32 30 / 0.18);
+  --danger: #a3341a;
+  --danger-ink: #ffffff;
+  --loc-sand: #f6e8c9;
+  --loc-ice: #dcebf7;
+  --loc-mint: #ddf0ea;
+  --loc-clay: #f4dfd0;
+  --loc-teal: #ddf0ef;
+  --loc-rose: #f7dfe4;
+  --loc-saffron: #f6e3b9;
+  --loc-lilac: #e6e3f5;
+  --loc-ink: #3a3024;
+  --loc-ink-soft: #5d5040;
+  --shadow-card: 0 1px 0 rgb(43 34 24 / 0.04), 0 8px 22px rgb(43 34 24 / 0.06);
+  --shadow-lift: 0 14px 30px rgb(43 34 24 / 0.12);
+  --shadow-pop: 0 8px 24px rgb(43 34 24 / 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --bg: #0d1312;
-    --surface: #151d1b;
-    --ink: #e6eeeb;
-    --muted: #9aa9a4;
-    --line: #26302e;
-    --hair: #1e2725;
-    --field-line: #62716c;
+    --bg: #17130e;
+    --surface: #211b14;
+    --ink: #f3eadb;
+    --muted: #b9aa94;
+    --line: #3a3226;
+    --hair: #2a2318;
+    --field-line: #8a7d6b;
     --scrim: rgb(0 0 0 / 0.5);
     --accent: #4fc2b8;
     --accent-ink: #062321;
     --focus: #4fc2b8;
-    --chip-on: #e6eeeb;
-    --chip-on-ink: #0d1312;
-    --track: #2a3633;
+    --chip-on: #f3eadb;
+    --chip-on-ink: #17130e;
+    --track: #3a3226;
     --fill: #4fc2b8;
     --low: #f0955c;
-    --rail: #151d1b;
-    --rail-ink: #c3cfcb;
+    --rail: #1e1812;
+    --rail-ink: #d5c8b3;
     --rail-on: #173a37;
     --rail-on-ink: #8fe0d7;
     --icon-bg: #173a37;
     --icon-ink: #8fe0d7;
-    --toast: #e6eeeb;
-    --toast-ink: #0d1312;
+    --sidebar-on: #4fc2b8;
+    --sidebar-on-ink: #062321;
+    --toast: #f3eadb;
+    --toast-ink: #17130e;
     --toast-act: #0b6e75;
-    --status-expired-bg: #ef6a52;
-    --status-expired-fg: #1a0805;
+    --status-expired-bg: #3d1d17;
+    --status-expired-fg: #f2a99a;
     --status-today-bg: #3f2f12;
     --status-today-fg: #f7c77e;
-    --status-soon-bg: #2c2618;
+    --status-soon-bg: #3a2d17;
     --status-soon-fg: #ebc68c;
-    --status-ok-bg: #173a37;
-    --status-ok-fg: #8fe0d7;
-    --hover: #1c2523;
-    --pressed: #222c2a;
+    --status-ok-bg: #2a2318;
+    --status-ok-fg: #d5c8b3;
+    --tint-red: #3d1d17;
+    --tint-red-ink: #f2a99a;
+    --tint-amber: #3f2f12;
+    --tint-amber-ink: #f7c77e;
+    --tint-orange: #3d2616;
+    --tint-orange-ink: #f5b08a;
+    --tint-green: #1f3322;
+    --tint-green-ink: #a9d9a0;
+    --tint-teal: #173a37;
+    --tint-teal-ink: #8fe0d7;
+    --tint-neutral: #2a2318;
+    --tint-neutral-ink: #d5c8b3;
+    --tint-indigo: #262a4a;
+    --tint-indigo-ink: #b9c0f2;
+    --hover: #292117;
+    --pressed: #30271b;
     --accent-hover: #7fd9cf;
-    --disabled-bg: #1c2523;
-    --disabled-ink: #7f8d89;
+    --disabled-bg: #2a2318;
+    --disabled-ink: #8a7d6b;
     --error: #f2786a;
+    --danger: #ef6a52;
+    --danger-ink: #1a0805;
+    --loc-sand: #3b3224;
+    --loc-ice: #1f2f3b;
+    --loc-mint: #1d332d;
+    --loc-clay: #3d2a20;
+    --loc-teal: #1b3533;
+    --loc-rose: #3d252b;
+    --loc-saffron: #3d3217;
+    --loc-lilac: #2e2a40;
+    --loc-ink: #f3eadb;
+    --loc-ink-soft: #d5c8b3;
     --shadow-card: none;
+    --shadow-lift: 0 14px 30px rgb(0 0 0 / 0.45);
     --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0d1312;
-  --surface: #151d1b;
-  --ink: #e6eeeb;
-  --muted: #9aa9a4;
-  --line: #26302e;
-  --hair: #1e2725;
-  --field-line: #62716c;
+  --bg: #17130e;
+  --surface: #211b14;
+  --ink: #f3eadb;
+  --muted: #b9aa94;
+  --line: #3a3226;
+  --hair: #2a2318;
+  --field-line: #8a7d6b;
   --scrim: rgb(0 0 0 / 0.5);
   --accent: #4fc2b8;
   --accent-ink: #062321;
   --focus: #4fc2b8;
-  --chip-on: #e6eeeb;
-  --chip-on-ink: #0d1312;
-  --track: #2a3633;
+  --chip-on: #f3eadb;
+  --chip-on-ink: #17130e;
+  --track: #3a3226;
   --fill: #4fc2b8;
   --low: #f0955c;
-  --rail: #151d1b;
-  --rail-ink: #c3cfcb;
+  --rail: #1e1812;
+  --rail-ink: #d5c8b3;
   --rail-on: #173a37;
   --rail-on-ink: #8fe0d7;
   --icon-bg: #173a37;
   --icon-ink: #8fe0d7;
-  --toast: #e6eeeb;
-  --toast-ink: #0d1312;
+  --sidebar-on: #4fc2b8;
+  --sidebar-on-ink: #062321;
+  --toast: #f3eadb;
+  --toast-ink: #17130e;
   --toast-act: #0b6e75;
-  --status-expired-bg: #ef6a52;
-  --status-expired-fg: #1a0805;
+  --status-expired-bg: #3d1d17;
+  --status-expired-fg: #f2a99a;
   --status-today-bg: #3f2f12;
   --status-today-fg: #f7c77e;
-  --status-soon-bg: #2c2618;
+  --status-soon-bg: #3a2d17;
   --status-soon-fg: #ebc68c;
-  --status-ok-bg: #173a37;
-  --status-ok-fg: #8fe0d7;
-  --hover: #1c2523;
-  --pressed: #222c2a;
+  --status-ok-bg: #2a2318;
+  --status-ok-fg: #d5c8b3;
+  --tint-red: #3d1d17;
+  --tint-red-ink: #f2a99a;
+  --tint-amber: #3f2f12;
+  --tint-amber-ink: #f7c77e;
+  --tint-orange: #3d2616;
+  --tint-orange-ink: #f5b08a;
+  --tint-green: #1f3322;
+  --tint-green-ink: #a9d9a0;
+  --tint-teal: #173a37;
+  --tint-teal-ink: #8fe0d7;
+  --tint-neutral: #2a2318;
+  --tint-neutral-ink: #d5c8b3;
+  --tint-indigo: #262a4a;
+  --tint-indigo-ink: #b9c0f2;
+  --hover: #292117;
+  --pressed: #30271b;
   --accent-hover: #7fd9cf;
-  --disabled-bg: #1c2523;
-  --disabled-ink: #7f8d89;
+  --disabled-bg: #2a2318;
+  --disabled-ink: #8a7d6b;
   --error: #f2786a;
+  --danger: #ef6a52;
+  --danger-ink: #1a0805;
+  --loc-sand: #3b3224;
+  --loc-ice: #1f2f3b;
+  --loc-mint: #1d332d;
+  --loc-clay: #3d2a20;
+  --loc-teal: #1b3533;
+  --loc-rose: #3d252b;
+  --loc-saffron: #3d3217;
+  --loc-lilac: #2e2a40;
+  --loc-ink: #f3eadb;
+  --loc-ink-soft: #d5c8b3;
   --shadow-card: none;
+  --shadow-lift: 0 14px 30px rgb(0 0 0 / 0.45);
   --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
 }
 
@@ -190,6 +260,8 @@
   --color-rail-on-ink: var(--rail-on-ink);
   --color-icon-bg: var(--icon-bg);
   --color-icon-ink: var(--icon-ink);
+  --color-sidebar-on: var(--sidebar-on);
+  --color-sidebar-on-ink: var(--sidebar-on-ink);
   --color-toast: var(--toast);
   --color-toast-ink: var(--toast-ink);
   --color-toast-act: var(--toast-act);
@@ -201,24 +273,51 @@
   --color-status-soon-fg: var(--status-soon-fg);
   --color-status-ok-bg: var(--status-ok-bg);
   --color-status-ok-fg: var(--status-ok-fg);
+  --color-tint-red: var(--tint-red);
+  --color-tint-red-ink: var(--tint-red-ink);
+  --color-tint-amber: var(--tint-amber);
+  --color-tint-amber-ink: var(--tint-amber-ink);
+  --color-tint-orange: var(--tint-orange);
+  --color-tint-orange-ink: var(--tint-orange-ink);
+  --color-tint-green: var(--tint-green);
+  --color-tint-green-ink: var(--tint-green-ink);
+  --color-tint-teal: var(--tint-teal);
+  --color-tint-teal-ink: var(--tint-teal-ink);
+  --color-tint-neutral: var(--tint-neutral);
+  --color-tint-neutral-ink: var(--tint-neutral-ink);
+  --color-tint-indigo: var(--tint-indigo);
+  --color-tint-indigo-ink: var(--tint-indigo-ink);
   --color-hover: var(--hover);
   --color-pressed: var(--pressed);
   --color-accent-hover: var(--accent-hover);
   --color-disabled-bg: var(--disabled-bg);
   --color-disabled-ink: var(--disabled-ink);
   --color-error: var(--error);
+  --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
+  --color-loc-sand: var(--loc-sand);
+  --color-loc-ice: var(--loc-ice);
+  --color-loc-mint: var(--loc-mint);
+  --color-loc-clay: var(--loc-clay);
+  --color-loc-teal: var(--loc-teal);
+  --color-loc-rose: var(--loc-rose);
+  --color-loc-saffron: var(--loc-saffron);
+  --color-loc-lilac: var(--loc-lilac);
+  --color-loc-ink: var(--loc-ink);
+  --color-loc-ink-soft: var(--loc-ink-soft);
   --color-transparent: transparent;
   --color-current: currentColor;
 
   --shadow-card: var(--shadow-card);
+  --shadow-lift: var(--shadow-lift);
   --shadow-pop: var(--shadow-pop);
 }
 
 @theme {
-  /* Type: Inter Tight for UI, IBM Plex Mono for numbers (F-AP-05). */
+  /* Type: Inter Tight for UI (numbers use tabular figures), Bricolage Grotesque for titles and big numbers (F-AP-05). */
   --font-*: initial;
   --font-sans: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'Bricolage Grotesque', 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
 
   /* Type scale from the prototype (11 → 40 px at the default 16 px root), in rem so the device's
    * text-size setting scales it. Line-heights are unitless and >= 1.3 wherever Vietnamese can
@@ -244,6 +343,10 @@
   --text-3xl--line-height: 1.1;
   --text-4xl: 2.5rem;
   --text-4xl--line-height: 1;
+  --text-display: 2.375rem; /* page titles, 38 px: short titles only */
+  --text-display--line-height: 1.1;
+  --text-tile: 2.125rem; /* tile numbers: digits only */
+  --text-tile--line-height: 1.05;
 
   /* Spacing: Tailwind's 4 px base (p-1.5 = 6 px, p-3.5 = 14 px), plus named layout sizes. */
   --spacing: 4px;
@@ -251,14 +354,17 @@
   --spacing-nav: 70px; /* phone bottom nav height */
   --spacing-panel: 400px; /* tablet side panel width */
   --spacing-rail: 84px; /* tablet nav rail width */
+  --spacing-sidebar: 232px; /* labelled sidebar from 1024 px */
 
-  /* Radius: 14 px cards, 8 px controls, pills for chips and round buttons. */
+  /* Radius: 16 px cards, 20 px panels, 18 px tiles, 10 px controls, pills for chips and round buttons. */
   --radius-*: initial;
-  --radius-card: 14px;
-  --radius-control: 8px;
+  --radius-card: 16px;
+  --radius-panel: 20px;
+  --radius-tile: 18px;
+  --radius-control: 10px;
   --radius-pill: 9999px;
 
-  /* Breakpoints: bottom nav below 768 px, nav rail from 768 px; 1024 px card/table switch. */
+  /* Breakpoints: bottom nav below 768 px, nav rail from 768 px, labelled sidebar and grids from 1024 px. */
   --breakpoint-*: initial;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;

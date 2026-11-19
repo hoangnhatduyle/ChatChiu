@@ -1,4 +1,4 @@
-// Step 3.3: initial JS (shell + board route) <= 175 KB gz, each lazy route <= 120 KB gz
+// Step 3.3: initial JS (shell + board route) <= 185 KB gz, each lazy route <= 120 KB gz
 // (architecture.md §5, NC-AP-BUDGET), measured from the Vite build manifest.
 import { readFileSync } from 'node:fs'
 import { posix } from 'node:path'

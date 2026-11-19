@@ -6,8 +6,8 @@
 |---|---|---|
 | Web app | **React 19 + Vite** (single-page app, lazy-loaded routes), **React Router**, React Compiler on | Every screen is being redesigned anyway, and the reusable logic moves into framework-free `packages/domain`. So the old Angular code isn't what decides the framework. React gives a smaller baseline bundle than Angular and the **stable** TanStack Query adapter (the Angular one is experimental). It also has the best tooling for this repo's review and e2e agents. Chosen 2026-11-16 because the user wants "whatever makes it fastest and smoothest". |
 | Server data | **TanStack Query (React, stable)** + `@tanstack/query-sync-storage-persister` / IndexedDB persister, wrapped in our own hooks (`apps/web/src/data/*`) | Caching, background refresh, updates shown before the server confirms (with rollback), retries, offline queue and cache saved on the device, without building that ourselves |
-| UI | **Tailwind CSS v4** reading our design tokens + **React Aria Components** (accessible slider, dialog, popover, list box, date field; touch-friendly) + our own components; `@tanstack/react-virtual` for long lists; `@dnd-kit` for meal drag-and-drop | Accessible primitives with zero visual opinion, so the Fresh Ledger look is entirely ours |
-| Fonts | **Inter Tight** (UI) + **IBM Plex Mono** (numbers), self-hosted with `@fontsource` | Matches Fresh Ledger; Inter Tight includes Vietnamese; self-hosting keeps the strict CSP (`font-src 'self'`) |
+| UI | **Tailwind CSS v4** reading our design tokens + **React Aria Components** (accessible slider, dialog, popover, list box, date field; touch-friendly) + our own components; `@tanstack/react-virtual` for long lists; `@dnd-kit` for meal drag-and-drop | Accessible primitives with zero visual opinion, so the Market stall look is entirely ours |
+| Fonts | **Inter Tight** (UI, numbers with tabular figures) + **Bricolage Grotesque** (titles, big numbers), self-hosted with `@fontsource` | Matches Style A "Market stall" (UI refresh 2026-11-19, replaced Fresh Ledger and IBM Plex Mono); both include Vietnamese; self-hosting keeps the strict CSP (`font-src 'self'`) |
 | API | **Vercel serverless**, still a single router function (`api/handler.ts`, Hobby plan limit) | Proven setup; we port it and fix its bugs instead of rewriting it |
 | Database | **Supabase** (same project, D2): Postgres + RLS + Auth + Storage + **Realtime** | Realtime adds live sync between devices on the shared login (F-KB-16) |
 | Shared code | `packages/contracts` (zod schemas + TS types) and `packages/domain` (pure logic) | The web app and API cannot drift apart again (the old app had two definitions of "low stock") |
@@ -117,7 +117,7 @@ Response envelope: keep the old app's shape, since the old frontend depends on i
 
 ## 4. Design system
 
-- **Tokens** in `apps/web/src/styles/tokens.css`. These are the light (Fresh Ledger, from the prototype) and dark (Fresh Ledger Dark, its inverted counterpart; replaced Night Kitchen on 2026-11-17, D5) palettes:
+- **Tokens** in `apps/web/src/styles/tokens.css`. These are the light (Style A "Market stall", from `docs/plan/ui-refresh/prototype/`) and dark (Market stall after dark) palettes; the UI refresh of 2026-11-19 replaced Fresh Ledger (the 3.1 token list below shows the structure; `tokens.css` has the values):
 
   ```text
   --bg, --surface, --ink, --muted, --line, --hair, --accent, --accent-ink, --track, --fill, --low,
@@ -133,7 +133,7 @@ Response envelope: keep the old app's shape, since the old frontend depends on i
   - `Toast` (Undo / Retry / action buttons), `EmptyState`, `Skeleton`, `Icon` (inline SVG set)
 - **Layout**:
   - Below 768 px: bottom nav.
-  - From 768 px: a 84 px nav rail.
+  - From 768 px: a 84 px nav rail; from 1024 px the same nav is a 232 px labelled sidebar with the Stock expired count (UI refresh).
   - Board columns: up to 4 visible on the Fire in landscape; scrolls sideways with snapping when there are more locations; portrait shows 2.
 - **Motion**: 150–250 ms transform/opacity only; turned off under `prefers-reduced-motion`.
 - **Accessibility**: WCAG 2.2 AA contrast (checked for both palettes); expiry status always has a text label, never colour alone; focus rings drawn by us.
@@ -142,7 +142,7 @@ Response envelope: keep the old app's shape, since the old frontend depends on i
 
 | Metric | Target |
 |---|---|
-| Initial JS (shell + board route), gzipped | ≤ 175 KB (150 until step 5.1, 170 until step 5.6, 200 until step 6.1; step 6.1 moved the react-aria slider out of the first load: 178.8 → 171.9 KB). Going to 150 needs react-aria's Button out of the first load too (about 15 KB): see roadmap row 7.0.37 |
+| Initial JS (shell + board route), gzipped | ≤ 185 KB (raised from 175 for the UI refresh 2026-11-19; 150 until step 5.1, 170 until step 5.6, 200 until step 6.1; step 6.1 moved the react-aria slider out of the first load: 178.8 → 171.9 KB). Going to 150 needs react-aria's Button out of the first load too (about 15 KB): see roadmap row 7.0.37 |
 | Each lazy route, gzipped | ≤ 120 KB |
 | LCP on the Fire Max 11, cold (no cache) | < 2.5 s |
 | Board visible on the Fire, warm (cached snapshot) | < 1 s |

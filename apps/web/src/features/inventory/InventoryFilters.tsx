@@ -112,7 +112,7 @@ export function InventoryFilters(props: InventoryFiltersProps) {
               )}
             >
               {STATUS_LABELS[value]}
-              <span className="ml-0.5 font-mono text-sm opacity-75">{props.counts[value]}</span>
+              <span className="ml-0.5 tabular text-sm opacity-75">{props.counts[value]}</span>
             </button>
           ))}
         </div>

@@ -38,7 +38,7 @@ export function UsageControls({ item, isDisabled, onLevel, onQuick, onExact }: U
           How much is left
         </h3>
         <p className="text-md text-muted">
-          <span className="font-mono text-xl font-extrabold text-ink">{percent}%</span> · {amount}
+          <span className="tabular text-xl font-extrabold text-ink">{percent}%</span> · {amount}
           {usedUp && ' · Used up'}
           {low && ' · Low'}
         </p>

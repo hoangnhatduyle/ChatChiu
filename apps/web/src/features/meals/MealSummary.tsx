@@ -12,7 +12,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-card border border-line bg-surface p-3">
       <dt className="text-sm font-semibold text-muted">{label}</dt>
-      <dd className="font-mono text-2xl font-extrabold text-ink tabular">{value}</dd>
+      <dd className=" text-2xl font-extrabold text-ink tabular">{value}</dd>
     </div>
   )
 }
@@ -79,7 +79,7 @@ export function MealSummary({
             {s.mostFrequentMeals.map((m) => (
               <li key={m.name} className="flex justify-between text-base">
                 <span className="font-semibold text-ink">{m.name}</span>
-                <span className="font-mono text-muted tabular">×{m.count}</span>
+                <span className=" text-muted tabular">×{m.count}</span>
               </li>
             ))}
           </ol>
@@ -101,7 +101,7 @@ export function MealSummary({
               <li key={m.month} className="text-base">
                 <div className="flex justify-between">
                   <span className="text-ink">{monthLabel(`${m.month}-01`)}</span>
-                  <span className="font-mono text-muted tabular">{m.count}</span>
+                  <span className=" text-muted tabular">{m.count}</span>
                 </div>
                 <div aria-hidden="true" className="mt-0.5 h-1.5 rounded-pill bg-track">
                   <div

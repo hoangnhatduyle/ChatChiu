@@ -159,3 +159,28 @@
     transform: translateY(12px);
   }
 }
+
+/* A category's tint: its own colour mixed into the card surface, with a neutral fallback for a browser
+ * without color-mix (Chrome 111 / Safari 16.2 / Firefox 113 have it). Set `--cat` with `categoryVars`. */
+@layer components {
+  .cat-tint {
+    background: var(--tint-neutral);
+  }
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    .cat-tint {
+      background: color-mix(in srgb, var(--cat) 16%, var(--surface));
+    }
+  }
+
+  /* A scroller whose bar stays invisible until the pointer is over it (the space is reserved, so nothing jumps). */
+  .scroll-quiet {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .scroll-quiet:hover,
+  .scroll-quiet:focus-within {
+    scrollbar-color: var(--field-line) transparent;
+  }
+}

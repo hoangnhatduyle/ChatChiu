@@ -6,7 +6,7 @@ export function PageTitle({ children }: { children: string }) {
       <title>{`${children} · Chắt Chiu`}</title>
       <h1
         tabIndex={-1}
-        className="text-xl font-extrabold tracking-[-0.01em] outline-none md:text-2xl"
+        className="font-display text-2xl font-extrabold tracking-[-0.01em] outline-none md:text-3xl lg:text-display"
       >
         {children}
       </h1>

@@ -6,17 +6,21 @@ const decl = (css: string, name: string) =>
   css.match(new RegExp(`${name}\\s*:\\s*([^;]+);`))?.[1]?.trim()
 
 describe('tokens.css', () => {
-  it('CS-TOKENS: radius is 14 px for cards and 8 px for controls', () => {
-    expect(decl(tokensCss, '--radius-card')).toBe('14px')
-    expect(decl(tokensCss, '--radius-control')).toBe('8px')
+  it('CS-TOKENS: radius is 16 px for cards, 20 px for panels, 18 px for tiles and 10 px for controls', () => {
+    expect(decl(tokensCss, '--radius-card')).toBe('16px')
+    expect(decl(tokensCss, '--radius-panel')).toBe('20px')
+    expect(decl(tokensCss, '--radius-tile')).toBe('18px')
+    expect(decl(tokensCss, '--radius-control')).toBe('10px')
   })
 
   it('CS-ACCESSIBLE-UI: the touch-target token is 44 px', () => {
     expect(decl(tokensCss, '--spacing-touch')).toBe('44px')
   })
 
-  it('layout tokens: 84 px nav rail from 768 px', () => {
+  it('layout tokens: 84 px nav rail from 768 px, 232 px sidebar from 1024 px', () => {
     expect(decl(tokensCss, '--spacing-rail')).toBe('84px')
+    expect(decl(tokensCss, '--spacing-sidebar')).toBe('232px')
+    expect(decl(tokensCss, '--breakpoint-lg')).toBe('1024px')
     expect(decl(tokensCss, '--breakpoint-md')).toBe('768px')
   })
 
@@ -33,9 +37,10 @@ describe('tokens.css', () => {
     expect(decl(tokensCss, '--color-accent')).toBe('var(--accent)')
   })
 
-  it('F-AP-05: UI type is Inter Tight and numbers are IBM Plex Mono', () => {
+  it('F-AP-05: UI type is Inter Tight, titles are Bricolage Grotesque and there is no mono font', () => {
     expect(decl(tokensCss, '--font-sans')).toMatch(/^'Inter Tight'/)
-    expect(decl(tokensCss, '--font-mono')).toMatch(/^'IBM Plex Mono'/)
+    expect(decl(tokensCss, '--font-display')).toMatch(/^'Bricolage Grotesque'/)
+    expect(tokensCss).not.toMatch(/--font-mono/)
   })
 
   it('CS-ACCESSIBLE-UI: type sizes are rem, so the device text-size setting scales them', () => {

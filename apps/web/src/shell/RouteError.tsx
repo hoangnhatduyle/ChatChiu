@@ -13,7 +13,7 @@ export function RouteError({ error }: { error: unknown }) {
       <p role="alert" className="mt-2 max-w-prose text-base text-muted">
         The app may have been updated while it was open. Reloading gets the current version.
       </p>
-      {detail && <p className="mt-1 font-mono text-xs text-muted">{detail}</p>}
+      {detail && <p className="mt-1 tabular text-xs text-muted">{detail}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="primary" onPress={() => window.location.reload()}>
           <Icon name="refresh" size={18} />

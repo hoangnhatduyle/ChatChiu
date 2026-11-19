@@ -29,6 +29,16 @@ const PATHS = {
   'chevron-right': 'M9 6l6 6-6 6',
   undo: 'M9 14L4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7 M20 5v6h-6',
+  counter:
+    'M5 11h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z M6 11V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3',
+  shelf: 'M3 4h18 M3 12h18 M3 20h18 M6 4v16 M18 4v16',
+  refill: 'M20 11a8 8 0 0 0-14-4 M4 13a8 8 0 0 0 14 4 M20 4v5h-5 M4 20v-5h5',
+  cookie: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M9 9h.01 M15 10h.01 M10 15h.01 M15 15h.01',
+  spice: 'M9 3h6l1 4H8z M8 7v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7',
+  bag: 'M5 8h14l-1 12H6z M9 8a3 3 0 0 1 6 0',
+  bottle: 'M10 3h4v4l2 3v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10l2-3z M8 14h8',
+  leaf: 'M5 19C5 10 11 5 20 5c0 9-5 15-13 15 M5 19c3-4 6-6 10-8',
+  bread: 'M4 11a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z M9 12v4 M15 12v4',
 } as const
 
 export type IconName = keyof typeof PATHS

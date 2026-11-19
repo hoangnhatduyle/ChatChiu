@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dashboard · Style A Market stall</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 1px 0 rgba(43,34,24,.04),0 8px 22px rgba(43,34,24,.06);transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(43,34,24,.12)}
+.lh{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.lh .ic{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.75);display:grid;place-items:center;color:#4a3f31}
+.lh h3{font-size:20px;font-weight:700;line-height:1.1}
+.lh .sub{font-size:12.5px;font-weight:600;color:#5d5040;margin-top:2px}
+.lh .ct{margin-left:auto;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;color:#4a3f31}
+.row{padding:11px 14px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
+.row .top{display:flex;align-items:center;gap:9px}
+.row .nm{font-weight:600;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted)}
+.row .meta .bar{flex:1}
+.row .pc{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);width:38px;text-align:right}
+.more{padding:9px 14px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
+.foot{display:flex;border-top:1px solid var(--line)}
+.foot button,.foot a{flex:1;min-height:44px;border:0;background:transparent;color:var(--teal);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.foot button:hover,.foot a:hover{background:var(--teal-soft)}
+.chev{transition:transform .2s}
+.chev.up{transform:rotate(180deg)}
+.hintline{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.hintline svg{width:16px;height:16px}
+.tile{cursor:pointer;position:relative}
+.tile .go{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:12.5px;font-weight:700}
+.tile .go svg{width:14px;height:14px;transition:transform .15s}
+.tile:hover .go svg{transform:translateX(3px)}
+.tile.sel{box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 0 5px currentColor,0 10px 22px rgba(43,34,24,.14)}
+.fbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px 8px 8px 16px;margin:0 0 18px;font-size:14.5px;font-weight:600}
+.fbar button{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:#fff;font-weight:700;font-size:14px;color:var(--ink)}
+.fbar button:hover{background:#f4ecdc}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l3 12h10l2-8H6"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></symbol>
+<symbol id="i-set" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-counter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="9" rx="2"/><path d="M6 11V8a2 2 0 012-2h8a2 2 0 012 2v3"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/></symbol>
+<symbol id="i-fridge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M6 10h12M9 6v1M9 14v2"/></symbol>
+<symbol id="i-shelf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4h18M3 12h18M3 20h18M6 4v16M18 4v16"/></symbol>
+<symbol id="i-refill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 00-14-4M4 13a8 8 0 0014 4"/><path d="M20 4v5h-5M4 20v-5h5"/></symbol>
+<symbol id="i-cookie" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 9h.01M15 10h.01M10 15h.01M15 15h.01"/></symbol>
+<symbol id="i-spice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 4H8z"/><path d="M8 7v13a1 1 0 001 1h6a1 1 0 001-1V7"/></symbol>
+</defs></svg>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><img class="logo" src="/_blob/daeaa752bdab15a444775460975dd675" alt=""><div><b>Chắt Chiu</b><small>Keep what you buy</small></div></div>
+    <nav class="nav" aria-label="Main">
+      <a href="Main.dc.html" class="on"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Kitchen</a>
+      <a href="Stock.dc.html"><svg class="i" aria-hidden="true"><use href="#i-box"/></svg>Stock<span class="badge">7</span></a>
+      <a href="Shopping.dc.html"><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg>Shopping</a>
+      <a href="Meals.dc.html"><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg>Meals</a>
+      <a href="Stats.dc.html"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg>Stats</a>
+      <a href="#"><svg class="i" aria-hidden="true"><use href="#i-set"/></svg>Settings</a>
+    </nav>
+    <div class="today"><b>Today</b>3 things to use up, 7 past their date. Start with the Freezer.</div>
+  </aside>
+
+  <main class="main">
+    <header class="head">
+      <div class="grow"><h1>Kitchen</h1><p>Thursday, Nov 19 · 71 items in 8 places</p></div>
+      <div class="search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>Find on the board</div>
+      <a class="btn" href="#">Scan receipt</a>
+      <a class="btn primary" href="#"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add item</a>
+    </header>
+
+    <p class="hintline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5a2 2 0 014 0v5M13 10V8a2 2 0 014 0v4M17 11a2 2 0 014 0v3a7 7 0 01-7 7h-2a7 7 0 01-5-2l-3-4a2 2 0 013-2l2 2V11"/></svg>Tap a card to see only those items. They stay grouped by place.</p>
+    <section class="tiles" aria-label="Filter the board">
+      <sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+        <button class="tile {{t.cls}} rise" style="animation-delay: {{t.delay}}ms" aria-pressed="{{t.on}}" onClick="{{t.pick}}"><span class="n">{{t.n}}</span><span class="l">{{t.l}}</span><span class="go">{{t.hint}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span></button>
+      </sc-for>
+    </section>
+    <sc-if value="{{filtered}}" hint-placeholder-val="{{ false }}">
+      <div class="fbar" role="status"><span>Showing <b>{{filterName}}</b>: {{matchCount}} items in {{placeCount}} places</span><span style="flex:1"></span><button onClick="{{clearFilter}}">Clear filter</button></div>
+    </sc-if>
+
+    <sc-if value="{{showTip}}" hint-placeholder-val="{{ true }}">
+      <div class="tip"><span class="pigwrap"><img class="mascot" src="/_blob/daeaa752bdab15a444775460975dd675" alt=""></span><span class="grow">Tip: drag any bar down to log what you used. It saves right away, and Undo is one tap.</span><button onClick="{{hideTip}}">Got it</button></div>
+    </sc-if>
+
+    <section class="grid" aria-label="Where things are kept">
+      <sc-for list="{{locs}}" as="loc" hint-placeholder-count="8">
+        <article class="card rise" style="animation-delay: {{loc.delay}}ms">
+          <div class="lh" style="background: {{loc.tint}}">
+            <span class="ic">
+              <sc-if value="{{loc.isCounter}}" hint-placeholder-val="{{ false }}"><svg class="i" aria-hidden="true"><use href="#i-counter"/></svg></sc-if>
+              <sc-if value="{{loc.isFreezer}}" hint-placeholder-val="{{ false }}"><svg class="i" aria-hidden="true"><use href="#i-snow"/></svg></sc-if>
+              <sc-if value="{{loc.isFridge}}" hint-placeholder-val="{{ false }}"><svg class="i" aria-hidden="true"><use href="#i-fridge"/></svg></sc-if>
+              <sc-if value="{{loc.isShelf}}" hint-placeholder-val="{{ false }}"><svg class="i" aria-hidden="true"><use href="#i-shelf"/></svg></sc-if>
+              <sc-if value="{{loc.isRefill}}" hint-placeholder-val="{{ false }}"><svg class="i" aria-hidden="true"><use href="#i-refill"/></svg></sc-if>
+              <sc-if value="{{loc.isCookie}}" hint-placeholder-val="{{ false }}"><svg class="i" aria-hidden="true"><use href="#i-cookie"/></svg></sc-if>
+              <sc-if value="{{loc.isSpice}}" hint-placeholder-val="{{ false }}"><svg class="i" aria-hidden="true"><use href="#i-spice"/></svg></sc-if>
+            </span>
+            <div><h3>{{loc.name}}</h3><div class="sub">{{loc.status}}</div></div>
+            <span class="ct">{{loc.total}}</span>
+          </div>
+          <sc-for list="{{loc.rows}}" as="it" hint-placeholder-count="5">
+            <div class="row">
+              <div class="top"><span class="dot" style="background: {{it.color}}"></span><span class="nm">{{it.n}}</span><sc-if value="{{it.low}}" hint-placeholder-val="{{ false }}"><span class="lowtag">LOW</span></sc-if><span class="chip {{it.cls}}">{{it.chip}}</span></div>
+              <div class="meta"><div class="bar"><i style="width: {{it.pct}}%; background: {{it.fill}}"></i></div><span class="pc">{{it.pct}}%</span></div>
+            </div>
+          </sc-for>
+          <sc-if value="{{loc.hasMore}}" hint-placeholder-val="{{ false }}"><div class="more">+ {{loc.moreCount}} more not shown</div></sc-if>
+          <sc-if value="{{loc.canToggle}}" hint-placeholder-val="{{ false }}"><div class="foot"><button onClick="{{loc.toggle}}">{{loc.toggleLabel}}<svg class="i chev {{loc.chevCls}}" aria-hidden="true"><use href="#i-down"/></svg></button></div></sc-if>
+          <sc-if value="{{loc.canOpen}}" hint-placeholder-val="{{ false }}"><div class="foot"><a href="Stock.dc.html">Open {{loc.name}} in Stock</a></div></sc-if>
+        </article>
+      </sc-for>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1260}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { showTip: true, open: { freezer: false, fridge: false }, pick: 'all' };
+  }
+  renderVals() {
+    const CAT = { produce: '#3e8e4f', meat: '#b7432f', dairy: '#3b71b5', pantry: '#b27a1a', condiments: '#8b4e9c', snacks: '#d0663a', bakery: '#a8703a', other: '#6e6a63' };
+    // [name, quantity, category, days to expiry (-1 = expired), percent left, low]
+    const D = {
+      counter: [['Vifon Mi Xao (instant noodles)','0.2 of 1 pcs','other',180,20,true],['ORANGES','0.75 of 1 pcs','produce',8,75],['WINTER TIN','0.8 of 1 pcs','other',60,80],['Kosher Salt','0.5 of 1 pcs','pantry',300,50]],
+      freezer: [['Kirkland Signature Brats','0.2 of 1 pcs','meat',-1,20,true],['Ground pork (3 lb pack)','0.2 of 1 pcs','meat',0,20,true],['PARTY WINGS','0.35 of 1 pcs','meat',0,35],['CHEESE FISH TOFU','0.7 of 1 pcs','other',24,70],['VEGGIE ROLLS','1 of 1 pcs','other',24,100],['DUMPLING','0.6 of 1 pcs','other',43,60],['SHRIMP 21/25','0.6 of 1 pcs','meat',43,60],['Chicken thighs','3 of 3 pcs','meat',60,100],['Chicken thighs','3 of 3 pcs','meat',60,100],['Kirkland Signature Baguette','1 of 1 pcs','bakery',125,100],['Eastland Red Chili (8 oz)','0.55 of 1 pcs','condiments',125,55]],
+      fridge: [['Yogurt (CHO 20G)','0.35 of 1 pcs','dairy',-1,35],['Big Gai Choy (leafy greens)','1 of 1 pcs','produce',-1,100],['Organic Carrots','1 of 1 pcs','produce',-1,100],['Roma Tomato','0.6 of 1 pcs','produce',-1,60],['Kroger Butter','0.75 of 1 pcs','dairy',0,75],['Kewpie Mayonnaise','0.35 of 1 pcs','condiments',12,35],['KS 5DZ EGGS','0.85 of 1 pcs','other',24,85],['Shanghai Choy','2.87 of 2.87 pcs','produce',24,100],['Ssamjang (Mixed Soybean Paste) 500g','1 of 1 pcs','condiments',30,100],['Konjac noodles','1 of 1 pcs','other',31,100]],
+      shelf: [['Condensed milk','1 of 1 pcs','pantry',45,100],['Corn','12 of 12 pcs','pantry',240,100],['Canned Coconut Milk','3 of 3 can','pantry',600,100]],
+      pantry: [['Whole Almond','0.78 of 1 bag','pantry',-1,78],['Chinese Sausage','0.45 of 1 pcs','meat',18,45],['SAFACO NUI BIG TUBE','1 of 1 pcs','pantry',57,100]],
+      refills: [['BARONA SAUCE FOR CHAR SIU','1 of 1 pcs','condiments',24,100],['Three Crabs Fish Sauce','0.5 of 1 pcs','condiments',150,50],['Chin Su Chili Sauce (XL)','1 of 1 pcs','condiments',150,100]],
+      snacks: [['Boom Chicka Pop Popcorn','0.35 of 1 pcs','snacks',-1,35],['AZ Green Tea','0.65 of 1 pcs','snacks',59,65],['G7 COFFEE 20 BAG','0.45 of 1 pcs','snacks',147,45]],
+      spices: [['Sesame Oil (7.4 oz)','0.75 of 1 pcs','condiments',125,75],['Kroger Baking Powder','1 of 1 pcs','pantry',215,100]]
+    };
+    const L = [
+      ['counter','Counter',4,'#f6e8c9','isCounter'],['freezer','Freezer',11,'#dcebf7','isFreezer'],['fridge','Fridge',10,'#ddf0ea','isFridge'],
+      ['shelf','Open Shelf',3,'#efe6d5','isShelf'],['pantry','Pantry',25,'#f4dfd0','isShelf'],['refills','Refills',13,'#ddf0ef','isRefill'],
+      ['snacks','Snacks & Drinks',3,'#f7dfe4','isCookie'],['spices','Spices',2,'#f6e3b9','isSpice']
+    ];
+    const rank = (a) => (a[3] < 0 ? 0 : a[3] === 0 ? 1 : a[5] ? 2 : 3 + a[3] / 1000);
+    const chipOf = (d) => (d < 0 ? 'Expired' : d === 0 ? 'Today' : d <= 30 ? d + 'd' : Math.round(d / 30) + ' mo');
+    const clsOf = (d) => (d < 0 ? 'x' : d === 0 ? 't' : d <= 7 ? 's' : 'n');
+    const pickKey = this.state.pick;
+    const filtered = pickKey !== 'all';
+    const keep = (a) => !filtered || (pickKey === 'exp' && a[3] < 0) || (pickKey === 'today' && a[3] === 0) || (pickKey === 'low' && !!a[5]) || (pickKey === 'fresh' && a[3] > 7);
+    const locs0 = L.map((l, idx) => {
+      const [id, name, total0, tint, iconKey] = l;
+      const all = D[id].filter(keep).sort((a, b) => rank(a) - rank(b));
+      const total = filtered ? all.length : total0;
+      const open = !!this.state.open[id];
+      const shown = open ? all : all.slice(0, 5);
+      const exp = all.filter((a) => a[3] < 0).length;
+      const low = all.filter((a) => a[5]).length;
+      const today = all.filter((a) => a[3] === 0).length;
+      const bits = [];
+      if (exp) bits.push(exp + ' expired');
+      if (today) bits.push(today + ' today');
+      if (low) bits.push(low + ' low');
+      const canToggle = all.length > 5;
+      const o = { name, total, tint, delay: 120 + idx * 60, status: bits.length ? bits.join(' · ') : 'All good',
+        isCounter: iconKey === 'isCounter', isFreezer: iconKey === 'isFreezer', isFridge: iconKey === 'isFridge', isShelf: iconKey === 'isShelf', isRefill: iconKey === 'isRefill', isCookie: iconKey === 'isCookie', isSpice: iconKey === 'isSpice',
+        rows: shown.map((a) => ({ n: a[0], color: CAT[a[2]], cls: clsOf(a[3]), chip: chipOf(a[3]), pct: a[4], low: !!a[5], fill: a[5] ? '#c2570c' : CAT[a[2]] })),
+        hasMore: total > all.length && !canToggle ? true : (total > all.length && open),
+        moreCount: total - shown.length,
+        canToggle, toggleLabel: open ? 'Show fewer' : 'Show all ' + total, chevCls: open ? 'up' : '',
+        canOpen: !canToggle && total > all.length,
+        toggle: () => this.setState({ open: Object.assign({}, this.state.open, { [id]: !open }) })
+      };
+      if (canToggle && !open) { o.hasMore = false; }
+      if (filtered) { o.hasMore = false; o.canOpen = false; o.status = all.length + (all.length === 1 ? ' item' : ' items') + ' · ' + (total0 - all.length) + ' hidden'; }
+      return o;
+    });
+    // With a filter on, places that have nothing to show are left out; the others keep their own card.
+    const locs = filtered ? locs0.filter((l) => l.rows.length > 0) : locs0;
+    const names = { exp: 'Expired', today: 'Use today', low: 'Running low', fresh: 'Fresh' };
+    const t = (n, l, cls, key, delay) => { const on = this.state.pick === key; return { n, l, cls: cls + (on ? ' sel' : ''), delay, on, hint: on ? 'Showing. Tap to clear' : 'Tap to filter', pick: () => this.setState({ pick: on ? 'all' : key }) }; };
+    return {
+      locs, filtered, filterName: names[pickKey] || '', matchCount: locs.reduce((s, l) => s + l.total, 0), placeCount: locs.length,
+      clearFilter: () => this.setState({ pick: 'all' }),
+      tiles: [t(7, 'Expired', 'red', 'exp', 0), t(3, 'Use today', 'amber', 'today', 50), t(6, 'Running low', 'orange', 'low', 100), t(61, 'Fresh', 'green', 'fresh', 150)],
+      showTip: this.state.showTip,
+      hideTip: () => this.setState({ showTip: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

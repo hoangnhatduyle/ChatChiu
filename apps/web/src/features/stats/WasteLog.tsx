@@ -69,10 +69,10 @@ export function WasteLog({
                 </p>
               </div>
               <p className="text-right text-md text-ink">
-                <span className="font-mono tabular">
+                <span className="tabular">
                   {amount(entry.quantity)} {entry.unit}
                 </span>
-                <span className="block font-mono font-bold tabular">
+                <span className="block  font-bold tabular">
                   {entry.price === null ? (
                     <span className="font-sans font-normal text-muted">No price</span>
                   ) : (

@@ -77,7 +77,7 @@ export function DateField({
             'data-invalid:border-2 data-invalid:border-error',
           )}
         >
-          <DateInput className="flex flex-1 font-mono text-base text-ink tabular">
+          <DateInput className="flex flex-1  text-base text-ink tabular">
             {(segment) => (
               <DateSegment
                 segment={segment}
@@ -112,7 +112,7 @@ export function DateField({
               onPress={() => pickQuick(addExpiryOffset(quickFrom, chip.amount, chip.unit))}
               className={cx(
                 'inline-flex min-h-touch min-w-touch cursor-pointer items-center justify-center rounded-pill',
-                'border border-line bg-surface px-3 font-mono text-md font-medium text-ink',
+                'border border-line bg-surface px-3 tabular text-md font-medium text-ink',
                 'data-hovered:bg-hover data-pressed:bg-pressed',
               )}
             >
@@ -122,7 +122,7 @@ export function DateField({
         </div>
       )}
       {/* Mounted empty and filled after a pick, so screen readers announce the change. */}
-      <p role="status" className="min-h-5 font-mono text-sm text-muted">
+      <p role="status" className="min-h-5 tabular text-sm text-muted">
         {pickedNow && `${label} ${longDate(pickedNow)}`}
       </p>
     </div>
@@ -162,7 +162,7 @@ function CalendarPanel() {
           <CalendarCell
             date={date}
             className={cx(
-              'flex size-touch cursor-pointer items-center justify-center rounded-pill font-mono text-md text-ink',
+              'flex size-touch cursor-pointer items-center justify-center rounded-pill tabular text-md text-ink',
               'data-hovered:bg-hover data-outside-month:invisible data-today:font-extrabold data-today:underline',
               'data-selected:bg-accent data-selected:font-bold data-selected:text-accent-ink',
               'data-unavailable:text-disabled-ink',

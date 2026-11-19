@@ -63,7 +63,7 @@ export function BoardFilters({ query, onQuery, chip, onChip, counts }: BoardFilt
             )}
           >
             {CHIP_LABELS[value]}
-            <span className="ml-0.5 font-mono text-sm opacity-75">{counts[value]}</span>
+            <span className="ml-0.5 tabular text-sm opacity-75">{counts[value]}</span>
           </button>
         ))}
       </div>

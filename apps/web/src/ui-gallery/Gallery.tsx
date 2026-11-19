@@ -1,7 +1,12 @@
 // Every ui/ component in its states, on the board's surfaces, for screenshots and real-pointer
 // tests (e2e/ui/*.spec.ts). Sample data mirrors the approved prototype's board.
 import { useState, type ReactNode } from 'react'
+import { LOCATION_ICONS } from '@chatchiu/contracts'
+import { GREEN, YELLOW } from './sample-colours'
+import { BrandMark } from '../ui/BrandMark'
 import { Button } from '../ui/Button'
+import { Card } from '../ui/Card'
+import { CategoryDot, CategoryEdge, CategoryPill } from '../ui/CategoryStyle'
 import { Chip } from '../ui/Chip'
 import { DateField } from '../ui/DateField'
 import { EmptyState } from '../ui/EmptyState'
@@ -9,7 +14,10 @@ import { ExpiryChip } from '../ui/ExpiryChip'
 import { Field } from '../ui/Field'
 import { Icon } from '../ui/Icon'
 import { IconButton } from '../ui/IconButton'
+import { LocationHeader } from '../ui/LocationHeader'
+import { LOCATION_COLOR_LABEL } from '../ui/location-style'
 import { ResponsivePanel } from '../ui/ResponsivePanel'
+import { ScrollFade } from '../ui/ScrollFade'
 import { Segmented } from '../ui/Segmented'
 import { Select } from '../ui/Select'
 import { Skeleton } from '../ui/Skeleton'
@@ -51,7 +59,7 @@ function SliderDemo({
         <span className="text-base font-semibold text-ink">{name}</span>
         <span
           className={
-            value <= 20 ? 'font-mono text-sm font-bold text-low' : 'font-mono text-sm text-muted'
+            value <= 20 ? 'tabular text-sm font-bold text-low' : 'tabular text-sm text-muted'
           }
         >
           {value <= 20 && 'Low · '}
@@ -70,7 +78,7 @@ function SliderDemo({
           setCommits((c) => [...c, v])
         }}
       />
-      <output data-commits className="font-mono text-xs text-muted">
+      <output data-commits className="tabular text-xs text-muted">
         {commits.length === 0 ? 'no saves' : `saved: ${commits.join(', ')}`}
       </output>
     </div>
@@ -90,7 +98,7 @@ export function Gallery() {
     <main className="mx-auto flex max-w-6xl flex-col gap-4 p-4 md:p-6">
       <header className="flex items-center gap-3">
         <h1 className="text-2xl font-extrabold tracking-tight">Chắt Chiu · UI kit</h1>
-        <span className="font-mono text-sm text-muted">{TODAY}</span>
+        <span className="tabular text-sm text-muted">{TODAY}</span>
       </header>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -220,6 +228,55 @@ export function Gallery() {
           />
         </Section>
 
+        <Section title="Style A: cards, categories and places">
+          <div className="flex items-center gap-3">
+            <BrandMark size={44} />
+            <BrandMark size={72} />
+          </div>
+          <Card lift className="relative overflow-hidden pl-5">
+            <CategoryEdge colour={GREEN} />
+            <div className="flex items-center gap-2 py-3">
+              <CategoryDot colour={GREEN} />
+              <span className="text-base font-bold">Roma Tomato</span>
+              <CategoryPill name="Produce" colour={GREEN} />
+              <CategoryPill name="Dairy" colour={YELLOW} />
+            </div>
+          </Card>
+          <Card className="overflow-hidden">
+            {Object.keys(LOCATION_COLOR_LABEL).map((color, index) => (
+              <LocationHeader
+                key={color}
+                location={{
+                  name: LOCATION_COLOR_LABEL[color as keyof typeof LOCATION_COLOR_LABEL],
+                  icon: LOCATION_ICONS[index],
+                  color,
+                }}
+                title={LOCATION_COLOR_LABEL[color as keyof typeof LOCATION_COLOR_LABEL]}
+                status="1 expired · 2 low"
+                count={index + 3}
+              />
+            ))}
+          </Card>
+          <div className="flex flex-wrap gap-2">
+            {LOCATION_ICONS.map((icon) => (
+              <span
+                key={icon}
+                className="flex size-11 items-center justify-center rounded-control bg-tint-neutral text-tint-neutral-ink"
+              >
+                <Icon name={icon} size={22} />
+              </span>
+            ))}
+          </div>
+          <ScrollFade label="Sample list" moreLabel="4 more" scrollerClassName="max-h-32">
+            <ul>
+              {['Milk', 'Eggs', 'Rice', 'Butter', 'Flour', 'Salt', 'Sugar', 'Yeast'].map((n) => (
+                <li key={n} className="border-b border-hair px-3 py-2">
+                  {n}
+                </li>
+              ))}
+            </ul>
+          </ScrollFade>
+        </Section>
         <Section title="Empty and loading">
           <EmptyState
             icon="box"

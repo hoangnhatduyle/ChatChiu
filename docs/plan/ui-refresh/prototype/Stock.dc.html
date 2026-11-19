@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stock</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px}
+.seg button{border:0;background:transparent;min-height:38px;padding:0 18px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+.tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px}
+.sel{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:14px;color:#4a3f31;box-sizing:border-box}
+.gh{display:flex;align-items:center;gap:10px;padding:9px 16px;border-radius:14px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px;color:#3a3024;margin:26px 0 12px;position:sticky;top:0;z-index:2}
+.gh i{margin-left:auto;font-style:normal;font-weight:800}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px 13px;display:flex;flex-direction:column;gap:8px;transition:transform .15s,box-shadow .15s;box-shadow:0 1px 0 rgba(43,34,24,.04)}
+.ic:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(43,34,24,.12)}
+.ic .t1{display:flex;align-items:center;gap:8px}
+.ic .nm{font-weight:700;font-size:15.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic .t2{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.cp{border-radius:8px;padding:1px 8px;font-size:12px;font-weight:700}
+.ic .t3{display:flex;align-items:center;gap:10px}
+.ic .t3 .bar{flex:1}
+.ic .t3 b{width:38px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14.5px}
+th{text-align:left;font-size:12.5px;color:var(--muted);font-weight:700;padding:12px 14px;border-bottom:1px solid var(--line)}
+td{padding:14px;border-bottom:1px solid #f0e9dc}
+td.n{font-weight:700}
+.empty{display:flex;align-items:center;gap:16px;background:#f4ecdc;border-radius:18px;padding:18px;margin-top:20px}
+.empty img{border-radius:22%;object-fit:cover;width:64px;height:64px}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l3 12h10l2-8H6"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></symbol>
+<symbol id="i-set" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+</defs></svg>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><img class="logo" src="/_blob/daeaa752bdab15a444775460975dd675" alt=""><div><b>Chắt Chiu</b><small>Keep what you buy</small></div></div>
+    <nav class="nav" aria-label="Main">
+      <a href="Main.dc.html"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Kitchen</a>
+      <a href="Stock.dc.html" class="on"><svg class="i" aria-hidden="true"><use href="#i-box"/></svg>Stock<span class="badge">7</span></a>
+      <a href="Shopping.dc.html"><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg>Shopping</a>
+      <a href="Meals.dc.html"><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg>Meals</a>
+      <a href="Stats.dc.html"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg>Stats</a>
+      <a href="#"><svg class="i" aria-hidden="true"><use href="#i-set"/></svg>Settings</a>
+    </nav>
+    <div class="today"><b>Today</b>3 things to use up, 7 past their date. Start with the Freezer.</div>
+  </aside>
+  <main class="main">
+    <header class="head">
+      <div class="grow"><h1>Stock</h1><p>71 items · everything you own, by where it lives</p></div>
+      <div class="search"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg>Search name or notes</div>
+      <a class="btn" href="#">Scan receipt</a>
+      <a class="btn primary" href="#"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>Add item</a>
+    </header>
+
+    <section class="tiles" aria-label="Filter by date">
+      <sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+        <button class="tile {{t.cls}}" onClick="{{t.pick}}"><span class="n">{{t.n}}</span><span class="l">{{t.l}}</span></button>
+      </sc-for>
+    </section>
+
+    <div class="tools">
+      <span class="sel">Category: All <svg class="i" style="width:16px;height:16px" aria-hidden="true"><use href="#i-down"/></svg></span>
+      <span class="sel">Place: All <svg class="i" style="width:16px;height:16px" aria-hidden="true"><use href="#i-down"/></svg></span>
+      <span class="sel">Sort: Soonest first <svg class="i" style="width:16px;height:16px" aria-hidden="true"><use href="#i-down"/></svg></span>
+      <span style="flex:1"></span>
+      <div class="seg" role="group" aria-label="View">
+        <button class="{{shelfCls}}" onClick="{{showShelf}}">Shelves</button>
+        <button class="{{tableCls}}" onClick="{{showTable}}">Table (today)</button>
+      </div>
+    </div>
+
+    <sc-if value="{{isShelf}}" hint-placeholder-val="{{ true }}">
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+        <section>
+          <div class="gh" style="background: {{g.tint}}"><span>{{g.name}}</span><i>{{g.count}}</i></div>
+          <div class="cards">
+            <sc-for list="{{g.items}}" as="it" hint-placeholder-count="6">
+              <article class="ic" style="border-left: 5px solid {{it.color}}">
+                <div class="t1"><span class="nm">{{it.n}}</span><sc-if value="{{it.low}}" hint-placeholder-val="{{ false }}"><span class="lowtag">LOW</span></sc-if><span class="chip {{it.cls}}">{{it.chip}}</span></div>
+                <div class="t2"><span class="cp" style="background: {{it.tint}}; color: {{it.text}}">{{it.catName}}</span><span>{{it.q}}</span></div>
+                <div class="t3"><div class="bar"><i style="width: {{it.pct}}%; background: {{it.fill}}"></i></div><b>{{it.pct}}%</b></div>
+              </article>
+            </sc-for>
+          </div>
+        </section>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{isTable}}" hint-placeholder-val="{{ false }}">
+      <table>
+        <thead><tr><th>Name</th><th>Category</th><th>Place</th><th>Left</th><th>Expires</th><th>Level</th></tr></thead>
+        <tbody>
+          <sc-for list="{{flat}}" as="it" hint-placeholder-count="6">
+            <tr><td class="n">{{it.n}}</td><td>{{it.catName}}</td><td>{{it.loc}}</td><td>{{it.q}}</td><td><span class="chip {{it.cls}}">{{it.chip}}</span></td><td>{{it.pct}}%</td></tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </sc-if>
+
+    <sc-if value="{{nothing}}" hint-placeholder-val="{{ false }}">
+      <div class="empty"><img class="mascot" src="/_blob/daeaa752bdab15a444775460975dd675" alt=""><div><div class="display" style="font-size:20px;font-weight:700">Nothing here</div><div style="color:var(--muted);font-size:14px;margin-top:3px">No item matches this filter. Tap the tile again to clear it.</div></div></div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { view: 'shelf', f: 'all' }; }
+  renderVals() {
+    const CAT = { produce: ['Produce', '#3e8e4f', '#e1f1de', '#1f4d27'], meat: ['Meat', '#b7432f', '#f8e0da', '#7a2a1c'], dairy: ['Dairy', '#3b71b5', '#dfeaf7', '#20446f'], pantry: ['Pantry', '#b27a1a', '#f6e8c9', '#5e4108'], condiments: ['Condiments', '#8b4e9c', '#eee0f3', '#552f63'], snacks: ['Snacks', '#d0663a', '#fbe3d6', '#7a3515'], bakery: ['Bakery', '#a8703a', '#f3e4d2', '#62401a'], other: ['Other', '#6e6a63', '#ece8e1', '#47433c'] };
+    const D = {
+      freezer: [['Kirkland Signature Brats','0.2 of 1 pcs','meat',-1,20,true],['Ground pork (3 lb pack)','0.2 of 1 pcs','meat',0,20,true],['PARTY WINGS','0.35 of 1 pcs','meat',0,35],['CHEESE FISH TOFU','0.7 of 1 pcs','other',24,70],['VEGGIE ROLLS','1 of 1 pcs','other',24,100],['DUMPLING','0.6 of 1 pcs','other',43,60],['SHRIMP 21/25','0.6 of 1 pcs','meat',43,60],['Chicken thighs','3 of 3 pcs','meat',60,100],['Kirkland Signature Baguette','1 of 1 pcs','bakery',125,100]],
+      fridge: [['Yogurt (CHO 20G)','0.35 of 1 pcs','dairy',-1,35],['Big Gai Choy (leafy greens)','1 of 1 pcs','produce',-1,100],['Organic Carrots','1 of 1 pcs','produce',-1,100],['Roma Tomato','0.6 of 1 pcs','produce',-1,60],['Kroger Butter','0.75 of 1 pcs','dairy',0,75],['Kewpie Mayonnaise','0.35 of 1 pcs','condiments',12,35],['KS 5DZ EGGS','0.85 of 1 pcs','other',24,85],['Shanghai Choy','2.87 of 2.87 pcs','produce',24,100],['Konjac noodles','1 of 1 pcs','other',31,100]],
+      counter: [['Vifon Mi Xao (instant noodles)','0.2 of 1 pcs','other',180,20,true],['ORANGES','0.75 of 1 pcs','produce',8,75],['WINTER TIN','0.8 of 1 pcs','other',60,80],['Kosher Salt','0.5 of 1 pcs','pantry',300,50]],
+      pantry: [['Whole Almond','0.78 of 1 bag','pantry',-1,78],['Chinese Sausage','0.45 of 1 pcs','meat',18,45],['SAFACO NUI BIG TUBE','1 of 1 pcs','pantry',57,100]],
+      snacks: [['Boom Chicka Pop Popcorn','0.35 of 1 pcs','snacks',-1,35],['AZ Green Tea','0.65 of 1 pcs','snacks',59,65]]
+    };
+    const L = [['freezer','Freezer','#dcebf7'],['fridge','Fridge','#ddf0ea'],['counter','Counter','#f6e8c9'],['pantry','Pantry','#f4dfd0'],['snacks','Snacks & Drinks','#f7dfe4']];
+    const rank = (a) => (a[3] < 0 ? 0 : a[3] === 0 ? 1 : a[5] ? 2 : 3 + a[3] / 1000);
+    const chipOf = (d) => (d < 0 ? 'Expired' : d === 0 ? 'Today' : d <= 30 ? d + 'd' : Math.round(d / 30) + ' mo');
+    const clsOf = (d) => (d < 0 ? 'x' : d === 0 ? 't' : d <= 7 ? 's' : 'n');
+    const keep = (a) => { const f = this.state.f; return f === 'all' || (f === 'expired' && a[3] < 0) || (f === 'soon' && a[3] >= 0 && a[3] <= 7) || (f === 'fresh' && a[3] > 7); };
+    const view = (a, loc) => { const c = CAT[a[2]]; return { n: a[0], q: a[1], loc, catName: c[0], color: c[1], tint: c[2], text: c[3], low: !!a[5], cls: clsOf(a[3]), chip: chipOf(a[3]), pct: a[4], fill: a[5] ? '#c2570c' : c[1] }; };
+    const groups = L.map(([id, name, tint]) => {
+      const items = D[id].filter(keep).sort((a, b) => rank(a) - rank(b)).map((a) => view(a, name));
+      return { name, tint, count: items.length, items };
+    }).filter((g) => g.count > 0);
+    const flat = [].concat(...L.map(([id, name]) => D[id].filter(keep).map((a) => ({ a, name })))).sort((x, y) => rank(x.a) - rank(y.a)).map((x) => view(x.a, x.name));
+    const t = (n, l, cls, key) => ({ n, l, cls: cls + (this.state.f === key ? ' sel' : ''), pick: () => this.setState({ f: this.state.f === key ? 'all' : key }) });
+    return {
+      tiles: [t(71, 'All items', 'green', 'all'), t(7, 'Expired', 'red', 'expired'), t(3, 'Expiring this week', 'amber', 'soon'), t(61, 'Fresh', 'green', 'fresh')],
+      isShelf: this.state.view === 'shelf', isTable: this.state.view === 'table',
+      shelfCls: this.state.view === 'shelf' ? 'on' : '', tableCls: this.state.view === 'table' ? 'on' : '',
+      showShelf: () => this.setState({ view: 'shelf' }), showTable: () => this.setState({ view: 'table' }),
+      groups, flat, nothing: flat.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

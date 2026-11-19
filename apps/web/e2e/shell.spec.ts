@@ -36,7 +36,7 @@ for (const theme of THEMES) {
         )
       })
 
-      test(`F-AP-02: ${size.name === 'phone' ? 'bottom bar' : '84 px rail'} reaches every destination`, async ({
+      test(`F-AP-02: ${size.name === 'phone' ? 'bottom bar' : size.width >= 1024 ? '232 px sidebar' : '84 px rail'} reaches every destination`, async ({
         page,
       }) => {
         await page.goto('/')
@@ -50,7 +50,8 @@ for (const theme of THEMES) {
         if (size.name === 'phone') {
           expect(Math.round(box.y + box.height)).toBe(size.height)
         } else {
-          expect(Math.round(box.width)).toBe(84)
+          // 768 to 1023 px: the 84 px icon rail; from 1024 px: the 232 px labelled sidebar.
+          expect(Math.round(box.width)).toBe(size.width >= 1024 ? 232 : 84)
         }
 
         for (const d of DESTINATIONS) {
@@ -145,3 +146,33 @@ test('F-AP-01 (roadmap 3.4): Chrome finds the app installable (no installability
     await cdp.detach()
   }
 })
+
+// The rail becomes the labelled sidebar at exactly 1024 px (CSS only, the same <nav>).
+for (const [width, expected, labelsShown] of [
+  [1023, 84, false],
+  [1024, 232, true],
+] as const) {
+  test.describe(`rail or sidebar at ${width}px`, () => {
+    test.use({ viewport: { width, height: 800 }, serviceWorkers: 'block' })
+
+    test(`F-AP-02: ${width} px is ${expected} px wide and ${labelsShown ? 'shows' : 'has no'} wide labels`, async ({
+      page,
+      context,
+    }) => {
+      await context.route('**/api/bootstrap', (route) =>
+        route.fulfill({
+          json: { data: { items: [], locations: [], categories: [], summary: {} } },
+        }),
+      )
+      await page.goto('/')
+      const nav = page.getByRole('navigation', { name: 'Main', exact: true })
+      await expect(nav).toBeVisible()
+      const box = await nav.boundingBox()
+      expect(Math.round(box?.width ?? 0)).toBe(expected)
+      const link = nav.getByRole('link', { name: 'Shopping', exact: true })
+      const linkBox = await link.boundingBox()
+      // On the rail the link is a 68 px tile (icon over label); in the sidebar it spans the nav.
+      expect(Math.round(linkBox?.width ?? 0) > 100).toBe(labelsShown)
+    })
+  })
+}

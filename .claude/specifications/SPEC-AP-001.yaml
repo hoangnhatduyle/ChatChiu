@@ -6,7 +6,7 @@ status: active
 context_and_scope:
   in_scope:
     - Installable PWA with instant cached reads and an offline write queue (F-AP-01)
-    - Nav rail on the tablet, bottom bar on the phone (F-AP-02)
+    - Nav rail on the tablet (768 to 1023 px), labelled sidebar from 1024 px, bottom bar on the phone (F-AP-02)
     - One toast system with Undo and Retry plus inline form errors (F-AP-03)
     - Updates shown before the server confirms, with rollback, no full-list reloads (F-AP-04)
     - English UI, Vietnamese brand name, fonts with Vietnamese diacritics (F-AP-05)
@@ -15,7 +15,7 @@ context_and_scope:
     - Vietnamese UI translation (Later)
     - Global error dialog (replaced by toasts and inline errors)
   external_dependencies:
-    - vite-plugin-pwa, TanStack Query persist (IndexedDB), Supabase Realtime, @fontsource/inter-tight, @fontsource/ibm-plex-mono
+    - vite-plugin-pwa, TanStack Query persist (IndexedDB), Supabase Realtime, @fontsource/inter-tight, @fontsource/bricolage-grotesque
   shared_schemas:
     - Mutation queue entries persisted with the query cache
 state_machines:
@@ -66,7 +66,7 @@ negative_constraints:
     message: Skeletons MUST match the final layout (CLS < 0.1)
     severity: medium
   - id: NC-AP-BUDGET
-    message: Initial JS (shell + board) MUST NOT exceed 170 KB gzipped (raised from 150 at step 5.1, user decision 2026-11-17); each lazy route 120 KB
+    message: Initial JS (shell + board) MUST NOT exceed 185 KB gzipped (raised from 150 at step 5.1, 2026-11-17, and to 185 for the UI refresh, user decision 2026-11-19); each lazy route 120 KB
     severity: medium
 acceptance_criteria:
   - id: F-AP-01
@@ -75,9 +75,9 @@ acceptance_criteria:
     then: the board shows instantly from the cache, the change shows with a "1 change waiting to sync" badge, survives a reload, and is saved when back online
     invariant: false
   - id: F-AP-02
-    given: widths 390, 768 and 1280
+    given: widths 390, 768, 1023, 1024 and 1280
     when: the shell renders
-    then: 390 shows the bottom bar Kitchen · Stock · Shopping · Meals · More; 768 and 1280 show the 84 px nav rail; every destination (board, inventory, meals, shopping, waste & stats, settings) is reachable
+    then: 390 shows the bottom bar Kitchen · Stock · Shopping · Meals · More; 768 and 1023 show the 84 px nav rail; 1024 and 1280 show the 232 px sidebar with labels and the number of expired items on Stock; every destination (board, inventory, meals, shopping, waste & stats, settings) is reachable
     invariant: false
   - id: F-AP-03
     given: a success, a failure and an undoable action
@@ -92,7 +92,7 @@ acceptance_criteria:
   - id: F-AP-05
     given: the UI
     when: it renders
-    then: text is English, the brand reads "Chắt Chiu" with correct diacritics in the self-hosted fonts
+    then: text is English, the brand reads "Chắt Chiu" with correct diacritics in the self-hosted fonts (Inter Tight for text, Bricolage Grotesque for titles; numbers use tabular figures, no mono font)
     invariant: false
 depends_on:
   - SPEC-DATA-001

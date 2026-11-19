@@ -214,3 +214,12 @@ describe('7.0.13e: upper bounds on the old schemas', () => {
     expect(recipeUpdate.safeParse({ servings: 1e6 }).success).toBe(false)
   })
 })
+
+describe('location style lists (UI refresh)', () => {
+  it('offers 15 icons and 8 colours, each once', () => {
+    expect(contracts.LOCATION_ICONS).toHaveLength(15)
+    expect(new Set(contracts.LOCATION_ICONS).size).toBe(15)
+    expect(contracts.LOCATION_COLORS).toHaveLength(8)
+    expect(new Set(contracts.LOCATION_COLORS).size).toBe(8)
+  })
+})

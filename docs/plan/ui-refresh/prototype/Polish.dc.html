@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone, tablet, scroll cues, motion</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.wrap{max-width:1344px;margin:0 auto;padding:36px 40px 56px;box-sizing:border-box}
+.cols{display:flex;flex-wrap:wrap;gap:24px;margin-top:22px;align-items:flex-start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px 22px;box-sizing:border-box;box-shadow:0 8px 22px rgba(43,34,24,.05)}
+.panel h2{font-size:22px;font-weight:700;margin-bottom:4px}
+.panel .lead{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.5}
+.phone{width:372px;height:780px;border-radius:44px;border:9px solid #2b2218;background:var(--paper);overflow:hidden;position:relative;display:flex;flex-direction:column;box-sizing:content-box;flex:none}
+.phone .ph{padding:22px 20px 8px}
+.phone .ph h3{font-size:28px;font-weight:800}
+.phone .ph p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.strip{display:flex;gap:8px;padding:6px 20px 10px;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 80%,transparent);mask-image:linear-gradient(to right,#000 80%,transparent)}
+.strip span{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13.5px;box-sizing:border-box}
+.car{display:flex;gap:12px;padding:8px 20px 12px;overflow-x:auto;scroll-snap-type:x mandatory;flex:1;scrollbar-width:none;align-items:flex-start}
+.pc{flex:0 0 84%;scroll-snap-align:start;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 8px 22px rgba(43,34,24,.08)}
+.pc .lh{display:flex;align-items:center;gap:10px;padding:11px 14px;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px}
+.pc .lh i{margin-left:auto;font-style:normal;font-weight:800}
+.pr{padding:10px 14px 11px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.pr .t{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14.5px}
+.pr .t span.n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{display:flex;justify-content:center;gap:6px;padding:2px 0 8px}
+.dots i{width:7px;height:7px;border-radius:50%;background:#d8cdb8}.dots i.on{background:var(--teal);width:20px;border-radius:99px}
+.tabs{display:flex;border-top:1px solid var(--line);background:var(--card);padding:6px 6px 14px}
+.tabs div{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted);border-radius:14px}
+.tabs div.on{background:var(--teal-soft);color:#0a4f54}
+.tab{width:min(660px,100%);background:#2b2218;border-radius:22px;padding:12px;box-sizing:border-box}
+.tin{background:var(--paper);border-radius:12px;display:flex;overflow:hidden;min-height:330px}
+.tin .rail{width:54px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 0}
+.tin .rail i{width:26px;height:26px;border-radius:8px;background:#e2d6bf}.tin .rail i.on{background:var(--teal)}
+.tin .g{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;align-content:start}
+.tin .g div{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tin .g b{display:block;height:24px}
+.tin .g s{display:block;height:8px;border-radius:9px;background:#ece6da;margin:10px 10px 0;text-decoration:none}
+.tin .g s.f{background:#3e8e4f}
+.scroll{height:236px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:transparent transparent;border-radius:14px;background:#fffaf0;border:1px solid var(--line);transition:scrollbar-color .2s}
+.scroll:hover{scrollbar-color:#c9bca6 transparent}
+.scroll.fade{-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 56px),transparent)}
+.scroll .it{padding:12px 16px;border-top:1px solid var(--line);font-weight:600;font-size:15px;display:flex;gap:10px;align-items:center}
+.scroll .it:first-child{border-top:0}
+.cue{position:relative}
+.pill{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:0 16px;min-height:36px;display:flex;align-items:center;font-weight:700;font-size:13.5px;box-shadow:0 6px 16px rgba(43,34,24,.3);pointer-events:none}
+.demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:14px}
+.demo .m{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 14px;font-weight:700;font-size:14px;transition:transform .2s,box-shadow .2s}
+.demo .m:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(43,34,24,.14)}
+ul.chk{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.45}
+ul.chk li{display:flex;gap:10px;align-items:flex-start}
+ul.chk li:before{content:'';width:18px;height:18px;border-radius:50%;background:var(--green-soft);border:2px solid var(--green);flex:none;margin-top:1px;box-sizing:border-box}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l3 12h10l2-8H6"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></symbol>
+</defs></svg>
+<div class="wrap">
+  <h1 class="display" style="font-size:44px;font-weight:800">Every screen size, scroll cues and motion</h1>
+  <p style="margin:8px 0 0;color:var(--muted);font-size:16px;max-width:780px;line-height:1.5">Desktop and the Fire tablet in landscape share the grid. Phones and portrait tablets keep the swipe. Where something still scrolls, the scrollbar hides until you need it and a soft fade says there is more.</p>
+
+  <div class="cols">
+    <section class="panel">
+      <h2>Phone (390 px)</h2>
+      <p class="lead">One place at a time, swipe sideways. The next card peeks in.</p>
+      <div class="phone">
+        <div class="ph"><h3>Kitchen</h3><p>Thu, Nov 19 · 71 items</p></div>
+        <div class="strip" aria-hidden="true"><span style="background:var(--ink);color:#fff">All 71</span><span style="background:var(--red-soft);color:var(--red)">Expired 7</span><span style="background:var(--amber-soft);color:var(--amber)">Today 3</span><span style="background:#fbe3d3;color:#8f3d06">Low 6</span><span style="background:var(--green-soft);color:var(--green)">Fresh 61</span></div>
+        <div class="car">
+          <article class="pc"><div class="lh" style="background:#dcebf7">Freezer<i>11</i></div>
+            <div class="pr"><div class="t"><span class="dot" style="background:#b7432f"></span><span class="n">Kirkland Signature Brats</span><span class="chip x">Expired</span></div><div class="bar"><i style="width:20%;background:#c2570c"></i></div></div>
+            <div class="pr"><div class="t"><span class="dot" style="background:#b7432f"></span><span class="n">Ground pork (3 lb pack)</span><span class="chip t">Today</span></div><div class="bar"><i style="width:20%;background:#c2570c"></i></div></div>
+            <div class="pr"><div class="t"><span class="dot" style="background:#b7432f"></span><span class="n">PARTY WINGS</span><span class="chip t">Today</span></div><div class="bar"><i style="width:35%;background:#b7432f"></i></div></div>
+            <div class="pr"><div class="t"><span class="dot" style="background:#6e6a63"></span><span class="n">CHEESE FISH TOFU</span><span class="chip n">24d</span></div><div class="bar"><i style="width:70%;background:#6e6a63"></i></div></div>
+            <div class="pr" style="color:var(--teal);font-weight:700;font-size:14px;align-items:center">Show all 11</div>
+          </article>
+          <article class="pc"><div class="lh" style="background:#ddf0ea">Fridge<i>10</i></div>
+            <div class="pr"><div class="t"><span class="dot" style="background:#3b71b5"></span><span class="n">Yogurt (CHO 20G)</span><span class="chip x">Expired</span></div><div class="bar"><i style="width:35%;background:#3b71b5"></i></div></div>
+            <div class="pr"><div class="t"><span class="dot" style="background:#3e8e4f"></span><span class="n">Big Gai Choy</span><span class="chip x">Expired</span></div><div class="bar"><i style="width:100%;background:#3e8e4f"></i></div></div>
+          </article>
+        </div>
+        <div class="dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+        <nav class="tabs" aria-label="Main">
+          <div class="on"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Kitchen</div>
+          <div><svg class="i" aria-hidden="true"><use href="#i-box"/></svg>Stock</div>
+          <div><svg class="i" aria-hidden="true"><use href="#i-cart"/></svg>Shopping</div>
+          <div><svg class="i" aria-hidden="true"><use href="#i-cal"/></svg>Meals</div>
+          <div><svg class="i" aria-hidden="true"><use href="#i-more"/></svg>More</div>
+        </nav>
+      </div>
+    </section>
+
+    <div style="flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:24px">
+      <section class="panel">
+        <h2>Tablet, landscape (Fire Max 11)</h2>
+        <p class="lead">The same grid as the desktop: a slim icon rail, three columns, all places visible. Portrait switches to the phone layout.</p>
+        <div class="tab"><div class="tin"><div class="rail"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          <div class="g">
+            <div><b style="background:#f6e8c9"></b><s class="f" style="width:70%"></s><s style="width:90%"></s><s style="width:55%"></s></div>
+            <div><b style="background:#dcebf7"></b><s class="f" style="width:40%"></s><s style="width:80%"></s><s style="width:65%"></s></div>
+            <div><b style="background:#ddf0ea"></b><s class="f" style="width:85%"></s><s style="width:50%"></s><s style="width:75%"></s></div>
+            <div><b style="background:#efe6d5"></b><s class="f" style="width:60%"></s><s style="width:90%"></s></div>
+            <div><b style="background:#f4dfd0"></b><s class="f" style="width:75%"></s><s style="width:45%"></s><s style="width:70%"></s></div>
+            <div><b style="background:#ddf0ef"></b><s class="f" style="width:50%"></s><s style="width:85%"></s></div>
+          </div></div></div>
+      </section>
+
+      <section class="panel">
+        <h2>Your scrollbar question</h2>
+        <p class="lead">The page scrolls once. Inside a card or panel that still scrolls, the bar stays hidden until the pointer is over it. A fade and a pill say “there is more”, and both go away at the bottom. Scroll this list.</p>
+        <div class="cue">
+          <div class="scroll {{fadeCls}}" onScroll="{{onScroll}}">
+            <sc-for list="{{items}}" as="x" hint-placeholder-count="8">
+              <div class="it"><span class="dot" style="background: {{x.color}}"></span>{{x.name}}</div>
+            </sc-for>
+          </div>
+          <sc-if value="{{showPill}}" hint-placeholder-val="{{ true }}"><div class="pill">{{moreText}}</div></sc-if>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Motion</h2>
+        <p class="lead">Cards rise in once, one after another. Hover lifts them. Only position and opacity move, and nothing moves if the system asks for reduced motion.</p>
+        <button class="btn" onClick="{{replay}}">Replay</button>
+        <sc-if value="{{show}}" hint-placeholder-val="{{ true }}">
+          <div class="demo">
+            <sc-for list="{{cards}}" as="c" hint-placeholder-count="5">
+              <div class="m rise" style="animation-delay: {{c.delay}}ms; border-top: 4px solid {{c.color}}">{{c.name}}</div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </section>
+
+      <section class="panel">
+        <h2>What stays guarded</h2>
+        <ul class="chk">
+          <li>Every new colour pair passes the 4.5:1 contrast check before it can be committed.</li>
+          <li>The accessibility scan (axe) stays at zero findings on every screen, in light and dark.</li>
+          <li>Touch targets stay at least 44 px; keyboard and screen reader behaviour does not change.</li>
+          <li>New visual baselines are taken at six widths; the first-load JavaScript budget is unchanged because fonts and styles are not JavaScript.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1380}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { atBottom: false, show: true }; }
+  renderVals() {
+    const names = ['Kirkland Signature Brats', 'Ground pork (3 lb pack)', 'PARTY WINGS', 'CHEESE FISH TOFU', 'VEGGIE ROLLS', 'DUMPLING', 'SHRIMP 21/25', 'Chicken thighs', 'Chicken thighs', 'Kirkland Signature Baguette', 'Eastland Red Chili (8 oz)', 'Yogurt (CHO 20G)', 'Kroger Butter', 'ORANGES'];
+    const colors = ['#b7432f', '#b7432f', '#b7432f', '#6e6a63', '#6e6a63', '#6e6a63', '#b7432f', '#b7432f', '#b7432f', '#a8703a', '#8b4e9c', '#3b71b5', '#3b71b5', '#3e8e4f'];
+    return {
+      items: names.map((n, i) => ({ name: n, color: colors[i] })),
+      fadeCls: this.state.atBottom ? '' : 'fade',
+      showPill: !this.state.atBottom, moreText: '8 more ↓',
+      onScroll: (e) => { const t = e.target; const at = t.scrollTop + t.clientHeight >= t.scrollHeight - 6; if (at !== this.state.atBottom) this.setState({ atBottom: at }); },
+      show: this.state.show,
+      replay: () => { this.setState({ show: false }); setTimeout(() => this.setState({ show: true }), 80); },
+      cards: [['Freezer', '#6aa6d6'], ['Fridge', '#4fb59a'], ['Counter', '#e0a93c'], ['Pantry', '#d98b5f'], ['Spices', '#d6b13f']].map((c, i) => ({ name: c[0], color: c[1], delay: i * 90 }))
+    };
+  }
+}
+</script>
+</body>
+</html>

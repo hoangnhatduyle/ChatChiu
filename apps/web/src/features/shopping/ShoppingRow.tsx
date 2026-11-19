@@ -45,7 +45,7 @@ export function ShoppingRow({ item, onTick, onDelete }: ShoppingRowProps) {
           >
             {item.name}
           </span>
-          {item.quantity && <span className="font-mono text-md text-muted">{item.quantity}</span>}
+          {item.quantity && <span className="tabular text-md text-muted">{item.quantity}</span>}
         </p>
         {item.notes && <p className="text-sm break-words text-muted">{item.notes}</p>}
         {saving && <p className="text-sm text-muted">Saving…</p>}

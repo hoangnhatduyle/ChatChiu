@@ -52,7 +52,7 @@ export function InventoryTable({ rows, ...actions }: InventoryTableProps) {
             <div role="row" aria-rowindex={index + 2} className="flex h-full items-end px-3 pb-1.5">
               <div role="cell" aria-colspan={6}>
                 <h2 className="text-md font-extrabold text-muted">
-                  {row.label} <span className="font-mono text-sm">{row.count}</span>
+                  {row.label} <span className="tabular text-sm">{row.count}</span>
                 </h2>
               </div>
             </div>
@@ -130,7 +130,7 @@ function Row({
         <ExpiryChip expirationDate={item.expirationDate} today={actions.today} />
       </span>
       <span role="cell" className="flex flex-col items-end">
-        <span className="font-mono text-md font-bold">{percent}%</span>
+        <span className="tabular text-md font-bold">{percent}%</span>
         {cue && (
           <span
             className={cx('text-2xs font-bold', level === 'critical' ? 'text-error' : 'text-low')}

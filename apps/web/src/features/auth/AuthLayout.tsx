@@ -2,8 +2,7 @@
 // navigation, so the page is a brand panel (tablet and up) beside one form card. On a phone the
 // brand shrinks to a header row above the form.
 import { useEffect, useRef, type ReactNode } from 'react'
-
-const BRAND_ICON = '/icons/icon-192x192.png'
+import { BrandMark } from '../../ui/BrandMark'
 
 const PROMISES = [
   'Every item in the kitchen, one board',
@@ -31,13 +30,15 @@ export function AuthLayout({ title, intro, focusTitle = false, children }: AuthL
         aria-hidden="true"
         className="hidden flex-col justify-between border-r border-line bg-rail p-10 text-rail-ink md:flex"
       >
-        <img src={BRAND_ICON} alt="" width={88} height={88} className="size-22 rounded-card" />
+        <BrandMark size={88} />
         <div>
-          <p className="text-4xl font-extrabold tracking-[-0.02em] text-ink">Chắt Chiu</p>
+          <p className="font-display text-4xl font-extrabold tracking-[-0.02em] text-ink">
+            Chắt Chiu
+          </p>
           <ol className="mt-8 flex flex-col gap-4">
             {PROMISES.map((text, index) => (
               <li key={text} className="flex items-baseline gap-4 border-t border-hair pt-4">
-                <span className="font-mono text-md font-semibold text-muted" aria-hidden="true">
+                <span className="tabular text-md font-semibold text-muted" aria-hidden="true">
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <span className="text-lg font-semibold text-ink">{text}</span>
@@ -52,8 +53,8 @@ export function AuthLayout({ title, intro, focusTitle = false, children }: AuthL
         className="mx-auto flex w-full max-w-md flex-col justify-center gap-6 px-4 py-8 md:max-w-none md:px-14"
       >
         <div className="flex items-center gap-3 md:hidden">
-          <img src={BRAND_ICON} alt="" width={44} height={44} className="size-11 rounded-control" />
-          <span className="text-xl font-extrabold tracking-[-0.01em]">Chắt Chiu</span>
+          <BrandMark size={44} className="rounded-control" />
+          <span className="font-display text-xl font-extrabold tracking-[-0.01em]">Chắt Chiu</span>
         </div>
         <section className="w-full max-w-md rounded-card border border-line bg-surface p-6 shadow-card">
           <title>{`${title} · Chắt Chiu`}</title>

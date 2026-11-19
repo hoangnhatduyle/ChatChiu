@@ -7,6 +7,7 @@ import { PublicRoute } from './core/PublicRoute'
 import { RequireAuth } from './core/RequireAuth'
 import { AppDataProvider } from './data/AppDataProvider'
 import { LoginPage, RegisterPage, ResetPasswordPage } from './features/auth/pages'
+import { NavCountsProvider } from './features/nav-counts/NavCountsProvider'
 import { SyncBadge } from './features/sync/SyncBadge'
 import { AppShell } from './shell/AppShell'
 import { RoutePageBoundary } from './shell/RouteErrorBoundary'
@@ -34,7 +35,11 @@ export const routes: RouteObject[] = [
         children: [
           {
             path: '/',
-            element: <AppShell banner={<SyncBadge />} />,
+            element: (
+              <NavCountsProvider>
+                <AppShell banner={<SyncBadge />} />
+              </NavCountsProvider>
+            ),
             children: [
               {
                 // A page that fails (e.g. a chunk removed by a deploy) shows RouteError inside the shell.

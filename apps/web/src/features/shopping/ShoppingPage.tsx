@@ -207,7 +207,7 @@ export default function ShoppingPage() {
               {grouped && (
                 <h2 id={id} className="mb-1 text-md font-extrabold text-muted">
                   {categoryName(group.key)}{' '}
-                  <span aria-hidden="true" className="font-mono text-sm">
+                  <span aria-hidden="true" className="tabular text-sm">
                     {group.items.length}
                   </span>
                   <span className="sr-only">

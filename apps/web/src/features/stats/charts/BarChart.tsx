@@ -59,9 +59,7 @@ export function BarChart({
                 />
               </span>
               <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-                <span className="font-mono text-md font-bold text-ink tabular">
-                  {money(row.value)}
-                </span>
+                <span className=" text-md font-bold text-ink tabular">{money(row.value)}</span>
                 <span className="text-sm text-muted">
                   {row.count} {row.count === 1 ? 'item' : 'items'}
                 </span>
@@ -101,8 +99,8 @@ export function BarChart({
                     <th scope="row" className="py-1 font-normal">
                       {row.label}
                     </th>
-                    <td className="py-1 text-right font-mono tabular">{row.count}</td>
-                    <td className="py-1 text-right font-mono tabular">{money(row.value)}</td>
+                    <td className="py-1 text-right tabular">{row.count}</td>
+                    <td className="py-1 text-right tabular">{money(row.value)}</td>
                   </tr>
                 ))}
               </tbody>

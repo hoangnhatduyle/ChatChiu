@@ -41,7 +41,7 @@ export function InventoryCards({ rows, total, ...actions }: InventoryCardsProps)
           row.kind === 'header' ? (
             <div role="presentation" className="flex h-full items-end pb-1.5">
               <h2 className="text-md font-extrabold text-muted">
-                {row.label} <span className="font-mono text-sm">{row.count}</span>
+                {row.label} <span className="tabular text-sm">{row.count}</span>
               </h2>
             </div>
           ) : (
@@ -112,7 +112,7 @@ function Card({ item, ...actions }: { item: InventoryItem } & RowActions) {
           </button>
         )}
         <span className="flex shrink-0 flex-col items-end">
-          <span className="font-mono text-md font-bold">{percent}%</span>
+          <span className="tabular text-md font-bold">{percent}%</span>
           {cue && (
             <span
               className={cx('text-2xs font-bold', level === 'critical' ? 'text-error' : 'text-low')}

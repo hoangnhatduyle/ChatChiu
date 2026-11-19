@@ -56,7 +56,7 @@ export function BoardRow({ item, today, onOpen, onUse }: BoardRowProps) {
           </button>
         )}
         <span className="flex shrink-0 flex-col items-end">
-          <span className="font-mono text-md font-bold">{percent}%</span>
+          <span className="tabular text-md font-bold">{percent}%</span>
           {cue && (
             <span
               className={cx('text-2xs font-bold', level === 'critical' ? 'text-error' : 'text-low')}

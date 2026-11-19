@@ -82,7 +82,26 @@ export const PAIRS = [
   // Filled buttons (accent, Move to waste) against the surface around them
   graphic('accent', 'surface'),
   graphic('accent', 'bg'),
-  graphic('status-expired-bg', 'surface'),
+  // Danger buttons (the solid red; the expiry chip itself is a soft tint, below)
+  text('danger-ink', 'danger'),
+  graphic('danger', 'surface'),
+  graphic('danger', 'bg'),
+  // Style A (UI refresh): paper and card surfaces, the wide sidebar, soft tints, location and meal colours
+  text('ink', 'rail'),
+  text('sidebar-on-ink', 'sidebar-on'),
+  graphic('sidebar-on', 'rail'),
+  graphic('focus', 'rail'),
+  ...['red', 'amber', 'orange', 'green', 'teal', 'neutral', 'indigo'].map((c) =>
+    text(`tint-${c}-ink`, `tint-${c}`),
+  ),
+  ...['sand', 'ice', 'mint', 'clay', 'teal', 'rose', 'saffron', 'lilac'].flatMap((c) => [
+    text('loc-ink', `loc-${c}`),
+    text('loc-ink-soft', `loc-${c}`),
+  ]),
+  // The same tints sitting on the card surface need their ink to read there too (tiles, chips on cards)
+  ...['red', 'amber', 'orange', 'green', 'teal', 'neutral', 'indigo'].map((c) =>
+    graphic(`tint-${c}-ink`, 'surface'),
+  ),
 ]
 
 // sRGB → relative luminance, WCAG 2.2 definition.

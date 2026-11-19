@@ -1,4 +1,5 @@
 // Step 3.2: Icon, Button, IconButton, EmptyState, Skeleton.
+import { LOCATION_ICONS } from '@chatchiu/contracts'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Button } from './Button'
@@ -13,6 +14,13 @@ describe('Icon', () => {
     const svg = container.querySelector('svg')
     expect(svg).toHaveAttribute('aria-hidden', 'true')
     expect(svg).toHaveAttribute('focusable', 'false')
+  })
+
+  it.each(LOCATION_ICONS)('draws the location icon %s', (name) => {
+    const { container } = render(<Icon name={name} />)
+    expect(container.querySelector(`svg[data-icon="${name}"] path`)?.getAttribute('d')).toMatch(
+      /^M/,
+    )
   })
 
   it('CS-ACCESSIBLE-UI: a labelled icon is an image with that name', () => {
@@ -60,7 +68,7 @@ describe('Button', () => {
     )
     expect(screen.getByRole('button', { name: 'P' })).toHaveClass('bg-accent', 'text-accent-ink')
     expect(screen.getByRole('button', { name: 'S' })).toHaveClass('border-field-line')
-    expect(screen.getByRole('button', { name: 'D' })).toHaveClass('bg-status-expired-bg')
+    expect(screen.getByRole('button', { name: 'D' })).toHaveClass('bg-danger', 'text-danger-ink')
   })
 })
 
@@ -102,5 +110,13 @@ describe('Skeleton', () => {
     expect(el).toHaveAttribute('aria-hidden', 'true')
     expect(el).toHaveClass('h-11', 'w-full')
     expect(el?.textContent).toBe('')
+  })
+})
+
+describe('EmptyState brand', () => {
+  it('shows the app icon instead of the glyph square when asked', () => {
+    const { container } = render(<EmptyState icon="cart" title="Your list is empty" brand />)
+    expect(container.querySelector('img')).toHaveAttribute('src', '/icons/icon-192x192.png')
+    expect(container.querySelector('svg[data-icon="cart"]')).toBeNull()
   })
 })

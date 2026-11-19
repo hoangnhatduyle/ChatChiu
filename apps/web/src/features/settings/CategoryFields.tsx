@@ -2,7 +2,7 @@
 import { Radio, RadioGroup } from 'react-aria-components'
 import { Field, LABEL } from '../../ui/Field'
 import { cx } from '../../ui/cx'
-import { CATEGORY_COLOURS, CATEGORY_ICONS } from './category-style'
+import { CATEGORY_COLOURS, CATEGORY_ICONS } from '../../ui/category-colours'
 
 export type CategoryDraft = { name: string; icon: string | null; color: string | null }
 

@@ -10,7 +10,7 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
   return (
     <div className="rounded-card border border-line bg-surface p-3">
       <dt className="text-sm font-semibold text-muted">{label}</dt>
-      <dd className="font-mono text-2xl font-extrabold text-ink tabular">{value}</dd>
+      <dd className=" text-2xl font-extrabold text-ink tabular">{value}</dd>
       {note && <dd className="text-sm text-muted">{note}</dd>}
     </div>
   )
@@ -40,7 +40,7 @@ function RunningLow({ rows }: { rows: readonly RunOutRow[] }) {
         <li key={row.id} className="flex flex-wrap items-baseline justify-between gap-x-3 py-2">
           <span className="text-base font-bold text-ink">{row.name}</span>
           <span className="text-md text-ink">
-            <span className="font-mono font-bold tabular">{Math.round(row.percentLeft)}% left</span>
+            <span className=" font-bold tabular">{Math.round(row.percentLeft)}% left</span>
             <span className="text-muted">
               {' '}
               · {amount(row.currentQuantity)} of {amount(row.initialQuantity)} {row.unit}
@@ -81,7 +81,7 @@ export function Overview({ overview }: { overview: StatsOverview }) {
             {overview.byCategory.map((c) => (
               <li key={c.categoryId} className="flex justify-between text-base">
                 <span className="text-ink">{c.category}</span>
-                <span className="font-mono text-muted tabular">
+                <span className=" text-muted tabular">
                   {c.count} · {money(c.value)}
                 </span>
               </li>
@@ -93,7 +93,7 @@ export function Overview({ overview }: { overview: StatsOverview }) {
             {overview.byLocation.map((l) => (
               <li key={l.locationId ?? 'none'} className="flex justify-between text-base">
                 <span className="text-ink">{l.location}</span>
-                <span className="font-mono text-muted tabular">{l.count}</span>
+                <span className=" text-muted tabular">{l.count}</span>
               </li>
             ))}
           </ul>

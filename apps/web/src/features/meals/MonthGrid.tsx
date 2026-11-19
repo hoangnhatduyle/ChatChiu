@@ -62,7 +62,7 @@ export function MonthGrid({
               {count > 0 && (
                 <span
                   aria-hidden="true"
-                  className="rounded-pill bg-chip-on px-2 font-mono text-sm text-chip-on-ink"
+                  className="rounded-pill bg-chip-on px-2 tabular text-sm text-chip-on-ink"
                 >
                   {count}
                 </span>

@@ -29,7 +29,7 @@ export function Chip({ label, count, isSelected, onChange, className }: ChipProp
     >
       {isSelected && <Icon name="check" size={16} strokeWidth={2.6} />}
       {label}
-      {count !== undefined && <span className="font-mono text-sm tabular">{count}</span>}
+      {count !== undefined && <span className=" text-sm tabular">{count}</span>}
     </ToggleButton>
   )
 }

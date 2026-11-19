@@ -29,7 +29,7 @@ cases:
   - id: T-SPEC-SE-001-AC-F_SE_06
     kind: acceptance
     traces_to: SPEC-SE-001#F-SE-06
-    assertion: given the Appearance section, when she picks System, Light or Dark, then the theme applies at once (Fresh Ledger / Fresh Ledger Dark), System follows the device, and the choice persists
+    assertion: given the Appearance section, when she picks System, Light or Dark, then the theme applies at once (Market stall / Market stall Dark), System follows the device, and the choice persists
     invariant: false
   - id: T-SPEC-SE-001-AC-F_SE_07
     kind: acceptance

@@ -1,4 +1,4 @@
-// Component screenshots in Fresh Ledger (light) and Fresh Ledger Dark (dark), at phone and tablet
+// Component screenshots in Market stall (light) and Market stall Dark (dark), at phone and tablet
 // widths (roadmap 3.2, architecture.md §4).
 import { expect, test } from '@playwright/test'
 
