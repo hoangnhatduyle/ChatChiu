@@ -61,10 +61,13 @@ const categories = [
 const bootstrap = (items: InventoryItem[]): Bootstrap =>
   ({ items, locations, categories, summary: {} }) as unknown as Bootstrap
 
-/** The page width decides cards or table (a media query at 1024 px). */
+/** The page width decides how many cards sit in a row (media queries at 768 and 1280 px). */
 function mockViewport(width: number) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches: /min-width:\s*1024px/.test(query) ? width >= 1024 : false,
+    matches: (() => {
+      const min = Number(/min-width:\s*(\d+)px/.exec(query)?.[1])
+      return Number.isFinite(min) && width >= min
+    })(),
     media: query,
     onchange: null,
     addEventListener: () => undefined,
@@ -146,9 +149,9 @@ describe('F-IN-02 filters in the URL', () => {
     await screen.findByRole('button', { name: /^Open Milk\b/ })
     await user.click(screen.getByRole('button', { name: /Category/ }))
     await user.click(await screen.findByRole('option', { name: 'Dairy' }))
-    await user.click(screen.getByRole('button', { name: /Location/ }))
+    await user.click(screen.getByRole('button', { name: /All locations/ }))
     await user.click(await screen.findByRole('option', { name: 'Fridge' }))
-    await user.click(screen.getByRole('button', { name: /^Expiring/ }))
+    await user.click(screen.getByRole('button', { name: /Expiring soon/ }))
     await waitFor(() => expect(location()).toContain('status=expiring'))
     expect(location()).toContain('category=1')
     expect(location()).toContain('location=1')
@@ -183,6 +186,17 @@ describe('F-IN-03 sort and F-IN-04 group', () => {
     expect(names()).toEqual(['Apple', 'Banana', 'Cherry'])
   })
 
+  it('F-IN-04: with no ?group= the list is grouped by where things live (the Shelves view)', async () => {
+    renderPage([
+      makeItem(1, { name: 'Milk', locationId: 1 }),
+      makeItem(2, { name: 'Rice', locationId: 2 }),
+    ])
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
+    const headers = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    expect(headers.join('|')).toMatch(/Fridge/)
+    expect(headers.join('|')).toMatch(/Pantry/)
+  })
+
   it('F-IN-04: group=category shows a header per category; group=location one per location; none shows none', async () => {
     const mixed = [
       makeItem(1, { name: 'Milk', categoryId: 1, locationId: 1 }),
@@ -208,27 +222,51 @@ describe('F-IN-03 sort and F-IN-04 group', () => {
   })
 })
 
-describe('F-IN-05 cards below 1024 px, table from 1024 px', () => {
-  it('F-IN-05: 1023 px shows cards, 1024 px shows the table', async () => {
-    const narrow = renderPage([makeItem(1, { name: 'Milk' })], '/stock', 1023)
-    await screen.findByRole('button', { name: /^Open Milk\b/ })
-    expect(screen.queryByRole('table')).toBeNull()
-    narrow.unmount()
-    client.unmount()
-    renderPage([makeItem(1, { name: 'Milk' })], '/stock', 1024)
-    await screen.findByRole('button', { name: /^Open Milk\b/ })
-    expect(screen.getByRole('table')).toBeInTheDocument()
+describe('F-IN-05 Shelves is the default, the table is the second view', () => {
+  it('F-IN-05: Shelves shows at every width, 1023 and 1024 px included; the table only when chosen', async () => {
+    for (const width of [800, 1023, 1024, 1440]) {
+      const page = renderPage([makeItem(1, { name: 'Milk' })], '/stock', width)
+      await screen.findByRole('button', { name: /^Open Milk\b/ })
+      expect(screen.queryByRole('table')).toBeNull()
+      expect(screen.getByRole('radio', { name: 'Shelves' })).toBeChecked()
+      page.unmount()
+      client.unmount()
+    }
   })
 
-  it('F-IN-05: a manual choice beats the width and is remembered on this device', async () => {
+  it('F-IN-05: a manual choice is remembered on this device, and an old saved "auto" reads as Shelves', async () => {
+    window.localStorage.setItem('chatchiu.inventory.view', 'auto')
     const first = renderPage([makeItem(1, { name: 'Milk' })], '/stock', 800)
     await screen.findByRole('button', { name: /^Open Milk\b/ })
+    expect(screen.queryByRole('table')).toBeNull()
     await first.user.click(screen.getByRole('radio', { name: 'Table' }))
     expect(await screen.findByRole('table')).toBeInTheDocument()
     first.unmount()
     client.unmount()
     renderPage([makeItem(1, { name: 'Milk' })], '/stock', 800)
     expect(await screen.findByRole('table')).toBeInTheDocument()
+  })
+
+  it('F-IN-05: cards sit 3 to a row from 1280 px, 2 from 768 px and 1 below, and every card still numbers itself', async () => {
+    const many = Array.from({ length: 7 }, (_, i) => makeItem(i + 1, { name: `Item ${i + 1}` }))
+    for (const [width, perRow] of [
+      [1300, 3],
+      [800, 2],
+      [400, 1],
+    ] as const) {
+      const page = renderPage(many, '/stock?group=none', width)
+      await screen.findByRole('button', { name: /^Open Item 1\b/ })
+      const first = screen.getByRole('button', { name: /^Open Item 1\b/ })
+      const row = first.closest('[role="presentation"]')!
+      expect(row.querySelectorAll('[role="listitem"]')).toHaveLength(perRow)
+      const fourth = screen
+        .getByRole('button', { name: /^Open Item 4\b/ })
+        .closest('[role="listitem"]')
+      expect(fourth).toHaveAttribute('aria-posinset', '4')
+      expect(fourth).toHaveAttribute('aria-setsize', '7')
+      page.unmount()
+      client.unmount()
+    }
   })
 })
 
@@ -243,7 +281,7 @@ describe('F-IN-06 virtual scrolling', () => {
     expect(names().length).toBeLessThan(60)
     expect(screen.queryByRole('button', { name: /next page|previous page|page \d/i })).toBeNull()
     expect(screen.queryByRole('navigation', { name: /pagination/i })).toBeNull()
-    expect(screen.getByText('300 items')).toBeInTheDocument()
+    expect(screen.getByText(/^300 items ·/)).toBeInTheDocument()
   })
 })
 
@@ -260,8 +298,8 @@ describe('F-IN-07 counters', () => {
   it('F-IN-07: Expired 2 and Expiring 3; tapping one applies that status filter', async () => {
     const { user, location } = renderPage(items())
     await screen.findByRole('button', { name: /^Open E1\b/ })
-    const expired = screen.getByRole('button', { name: /^Expired/ })
-    const expiring = screen.getByRole('button', { name: /^Expiring/ })
+    const expired = screen.getByRole('button', { name: /Expired/ })
+    const expiring = screen.getByRole('button', { name: /Expiring soon/ })
     expect(expired).toHaveTextContent('2')
     expect(expiring).toHaveTextContent('3')
     await user.click(expired)
@@ -269,6 +307,20 @@ describe('F-IN-07 counters', () => {
     expect(names().sort()).toEqual(['E1', 'E2'])
     await user.click(expiring)
     await waitFor(() => expect(names().sort()).toEqual(['S1', 'S2', 'S3']))
+  })
+
+  it('F-IN-07: the tiles say Expired, Expiring soon and Fresh, and pressing the chosen one shows everything again', async () => {
+    const { user, location } = renderPage(items())
+    await screen.findByRole('button', { name: /^Open E1\b/ })
+    expect(screen.getByRole('button', { name: /Fresh/ })).toHaveTextContent('1')
+    const expired = screen.getByRole('button', { name: /Expired/ })
+    expect(expired).toHaveAttribute('aria-pressed', 'false')
+    await user.click(expired)
+    expect(expired).toHaveAttribute('aria-pressed', 'true')
+    await user.click(expired)
+    await waitFor(() => expect(location()).not.toContain('status='))
+    expect(expired).toHaveAttribute('aria-pressed', 'false')
+    expect(names()).toHaveLength(6)
   })
 })
 
@@ -295,6 +347,17 @@ describe('F-IN-08 usage drag on cards, F-IN-09 tap opens the panel', () => {
     )
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(await screen.findByRole('button', { name: 'Undo' })).toBeInTheDocument()
+  })
+
+  it('F-IN-08: while the bar moves the percent and the amount follow it, before anything is saved', async () => {
+    api.post.mockReturnValue(new Promise(() => {}))
+    const { user } = renderPage([milk()])
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
+    screen.getByRole('slider', { name: /Milk/ }).focus()
+    for (let i = 0; i < 5; i++) await user.keyboard('{ArrowLeft}')
+    expect(screen.getByText('35%')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Open Milk, .*35 of 100 L/ })).toBeInTheDocument()
+    expect(api.post).not.toHaveBeenCalled()
   })
 
   it('F-IN-09: tapping a card opens the quick-action panel; there is no View image action', async () => {
@@ -558,9 +621,9 @@ describe('review fixes', () => {
       '/stock?category=2',
     )
     await screen.findByRole('button', { name: /^Open Rice\b/ })
-    expect(screen.getByRole('button', { name: /^Expiring/ })).toHaveTextContent('1')
-    expect(screen.getByRole('button', { name: /^Expired/ })).toHaveTextContent('1')
-    expect(screen.getByRole('button', { name: /^All\s*2$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Expiring soon/ })).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: /Expired/ })).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: /Fresh/ })).toHaveTextContent('0')
   })
 
   it('select mode ends when the last item disappears, instead of getting stuck', async () => {
@@ -586,7 +649,7 @@ describe('review fixes', () => {
   it('the table numbers every row, group headers included, and counts them in aria-rowcount', async () => {
     renderPage(
       [makeItem(1, { name: 'Milk', categoryId: 1 }), makeItem(2, { name: 'Rice', categoryId: 2 })],
-      '/stock?group=category',
+      '/stock?group=category&view=table',
       1100,
     )
     await screen.findByRole('button', { name: /^Open Milk\b/ })

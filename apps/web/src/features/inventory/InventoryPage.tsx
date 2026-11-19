@@ -1,6 +1,6 @@
-// The inventory list (SPEC-IN-001, route /stock): search, URL-held filters, sort and group, cards below
-// 1024 px and a table from it, a virtual window of rows, counters that act as filters, the usage drag on
-// cards, a tap that opens the quick-action panel, and select mode with ONE bulk delete and Undo.
+// The inventory list (SPEC-IN-001, route /stock): colourful status tiles, search, URL-held filters, sort and
+// group (by place by default), the Shelves view (cards, 2 or 3 to a row on a wide screen) and a table as the
+// second view, a virtual window of rows, the usage drag on cards, a tap that opens the quick-action panel, and select mode with ONE bulk delete and Undo.
 // Reads and writes only through the data hooks (AR-NO-DIRECT-API); all filtering is the domain's
 // filter.ts (NC-IN-ONE-FILTER-IMPL).
 import { lazyRetry } from '../../core/lazy-retry'
@@ -12,9 +12,11 @@ import { useToast } from '../../core/toast-context'
 import { bulkDelete, useBootstrapQuery } from '../../data/inventory'
 import { isTempId } from '../../data/resource'
 import { useHeldWrite } from '../../data/undoable'
-import { PageTitle } from '../../shell/PageTitle'
+import { PAGE_FRAME } from '../../shell/page-frame'
+import { PageHeader } from '../../shell/PageHeader'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
+import type { LocationLike } from '../../ui/location-style'
 import { Skeleton } from '../../ui/Skeleton'
 import { useBoardActions } from '../kitchen-board/use-board-actions'
 import { PanelLoadBoundary } from '../item-panel/PanelLoadBoundary'
@@ -35,6 +37,8 @@ import {
 import { InventoryCards } from './InventoryCards'
 import { InventoryFilters, SELECT_TOGGLE_ID } from './InventoryFilters'
 import { InventoryTable } from './InventoryTable'
+import { StockActions } from './StockActions'
+import { StockTiles } from './StockTiles'
 import { useMediaQuery } from './use-media-query'
 import { flattenGroups } from './virtual-rows'
 
@@ -43,7 +47,9 @@ const ItemPanelHost = lazyRetry(() => import('../item-panel/ItemPanelHost'))
 
 /** The most ids one DELETE /api/inventory/bulk accepts (BULK_MAX in packages/contracts). */
 export const BULK_DELETE_MAX = 200
-const WIDE_QUERY = '(min-width: 1024px)'
+/** Cards per row in the Shelves view: 3 from 1280 px, 2 from 768 px, else 1. */
+const THREE_COLUMNS_QUERY = '(min-width: 1280px)'
+const TWO_COLUMNS_QUERY = '(min-width: 768px)'
 
 export default function InventoryPage() {
   const query = useBootstrapQuery()
@@ -64,7 +70,9 @@ export default function InventoryPage() {
   const toasts = useToast()
   const { logUse } = useBoardActions()
   const holdBulk = useHeldWrite(bulkDelete)
-  const wide = useMediaQuery(WIDE_QUERY)
+  const threeColumns = useMediaQuery(THREE_COLUMNS_QUERY)
+  const twoColumns = useMediaQuery(TWO_COLUMNS_QUERY)
+  const columns = threeColumns ? 3 : twoColumns ? 2 : 1
   // Read once: her card/table choice saved on this device (F-IN-05).
   const [savedView, setSavedView] = useState(loadView)
   const [selecting, setSelecting] = useState(false)
@@ -118,10 +126,13 @@ export default function InventoryPage() {
   }, [remembered])
 
   const today = useToday()
-  const title = <PageTitle>Stock</PageTitle>
-  const frame = (children: React.ReactNode) => (
-    <div className="px-4 pt-5 pb-6 md:px-6 md:pt-6">
-      {title}
+  const frame = (children: React.ReactNode, header?: { subtitle: string; addHref: string }) => (
+    <div className={PAGE_FRAME}>
+      <PageHeader
+        title="Stock"
+        subtitle={header?.subtitle}
+        actions={header && <StockActions addHref={header.addHref} />}
+      />
       {children}
     </div>
   )
@@ -170,23 +181,24 @@ export default function InventoryPage() {
     const location = data.locations.find((l) => l.id === id)
     return location ? locationLabel(location) : ''
   }
+  const view: ViewMode = filters.view ?? savedView ?? 'cards'
+  const showTable = view === 'table'
   const groups = groupItems(shown, filters.group)
-  const rows = flattenGroups(groups, filters.group !== 'none', (key) =>
+  const groupLabel = (key: number | null) =>
     filters.group === 'category'
       ? key === null
         ? 'No category'
         : categoryName(key) || 'Unknown category'
       : key === null
         ? 'No location'
-        : locationName(key) || 'Unknown location',
-  )
+        : locationName(key) || 'Unknown location'
+  // The table has one row per item; Shelves cuts a group into rows of `columns` cards.
+  const rows = flattenGroups(groups, filters.group !== 'none', groupLabel, showTable ? 1 : columns)
   const isFiltered =
     filters.q !== '' ||
     filters.categoryId !== null ||
     filters.locationId !== null ||
     filters.status !== DEFAULT_STATUS
-  const view: ViewMode = filters.view ?? savedView ?? 'auto'
-  const showTable = view === 'table' || (view === 'auto' && wide)
 
   // Select mode only counts what is on screen: an item hidden by a filter is never deleted by accident.
   const inSelectMode = selecting && total > 0
@@ -245,13 +257,21 @@ export default function InventoryPage() {
     onUse: logUse,
     categoryName,
     locationName,
+    categoryColour: (id: number) => data.categories.find((c) => c.id === id)?.color ?? null,
+    locationOf: (id: number | null): LocationLike =>
+      data.locations.find((l) => l.id === id) ?? { name: 'No location' },
+    group: filters.group,
   }
 
   return frame(
-    <div className="mt-1 flex flex-col gap-4">
-      <p className="text-md text-muted">
-        {total} {total === 1 ? 'item' : 'items'}
-      </p>
+    <div className="flex flex-col gap-4">
+      {total > 0 && (
+        <StockTiles
+          status={filters.status}
+          counts={counts}
+          onStatus={(status) => setParam('status', status, DEFAULT_STATUS)}
+        />
+      )}
       {total > 0 && (
         <InventoryFilters
           query={filters.q}
@@ -262,9 +282,6 @@ export default function InventoryPage() {
           locationId={filters.locationId}
           onCategory={(id) => setParam('category', id === null ? null : String(id))}
           onLocation={(id) => setParam('location', id === null ? null : String(id))}
-          status={filters.status}
-          counts={counts}
-          onStatus={(status) => setParam('status', status, DEFAULT_STATUS)}
           sort={filters.sort}
           onSort={(sort) => setParam('sort', sort, DEFAULT_SORT)}
           group={filters.group}
@@ -285,9 +302,6 @@ export default function InventoryPage() {
           }
           selecting={inSelectMode}
           onToggleSelect={() => (inSelectMode ? exitSelecting() : setSelecting(true))}
-          addHref={
-            filters.locationId === null ? '/stock/new' : `/stock/new?location=${filters.locationId}`
-          }
         />
       )}
       {inSelectMode && (
@@ -384,7 +398,7 @@ export default function InventoryPage() {
       ) : showTable ? (
         <InventoryTable rows={rows} {...actions} />
       ) : (
-        <InventoryCards rows={rows} total={shown.length} {...actions} />
+        <InventoryCards rows={rows} total={shown.length} columns={columns} {...actions} />
       )}
       {params.has('item') && (
         <PanelLoadBoundary
@@ -398,5 +412,10 @@ export default function InventoryPage() {
         </PanelLoadBoundary>
       )}
     </div>,
+    {
+      subtitle: `${total} ${total === 1 ? 'item' : 'items'} · everything you own, by where it lives`,
+      addHref:
+        filters.locationId === null ? '/stock/new' : `/stock/new?location=${filters.locationId}`,
+    },
   )
 }

@@ -152,6 +152,8 @@ Status 2026-11-18: **7.0 wrap-up done on the code side** (not pushed; commits ar
 
 **Completed rows** (removed from the table to keep it short; other documents still refer to these numbers):
 
+- UI refresh 01-dashboard and 02-stock (2026-11-19, implemented and checked with their unit tests, the a11y, board and inventory e2e and the visual baselines; **not committed yet**): see `docs/plan/ui-refresh/` and SPEC-KB-001 (F-KB-17 to 19) and SPEC-IN-001 (F-IN-04 to 08). The full e2e suite is run once at the end, when all page plans are done.
+
 - UI refresh 00-foundation (2026-11-19, implemented and verified, **not committed yet**: waiting for the user to read the pictures): Style A tokens in light and dark, Bricolage Grotesque replaces IBM Plex Mono, shared UI pieces, labelled sidebar from 1024 px with the Stock expired count; initial JS gate raised 175 -> 185 KB (user decision), now 175.4 KB. Pages 01 to 06 are next, see `docs/plan/ui-refresh/`.
 
 - 7.0.17, 7.0.23 and 7.0.41 (c) (2026-11-19, confirmed by the user, not checked by me): the Supabase Site URL is `https://chatchiu-five.vercel.app`, the password rules are as in the dashboard, the test registration works, the time zone in Settings is America/New_York, and the sign-up, spend-limit and secret checks of 7.0.41(c) are done.

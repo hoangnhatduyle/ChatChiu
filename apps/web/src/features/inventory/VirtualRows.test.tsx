@@ -14,6 +14,7 @@ describe('VirtualRows', () => {
     const rows: ListRow[] = Array.from({ length: 300 }, (_, i) => ({
       kind: 'header',
       key: `k${i}`,
+      groupKey: null,
       label: `Row ${i}`,
       count: 1,
     }))

@@ -7,11 +7,11 @@ context_and_scope:
   in_scope:
     - Search by name and notes (F-IN-01)
     - Filters by category, location and status kept in the URL (F-IN-02, F-IN-14)
-    - Sort (F-IN-03) and group (F-IN-04)
-    - Card vs table view switching at 1024 px with a remembered override (F-IN-05)
+    - Sort (F-IN-03) and group by place by default (F-IN-04)
+    - Shelves view (cards, 2 or 3 to a row on a wide screen) by default, the table as the second view, the choice remembered (F-IN-05)
     - Virtual scrolling instead of pages (F-IN-06)
-    - Expired / expiring counters as quick filters (F-IN-07)
-    - Usage drag on cards with Undo (F-IN-08)
+    - Coloured Expired / Expiring soon / Fresh tiles as quick filters (F-IN-07)
+    - Usage drag on cards with Undo, the percent following the finger (F-IN-08)
     - Row tap opens the quick-action panel (F-IN-09)
     - Select mode with bulk delete and Undo (F-IN-10)
     - Waste value = per-unit price × remaining (F-IN-11)
@@ -26,7 +26,7 @@ context_and_scope:
     - "@tanstack/react-virtual"
     - DELETE /api/inventory/bulk
   shared_schemas:
-    - "URL search params: q, category, location, status (all|expired|expiring|fresh), sort (expiry|name|quantity|recent), group (none|category|location), view (auto|cards|table)"
+    - "URL search params: q, category, location, status (all|expired|expiring|fresh), sort (expiry|name|quantity|recent), group (none|category|location, default location), view (cards|table; an old saved auto reads as cards)"
 state_machines:
   - name: bulk_delete
     states:
@@ -101,27 +101,27 @@ acceptance_criteria:
   - id: F-IN-04
     given: the group control
     when: she picks none, category or location
-    then: items are grouped with headers accordingly
+    then: items are grouped with headers accordingly; with no choice the list is grouped by location (the Shelves view), each group under a shelf-label header with its place's icon and tint
     invariant: false
   - id: F-IN-05
-    given: widths 1023 px and 1024 px
-    when: the page renders with no override
-    then: cards below 1024 px and the table from 1024 px; a manual override is remembered on this device
+    given: widths 400, 800, 1023, 1024 and 1300 px
+    when: the page renders with no choice
+    then: the Shelves view at every width (1 card per row below 768 px, 2 from 768 px, 3 from 1280 px, each card numbered in the list); the table only when she picks Table, and that choice is remembered on this device
     invariant: false
   - id: F-IN-06
     given: 300 items
     when: she scrolls
-    then: rows are virtualised and there are no page controls
+    then: rows (a header, or a row of 1 to 3 cards) are virtualised and there are no page controls
     invariant: false
   - id: F-IN-07
-    given: 2 expired and 3 expiring items
+    given: 2 expired, 3 expiring (today to 3 days) and 1 fresh item
     when: the page renders
-    then: counters show 2 and 3, and tapping one applies that status filter
+    then: the Expired, Expiring soon and Fresh tiles show 2, 3 and 1 (counting what the other filters leave); tapping one applies that status filter and tapping the chosen one shows everything again
     invariant: false
   - id: F-IN-08
     given: a card's usage bar
     when: she drags it down and releases
-    then: it behaves as F-KB-04 (save on release, Undo, no confirm)
+    then: it behaves as F-KB-04 (save on release, Undo, no confirm) and, while the bar moves, the percent, the amount and the Low cue follow it
     invariant: false
   - id: F-IN-09
     given: a row or card

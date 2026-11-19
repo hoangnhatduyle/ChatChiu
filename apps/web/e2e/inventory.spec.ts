@@ -84,7 +84,7 @@ async function routeApi(context: BrowserContext) {
 const rows = (page: Page) => page.getByRole('button', { name: /^Open Item/ })
 const SHOTS = process.env.E2E_SHOTS
 
-test('F-IN-05 / F-IN-06: a table on the tablet and cards on the phone; 250 items render a window and scrolling reaches the last', async ({
+test('F-IN-05 / F-IN-06: Shelves (no table) at both sizes; 250 items render a window and scrolling reaches the last', async ({
   page,
   context,
   account,
@@ -93,10 +93,9 @@ test('F-IN-05 / F-IN-06: a table on the tablet and cards on the phone; 250 items
   await routeApi(context)
   await page.goto('/stock?sort=name')
   await expect(rows(page).first()).toBeVisible()
-  const isTablet = info.project.name === 'tablet'
-  await expect(page.getByRole('table')).toHaveCount(isTablet ? 1 : 0)
+  await expect(page.getByRole('table')).toHaveCount(0)
   expect(await rows(page).count()).toBeLessThan(80)
-  await expect(page.getByText('250 items', { exact: true })).toBeVisible()
+  await expect(page.getByText(/^250 items ·/)).toBeVisible()
 
   // Scroll the page to its end in steps (the virtual window follows).
   for (let i = 0; i < 40; i++) {
@@ -126,7 +125,7 @@ test('F-IN-02 / NC-IN-NO-LOST-FILTERS / F-IN-14: filters in the URL survive open
   await seed(account, 30)
   await routeApi(context)
   await page.goto('/stock?status=expiring&sort=name')
-  await expect(page.getByRole('button', { name: /^Expiring/ })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: /Expiring soon/ })).toHaveAttribute(
     'aria-pressed',
     'true',
   )
@@ -183,8 +182,8 @@ test('F-IN-07 / F-IN-09: the Expired and Expiring counters filter, and tapping a
   await seed(account, 30)
   await routeApi(context)
   await page.goto('/stock')
-  await expect(page.getByRole('button', { name: /^Expiring/ })).toContainText('3')
-  await page.getByRole('button', { name: /^Expiring/ }).click()
+  await expect(page.getByRole('button', { name: /Expiring soon/ })).toContainText('3')
+  await page.getByRole('button', { name: /Expiring soon/ }).click()
   await expect(rows(page)).toHaveCount(3)
   await rows(page).first().click()
   await expect(page.getByRole('dialog')).toBeVisible()

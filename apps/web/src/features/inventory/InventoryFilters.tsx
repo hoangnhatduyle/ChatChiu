@@ -1,27 +1,19 @@
-// The inventory header controls (F-IN-01..05, F-IN-07, F-IN-10, F-IN-13): search, status chips with
-// counters, category / location / sort / group, the view switch, select mode, Scan receipt and Add item.
+// The inventory filter controls (F-IN-01..05, F-IN-10): search, category / location / sort / group, the view
+// switch (Shelves | Table) and select mode. The status tiles (F-IN-07) are `StockTiles`; Scan receipt and Add item
+// are in the page header (F-IN-13).
 // Every value is held by the page in the URL; this component only shows it and reports changes.
-import type { GroupKey, SortKey, StatusFilter } from '@chatchiu/domain'
+import type { GroupKey, SortKey } from '@chatchiu/domain'
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { Button } from '../../ui/Button'
-import { cx } from '../../ui/cx'
 import { Icon } from '../../ui/Icon'
 import { Segmented } from '../../ui/Segmented'
 import { Select } from '../../ui/Select'
 import type { ViewMode } from './inventory-params'
 
-const PILL = 'inline-flex min-h-touch items-center gap-2 rounded-pill px-4 text-md font-bold'
 const ALL = 'all'
 /** The select-mode toggle: focus goes back to it when select mode ends (the rows it was on are gone). */
 export const SELECT_TOGGLE_ID = 'inventory-select-toggle'
 
-const STATUS_LABELS: Record<StatusFilter, string> = {
-  all: 'All',
-  expired: 'Expired',
-  expiring: 'Expiring',
-  fresh: 'Fresh',
-}
 const SORT_OPTIONS: ReadonlyArray<{ id: SortKey; label: string }> = [
   { id: 'expiry', label: 'Expiry' },
   { id: 'name', label: 'Name' },
@@ -34,8 +26,7 @@ const GROUP_OPTIONS: ReadonlyArray<{ id: GroupKey; label: string }> = [
   { id: 'location', label: 'Location' },
 ]
 const VIEW_OPTIONS: ReadonlyArray<{ id: ViewMode; label: string }> = [
-  { id: 'auto', label: 'Auto' },
-  { id: 'cards', label: 'Cards' },
+  { id: 'cards', label: 'Shelves' },
   { id: 'table', label: 'Table' },
 ]
 
@@ -48,9 +39,6 @@ export type InventoryFiltersProps = {
   locationId: number | null
   onCategory: (id: number | null) => void
   onLocation: (id: number | null) => void
-  status: StatusFilter
-  counts: Record<StatusFilter, number>
-  onStatus: (status: StatusFilter) => void
   sort: SortKey
   onSort: (sort: SortKey) => void
   group: GroupKey
@@ -61,7 +49,6 @@ export type InventoryFiltersProps = {
   onClear: () => void
   selecting: boolean
   onToggleSelect: () => void
-  addHref: string
 }
 
 const toId = (value: string): number | null => (value === ALL ? null : Number(value))
@@ -92,45 +79,6 @@ export function InventoryFilters(props: InventoryFiltersProps) {
             className="w-full bg-transparent text-base text-ink outline-none placeholder:text-muted"
           />
         </label>
-        <div
-          role="group"
-          aria-label="Status"
-          className="flex max-w-full gap-1.5 overflow-x-auto md:flex-wrap md:overflow-visible"
-        >
-          {(Object.keys(STATUS_LABELS) as StatusFilter[]).map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={value === props.status}
-              onClick={() => props.onStatus(value)}
-              className={cx(
-                PILL,
-                'shrink-0 cursor-pointer border',
-                value === props.status
-                  ? 'border-transparent bg-chip-on text-chip-on-ink'
-                  : 'border-line bg-surface text-ink hover:bg-hover',
-              )}
-            >
-              {STATUS_LABELS[value]}
-              <span className="ml-0.5 tabular text-sm opacity-75">{props.counts[value]}</span>
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2 md:ml-auto">
-          <Link
-            to="/scan"
-            className={cx(PILL, 'border border-line bg-surface text-ink hover:bg-hover')}
-          >
-            Scan receipt
-          </Link>
-          <Link
-            to={props.addHref}
-            className={cx(PILL, 'bg-accent text-accent-ink hover:bg-accent-hover')}
-          >
-            <Icon name="plus" size={18} strokeWidth={2.4} />
-            Add item
-          </Link>
-        </div>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Select

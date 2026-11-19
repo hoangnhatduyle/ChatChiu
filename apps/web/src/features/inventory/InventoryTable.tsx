@@ -1,4 +1,4 @@
-// The table view (from 1024 px, F-IN-05): name, category, location, amount left, expiry, percent. ARIA
+// The table view (the second view, chosen with Shelves | Table, F-IN-05): name, category, location, amount left, expiry, percent. ARIA
 // table roles on a grid of divs, because the rows are virtual (F-IN-06). The name opens the quick-action
 // panel (F-IN-09); there is no usage bar here (F-IN-08 is for cards) and no image or barcode (D3).
 import type { InventoryItem } from '@chatchiu/contracts'
@@ -56,9 +56,9 @@ export function InventoryTable({ rows, ...actions }: InventoryTableProps) {
                 </h2>
               </div>
             </div>
-          ) : (
+          ) : row.kind === 'item' ? (
             <Row item={row.item} rowIndex={index + 2} template={template} {...actions} />
-          )
+          ) : null
         }
       />
     </div>

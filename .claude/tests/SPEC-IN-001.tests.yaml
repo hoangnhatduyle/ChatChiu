@@ -19,27 +19,27 @@ cases:
   - id: T-SPEC-IN-001-AC-F_IN_04
     kind: acceptance
     traces_to: SPEC-IN-001#F-IN-04
-    assertion: given the group control, when she picks none, category or location, then items are grouped with headers accordingly
+    assertion: given the group control, when she picks none, category or location, then items are grouped with headers accordingly; with no choice the list is grouped by location (the Shelves view), each group under a shelf-label header with its place's icon and tint
     invariant: false
   - id: T-SPEC-IN-001-AC-F_IN_05
     kind: acceptance
     traces_to: SPEC-IN-001#F-IN-05
-    assertion: given widths 1023 px and 1024 px, when the page renders with no override, then cards below 1024 px and the table from 1024 px; a manual override is remembered on this device
+    assertion: given widths 400, 800, 1023, 1024 and 1300 px, when the page renders with no choice, then the Shelves view at every width (1 card per row below 768 px, 2 from 768 px, 3 from 1280 px, each card numbered in the list); the table only when she picks Table, and that choice is remembered on this device
     invariant: false
   - id: T-SPEC-IN-001-AC-F_IN_06
     kind: acceptance
     traces_to: SPEC-IN-001#F-IN-06
-    assertion: given 300 items, when she scrolls, then rows are virtualised and there are no page controls
+    assertion: given 300 items, when she scrolls, then rows (a header, or a row of 1 to 3 cards) are virtualised and there are no page controls
     invariant: false
   - id: T-SPEC-IN-001-AC-F_IN_07
     kind: acceptance
     traces_to: SPEC-IN-001#F-IN-07
-    assertion: given 2 expired and 3 expiring items, when the page renders, then counters show 2 and 3, and tapping one applies that status filter
+    assertion: given 2 expired, 3 expiring (today to 3 days) and 1 fresh item, when the page renders, then the Expired, Expiring soon and Fresh tiles show 2, 3 and 1 (counting what the other filters leave); tapping one applies that status filter and tapping the chosen one shows everything again
     invariant: false
   - id: T-SPEC-IN-001-AC-F_IN_08
     kind: acceptance
     traces_to: SPEC-IN-001#F-IN-08
-    assertion: given a card's usage bar, when she drags it down and releases, then it behaves as F-KB-04 (save on release, Undo, no confirm)
+    assertion: given a card's usage bar, when she drags it down and releases, then it behaves as F-KB-04 (save on release, Undo, no confirm) and, while the bar moves, the percent, the amount and the Low cue follow it
     invariant: false
   - id: T-SPEC-IN-001-AC-F_IN_09
     kind: acceptance

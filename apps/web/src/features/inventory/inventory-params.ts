@@ -5,7 +5,8 @@
 // the default instead of hiding items. Pure apart from the two small storage helpers.
 import type { GroupKey, SortKey, StatusFilter } from '@chatchiu/domain'
 
-export type ViewMode = 'auto' | 'cards' | 'table'
+/** Shelves (cards) is the default; the table is the second view. An old saved 'auto' reads as no choice, i.e. Shelves. */
+export type ViewMode = 'cards' | 'table'
 
 export type InventoryParams = {
   q: string
@@ -20,11 +21,12 @@ export type InventoryParams = {
 export const STATUSES: ReadonlyArray<StatusFilter> = ['all', 'expired', 'expiring', 'fresh']
 export const SORTS: ReadonlyArray<SortKey> = ['expiry', 'name', 'quantity', 'recent']
 export const GROUPS: ReadonlyArray<GroupKey> = ['none', 'category', 'location']
-export const VIEWS: ReadonlyArray<ViewMode> = ['auto', 'cards', 'table']
+export const VIEWS: ReadonlyArray<ViewMode> = ['cards', 'table']
 
 export const DEFAULT_STATUS: StatusFilter = 'all'
 export const DEFAULT_SORT: SortKey = 'expiry'
-export const DEFAULT_GROUP: GroupKey = 'none'
+/** Shelves: grouped by where things live. */
+export const DEFAULT_GROUP: GroupKey = 'location'
 
 const ID = /^\d+$/
 
