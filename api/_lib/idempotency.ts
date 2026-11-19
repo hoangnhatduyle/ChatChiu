@@ -127,9 +127,8 @@ export async function withIdempotency<T>(
   key: string,
   run: () => Promise<T>,
 ): Promise<T | undefined> {
-  const { __path: rawPath, ...withLegacy } = req.query as Record<string, unknown>;
-  // `path` is the router's fallback spelling of __path; neither is part of the request's identity.
-  const rest = Object.fromEntries(Object.entries(withLegacy).filter(([name]) => name !== 'path'));
+  // The route (__path) is not part of the request's identity; every other query parameter is.
+  const { __path: rawPath, ...rest } = req.query as Record<string, unknown>;
   const method = req.method ?? 'POST';
   const path = routeOf(req, rawPath);
   const hash = requestHash({ method, query: rest, body: req.body });

@@ -58,6 +58,9 @@ function assertCronAuth(req: VercelRequest): void {
   }
 }
 
+/** Push failures older than this many days are deleted on every run. */
+export const PUSH_FAILURE_RETENTION_DAYS = 30;
+
 /** Log a failed bookkeeping write and count it; never throws. */
 function checkWrite(c: Counters, what: string, error: unknown): boolean {
   if (!error) return true;
@@ -197,12 +200,17 @@ export default withErrorHandler(async (req: VercelRequest, res: VercelResponse) 
   if (applyCors(req, res)) return;
   if (req.method !== 'GET') throw new ApiError('METHOD_NOT_ALLOWED', 'Allowed methods: GET');
   assertCronAuth(req);
+  const db = serviceClient();
+  const now = new Date();
+  // push_failures only needs recent history: older rows are dropped here (roadmap 7.0.13f). A failure to prune is logged
+  // and never stops the reminders.
+  const failureCutoff = new Date(now.getTime() - PUSH_FAILURE_RETENTION_DAYS * 86_400_000).toISOString();
+  const pruned = await db.from('push_failures').delete().lt('created_at', failureCutoff);
+
   if (!env.vapidPublicKey || !env.vapidPrivateKey) {
     return { skipped: true, reason: 'VAPID keys not configured' };
   }
 
-  const db = serviceClient();
-  const now = new Date();
   const [items, prefs, subs] = await Promise.all([
     fetchAll<ReminderItem>(
       (from, to) => db.from('inventory_items').select(ITEM_COLUMNS).order('id').range(from, to),
@@ -252,6 +260,7 @@ export default withErrorHandler(async (req: VercelRequest, res: VercelResponse) 
     markFailures: 0,
     userErrors: 0,
   };
+  checkWrite(c, 'pruning old push failures', pruned.error);
 
   for (const [userId, userItems] of itemsByUser) {
     // One user's problem (e.g. an unexpected error) never stops the others.

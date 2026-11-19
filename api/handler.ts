@@ -94,16 +94,21 @@ const routes: Route[] = [
   { segments: ["preferences"], handler: h40 },
 ];
 
-function getParts(req: VercelRequest): string[] {
+/**
+ * The route named by the request, or null when the request is not a plain one. The route comes from the `__path` the
+ * vercel.json rewrite adds (`/api/(.*) -> /api/handler?__path=$1`); there is no other query parameter that can name a
+ * route (a client-made `path` would otherwise let it run another route than its URL says, past anything keyed on the
+ * URL such as the Vercel Firewall and the logs), and a `__path` that arrived twice (the client added its own) is
+ * refused. With no `__path` at all the URL itself is read, so the function still works if hit directly.
+ */
+function getParts(req: VercelRequest): string[] | null {
   const q = req.query as Record<string, string | string[] | undefined>;
-  // Primary source: the `__path` query param injected by the vercel.json
-  // rewrite (`/api/(.*) -> /api/handler?__path=$1`). Fall back to parsing the
-  // raw URL so the function still works if hit directly.
-  const raw = q.__path ?? q.path;
-  let pathStr: string;
-  if (Array.isArray(raw)) pathStr = raw.join('/');
-  else if (typeof raw === 'string' && raw.length) pathStr = raw;
-  else pathStr = (req.url ?? '').split('?')[0].replace(/^\/+/, '').replace(/^api\/?/, '');
+  const raw = q.__path;
+  if (Array.isArray(raw)) return null;
+  const pathStr =
+    typeof raw === 'string' && raw.length
+      ? raw
+      : (req.url ?? '').split('?')[0].replace(/^\/+/, '').replace(/^api\/?/, '');
 
   // Decode BEFORE splitting so a slash that Vercel percent-encoded inside the
   // rewrite capture (e.g. "statistics%2Fdashboard") still splits into segments.
@@ -145,6 +150,10 @@ function matchRoute(
 
 export default async function dispatch(req: VercelRequest, res: VercelResponse) {
   const parts = getParts(req);
+  if (parts === null) {
+    res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Invalid request path' } });
+    return;
+  }
   const match = matchRoute(parts);
   if (!match) {
     res

@@ -38,4 +38,6 @@ export const env = {
   vapidPrivateKey: optional('VAPID_PRIVATE_KEY', ''),
   vapidSubject: optional('VAPID_SUBJECT', 'mailto:admin@example.com'),
   cronSecret: optional('CRON_SECRET', ''),
+  // Writes (POST, PATCH, PUT, DELETE) one user may make per minute before the API answers 429 (roadmap 7.0.13d).
+  writeLimitPerMinute: optionalInt('WRITE_LIMIT_PER_MINUTE', 300),
 };

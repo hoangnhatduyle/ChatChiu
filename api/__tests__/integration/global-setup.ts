@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { TestProject } from 'vitest/node';
 
@@ -15,6 +17,12 @@ export default async function setup(project: TestProject): Promise<void> {
   }
   const admin = createClient(env.SUPABASE_URL ?? '', env.SUPABASE_SERVICE_ROLE_KEY ?? '', {
     auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // The post-cutover security hardening (supabase/post-cutover): production gets it after the old app is retired, and
+  // every test here runs against the database as it will be then. Idempotent.
+  execFileSync('node', [fileURLToPath(new URL('../../../scripts/apply-post-cutover.mjs', import.meta.url))], {
+    stdio: 'inherit',
   });
 
   const ownerId = await ensureSeedOwner(admin);

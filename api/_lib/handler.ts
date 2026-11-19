@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { applyCors } from './cors.js';
 import { withErrorHandler, ApiError } from './errors.js';
 import { readIdempotencyKey, withIdempotency } from './idempotency.js';
+import { BUDGETED_METHODS, consumeWriteBudgetOrThrow, WRITE_BUDGET_RETRY_AFTER_S } from './writeBudget.js';
+import { env } from './env.js';
 import { requireAuth, type AuthContext } from './supabase.js';
 
 type AuthedHandler = (
@@ -24,6 +26,16 @@ export function authedHandler(handler: AuthedHandler, { idempotent = true }: Aut
   return withErrorHandler(async (req, res) => {
     if (applyCors(req, res)) return;
     const ctx = await requireAuth(req);
+    if (req.method && BUDGETED_METHODS.has(req.method)) {
+      try {
+        await consumeWriteBudgetOrThrow(ctx.client, env.writeLimitPerMinute);
+      } catch (error) {
+        if (error instanceof ApiError && error.code === 'RATE_LIMITED') {
+          res.setHeader('Retry-After', String(WRITE_BUDGET_RETRY_AFTER_S));
+        }
+        throw error;
+      }
+    }
     // A write that carries an Idempotency-Key runs once per key (step 4.3b); others are unchanged.
     const key = idempotent ? readIdempotencyKey(req) : undefined;
     if (!key) return handler(ctx, req, res);

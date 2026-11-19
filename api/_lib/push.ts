@@ -27,6 +27,11 @@ export async function sendPush(
   subscription: PushSubscriptionRow,
   payload: PushPayload,
 ): Promise<void> {
+  // The one function that POSTs to a stored endpoint: a user can write push_subscriptions straight through PostgREST,
+  // so the host is checked here too (SSRF), not only when a subscription is saved.
+  if (!isAllowedPushEndpoint(subscription.endpoint)) {
+    throw new Error('Endpoint is not a known push service');
+  }
   ensureConfigured();
   await webpush.sendNotification(
     {

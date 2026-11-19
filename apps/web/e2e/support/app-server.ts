@@ -27,7 +27,13 @@ async function readBody(req: IncomingMessage): Promise<Buffer> {
 
 export type AppServer = { url: string; close: () => Promise<void> }
 
-export async function startAppServer(apiBaseUrl: string): Promise<AppServer> {
+/** Extra response headers for every file the server serves (the CSP spec sends vercel.json's headers). */
+export type AppServerOptions = { headers?: Record<string, string> }
+
+export async function startAppServer(
+  apiBaseUrl: string,
+  { headers: extraHeaders = {} }: AppServerOptions = {},
+): Promise<AppServer> {
   const server: Server = createServer((req, res) => {
     void (async () => {
       const path = new URL(req.url ?? '/', 'http://local').pathname
@@ -51,6 +57,7 @@ export async function startAppServer(apiBaseUrl: string): Promise<AppServer> {
         res.end(Buffer.from(await upstream.arrayBuffer()))
         return
       }
+      for (const [name, value] of Object.entries(extraHeaders)) res.setHeader(name, value)
       const file = join(DIST, normalize(path).replace(/^(\.\.[/\\])+/, ''))
       try {
         const data = await readFile(file)

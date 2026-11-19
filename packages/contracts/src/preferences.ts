@@ -52,6 +52,9 @@ export function defaultPreferences(deviceTimeZone: string | undefined): Preferen
   }
 }
 
+/** Most devices one user may register for reminders (web push and the Fire tablet together). */
+export const MAX_PUSH_SUBSCRIPTIONS = 20
+
 // Web Push services the app may send to. A subscription endpoint is a URL the
 // server-side send job POSTs to, so anything else would be SSRF (step 2.4 review).
 const PUSH_HOST_PATTERNS: readonly RegExp[] = [

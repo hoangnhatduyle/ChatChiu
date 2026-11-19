@@ -151,8 +151,6 @@ beforeAll(async () => {
       sub(carol.id, `${FCM}carol-fire`, 'local'),
       sub(dave.id, `${FCM}dave-ok`),
       sub(frank.id, `${FCM}frank-broken`),
-      // inserted behind the API's back: must never be contacted (SSRF guard)
-      sub(frank.id, 'http://169.254.169.254/latest/meta-data'),
     ],
     { defaultToNull: false },
   );
@@ -261,7 +259,7 @@ describe('scheduled send job', () => {
     expect(JSON.parse(toDave[0]?.[1] ?? '{}').body).toBe('Dave cheese expires soon');
   });
 
-  it('when every device fails the day stays DUE and the next run retries; a non-push URL is never contacted', async () => {
+  it('when every device fails the day stays DUE and the next run retries; a no-longer-stored non-push URL is covered in push-guard.test', async () => {
     const before = await admin
       .from('user_preferences')
       .select('last_expiry_reminder_on')
@@ -271,14 +269,10 @@ describe('scheduled send job', () => {
     sendNotification.mockClear();
     expectRan(await run(new Date(`${utcDay}T11:00:00Z`)));
     expect(pushesTo('frank-broken', /expir/i)).toHaveLength(1);
-    expect(sendNotification.mock.calls.some(([sub]) => sub.endpoint.includes('169.254'))).toBe(
-      false,
-    );
     const subs = await admin.from('push_subscriptions').select('endpoint').eq('user_id', frank.id);
     expect((subs.data ?? []).map((s) => s.endpoint)).toEqual([`${FCM}frank-broken`]);
     const failures = await admin.from('push_failures').select('message').eq('user_id', frank.id);
     const messages = (failures.data ?? []).map((f) => f.message);
-    expect(messages).toContain('Endpoint is not a known push service');
     expect(messages.every((m) => !/oops|secret/.test(m))).toBe(true); // no upstream bodies stored
   });
 

@@ -5,7 +5,7 @@ Goal: she switches to the new app without losing anything, and the old app keeps
 ## Principles
 
 1. **One database, two apps.** The old and new apps both talk to the same Supabase project (D2).
-2. **Additive-only schema changes while the old app is live.**
+2. **Additive-only schema changes while the old app is live.** (Changes that tighten old tables wait for step 8: `supabase/post-cutover/`.)
    - New functions, tables and columns only; nothing renamed or dropped.
    - The old `dashboard_summary()` is left as it is (the new app uses `dashboard_summary_v2()`).
    - Enforced by a CI check in `scripts/check-additive-migrations.mjs`, which fails on `drop`, `rename` or `alter … type` in migrations ≥ 0012.
@@ -24,6 +24,7 @@ Goal: she switches to the new app without losing anything, and the old app keeps
 | 5. Switch her over | Remove the old Home Screen icon from the iPhone and the old bookmark on the Fire. The new URL and the APK are now the only way in. | She uses only the new app for a few days with no problems |
 | 6. Rollback plan | The old Vercel project is **still deployed** and points at the same database. Because every database change was additive, she can just open the old URL again. | Old URL checked once after the new migrations are applied (cutover step 2) |
 | 7. Retire the old app | After 30 quiet days, and only with your go-ahead: delete the old Vercel project (`inventory-tracking-app-five`), archive the `Inventory_Tracking_App` repo, and optionally clean up unused DB objects (`dashboard_summary()`) in a later migration | Old project deleted; harness `record_decision` logged |
+| 8. Apply the security hardening | Only after step 7, because it tightens old tables the old app uses. Take a backup, run the two read-only checks in the header of `supabase/post-cutover/0100_security_hardening.sql`, then run that file (one transaction), then `alter table public.push_subscriptions validate constraint push_subscriptions_endpoint_service`. It closes cross-tenant references, revokes `anon` and `TRUNCATE`/`TRIGGER`/`REFERENCES`, pins function search paths and caps push subscriptions. Locally and in CI the integration tests run against the database with it applied (`scripts/apply-post-cutover.mjs`) | `api/__tests__/integration/rls.test.ts` passes against production's schema; the new app works the same |
 
 ## Data that is not touched
 
