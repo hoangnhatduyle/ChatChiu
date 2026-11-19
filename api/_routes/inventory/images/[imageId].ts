@@ -1,14 +1,12 @@
 import { authedHandler, assertMethod } from '../../../_lib/handler.js';
+import { pathId } from '../../../_lib/params.js';
 import { ApiError } from '../../../_lib/errors.js';
 
 // DELETE /api/inventory/images/:imageId
 // Removes the row AND the underlying Storage object.
 export default authedHandler(async ({ client }, req) => {
   assertMethod(req, ['DELETE']);
-  const id = Number.parseInt(String(req.query.imageId ?? ''), 10);
-  if (!Number.isFinite(id) || id <= 0) {
-    throw new ApiError('BAD_REQUEST', 'Invalid image id');
-  }
+  const id = pathId(req, 'imageId', 'image');
 
   const row = await client
     .from('item_images')

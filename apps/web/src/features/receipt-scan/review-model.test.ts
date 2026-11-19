@@ -1,6 +1,12 @@
 // SPEC-RS-001: what review opens with (F-RS-04/05/06) and what is added (F-RS-08/09).
 import { describe, expect, it } from 'vitest'
-import { addProblems, buildReviewItems, toBulkItems, type ReviewContext } from './review-model'
+import {
+  addProblems,
+  buildReviewItems,
+  matchCategory,
+  toBulkItems,
+  type ReviewContext,
+} from './review-model'
 
 const categories = [
   { id: 11, name: 'Dairy' },
@@ -106,5 +112,55 @@ describe('toBulkItems', () => {
       initialQuantity: 2,
       currentQuantity: 2,
     })
+  })
+})
+
+describe('matchCategory (7.0.33e: a hint may name her category loosely)', () => {
+  const mine = [
+    { id: 1, name: 'Dairy & Eggs' },
+    { id: 2, name: 'Frozen Veg' },
+    { id: 3, name: 'Frozen Meat' },
+    { id: 4, name: 'Pantry' },
+  ]
+
+  it('matches exactly, ignoring case and spaces', () => {
+    expect(matchCategory(' PANTRY ', mine)?.id).toBe(4)
+  })
+
+  it('matches a hint that is a whole word of her category name', () => {
+    expect(matchCategory('dairy', mine)?.id).toBe(1)
+    expect(matchCategory('Eggs', mine)?.id).toBe(1)
+  })
+
+  it('matches a longer hint that contains her category name', () => {
+    expect(matchCategory('pantry staples', mine)?.id).toBe(4)
+  })
+
+  it('prefers an exact name over a loose one', () => {
+    const both = [
+      { id: 1, name: 'Dairy' },
+      { id: 2, name: 'Dairy & Eggs' },
+    ]
+    expect(matchCategory('dairy', both)?.id).toBe(1)
+  })
+
+  it('picks nothing when two of her categories fit equally well, or none does', () => {
+    expect(matchCategory('frozen', mine)).toBeUndefined()
+    expect(matchCategory('bakery', mine)).toBeUndefined()
+    expect(matchCategory('', mine)).toBeUndefined()
+  })
+
+  it('does not match part of a word ("pan" is not "pantry")', () => {
+    expect(matchCategory('pan', mine)).toBeUndefined()
+  })
+
+  it('feeds the review: "dairy" fills "Dairy & Eggs" and its shelf-life default', () => {
+    const [item] = buildReviewItems([{ name: 'Milk', categoryHint: 'dairy' }], {
+      purchaseDate: '2026-11-10',
+      categories: mine,
+      defaultLocationId: null,
+    })
+    expect(item?.categoryId).toBe(1)
+    expect(item?.expirationDate).toBe('2026-11-24')
   })
 })

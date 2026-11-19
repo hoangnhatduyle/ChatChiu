@@ -4,6 +4,7 @@ import {
   idList,
   idSchema,
   optionalText,
+  MAX_AMOUNT,
   positiveNumber,
   requiredText,
 } from './fields.js'
@@ -54,8 +55,7 @@ export const usageUndo = z.object({ usageId: idSchema })
 export type UsageUndo = z.infer<typeof usageUndo>
 
 /** POST /api/inventory/:id/restock — refills the same item (D13). No defaults. */
-/** Upper bound for the new amount fields, so numeric maths cannot overflow. */
-export const MAX_AMOUNT = 1e9
+export { MAX_AMOUNT }
 
 export const restock = z.object({
   quantity: z.coerce.number().positive().max(MAX_AMOUNT),

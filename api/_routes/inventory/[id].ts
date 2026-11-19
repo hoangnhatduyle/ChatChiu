@@ -1,4 +1,5 @@
 import { authedHandler, assertMethod } from '../../_lib/handler.js';
+import { pathId } from '../../_lib/params.js';
 import { ApiError } from '../../_lib/errors.js';
 import { parseBody } from '../../_lib/validation.js';
 import { inventoryItemUpdate } from '../../_lib/schemas.js';
@@ -6,10 +7,7 @@ import { toCamel, toSnake } from '../../_lib/mappers.js';
 
 export default authedHandler(async ({ client }, req) => {
   const method = assertMethod(req, ['GET', 'PATCH', 'DELETE']);
-  const id = Number.parseInt(String(req.query.id ?? ''), 10);
-  if (!Number.isFinite(id) || id <= 0) {
-    throw new ApiError('BAD_REQUEST', 'Invalid item id');
-  }
+  const id = pathId(req, 'id', 'item');
 
   if (method === 'GET') {
     const { data, error } = await client

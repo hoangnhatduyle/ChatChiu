@@ -1,4 +1,5 @@
 import { authedHandler, assertMethod } from '../../../_lib/handler.js';
+import { pathId } from '../../../_lib/params.js';
 import { ApiError } from '../../../_lib/errors.js';
 import { parseBody } from '../../../_lib/validation.js';
 import { toCamel, toCamelList } from '../../../_lib/mappers.js';
@@ -12,10 +13,7 @@ import { usageLog as schema } from '../../../_lib/schemas.js';
 // crossedLowStock and the updated item (AC-API-07; additive, NC-API-NO-BREAK-OLD).
 export default authedHandler(async ({ client }, req) => {
   const method = assertMethod(req, ['GET', 'POST']);
-  const itemId = Number.parseInt(String(req.query.id ?? ''), 10);
-  if (!Number.isFinite(itemId) || itemId <= 0) {
-    throw new ApiError('BAD_REQUEST', 'Invalid item id');
-  }
+  const itemId = pathId(req, 'id', 'item');
 
   if (method === 'GET') {
     const { data, error } = await client

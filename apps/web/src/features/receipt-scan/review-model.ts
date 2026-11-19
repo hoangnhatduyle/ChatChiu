@@ -2,7 +2,7 @@
 //
 // Defaults when review opens (F-RS-04..06): the receipt date is every item's purchase date; the AI's unit is
 // kept when it is in our list (else piece); the expiry is the AI's shelf-life hint, else the default for the
-// category hint (only when the hint names one of HER categories: SPEC-RS-001), counted from the purchase date; a category is picked only when the hint names one of HER
+// category hint (only when the hint names one of HER categories, loosely: 7.0.33e), counted from the purchase date; a category is picked only when the hint names one of HER
 // categories, and the location is the last one she used. Nothing falls back to an id (NC-RS-NO-HARDCODED-LOCATION).
 import type { InventoryItemCreate, ReceiptScanLine } from '@chatchiu/contracts'
 import {
@@ -42,15 +42,48 @@ export type ReviewContext = {
   defaultLocationId: number | null
 }
 
+const words = (text: string): string[] =>
+  text
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+
+/** True when `inner` appears in `outer` as whole words in a row ("dairy" in "dairy and eggs"). */
+function containsWords(outer: readonly string[], inner: readonly string[]): boolean {
+  if (inner.length === 0 || inner.length > outer.length) return false
+  for (let at = 0; at + inner.length <= outer.length; at += 1) {
+    if (inner.every((word, i) => outer[at + i] === word)) return true
+  }
+  return false
+}
+
+/**
+ * Which of HER categories a reader's hint names (7.0.33e). An exact name (any case) wins; otherwise the hint
+ * may be a whole word or phrase of her category's name ("dairy" for "Dairy & Eggs") or contain it ("pantry
+ * staples" for "Pantry"). It picks nothing unless exactly one category fits, so a guess is never made between two.
+ */
+export function matchCategory<T extends { name: string }>(
+  hint: string | null | undefined,
+  categories: ReadonlyArray<T>,
+): T | undefined {
+  const wanted = words(hint ?? '')
+  if (wanted.length === 0) return undefined
+  const key = wanted.join(' ')
+  const exact = categories.find((c) => words(c.name).join(' ') === key)
+  if (exact) return exact
+  const loose = categories.filter((c) => {
+    const own = words(c.name)
+    return containsWords(own, wanted) || containsWords(wanted, own)
+  })
+  return loose.length === 1 ? loose[0] : undefined
+}
+
 export function buildReviewItems(
   lines: readonly ReceiptScanLine[],
   ctx: ReviewContext,
 ): ReviewItem[] {
   return lines.map((line, key) => {
-    const hint = line.categoryHint?.trim().toLowerCase() ?? ''
-    const category = hint
-      ? ctx.categories.find((c) => c.name.trim().toLowerCase() === hint)
-      : undefined
+    const category = matchCategory(line.categoryHint, ctx.categories)
     const days =
       line.shelfLifeDaysHint &&
       Number.isFinite(line.shelfLifeDaysHint) &&

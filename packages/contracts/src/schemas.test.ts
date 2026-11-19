@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as contracts from './index.js'
+import { inventoryItemCreate } from './index.js'
 import {
   categoryUpdate,
   clearPurchased,
@@ -184,5 +185,32 @@ describe('preferences', () => {
     expect(pushSubscribeLocal.safeParse({ channel: 'web-push', deviceId }).success).toBe(false)
     // A web-push body is still the old shape and is not a local one.
     expect(pushSubscribe.safeParse({ channel: 'local', deviceId }).success).toBe(false)
+  })
+})
+
+describe('7.0.13e: upper bounds on the old schemas', () => {
+  const item = { name: 'Milk', categoryId: 1, unit: 'L', expirationDate: '2026-12-01' }
+
+  it('accept ordinary amounts and prices (including 0)', () => {
+    expect(inventoryItemCreate.safeParse({ ...item, quantity: 2.5, price: 0 }).success).toBe(true)
+  })
+
+  it.each([
+    ['quantity', 1e12],
+    ['price', 1e12],
+    ['initialQuantity', 1e12],
+    ['currentQuantity', 1e12],
+    ['lowStockThreshold', 1e12],
+  ])('refuse an absurd %s', (field, value) => {
+    expect(inventoryItemCreate.safeParse({ ...item, quantity: 1, [field]: value }).success).toBe(
+      false,
+    )
+  })
+
+  it('refuse an absurd waste quantity and recipe servings', () => {
+    expect(wasteCreate.safeParse({ itemName: 'Milk', quantity: 1e12, unit: 'L' }).success).toBe(
+      false,
+    )
+    expect(recipeUpdate.safeParse({ servings: 1e6 }).success).toBe(false)
   })
 })

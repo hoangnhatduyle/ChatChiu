@@ -6,7 +6,7 @@ export const recipeCreate = z.object({
   /** Comma-separated. */
   ingredients: requiredText(5000),
   prepTime: optionalText(50),
-  servings: z.coerce.number().int().positive().optional().nullable(),
+  servings: z.coerce.number().int().positive().max(1000).optional().nullable(),
   instructions: optionalText(10000),
 })
 export type RecipeCreate = z.infer<typeof recipeCreate>

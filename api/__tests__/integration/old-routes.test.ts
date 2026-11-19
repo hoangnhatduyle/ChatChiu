@@ -469,6 +469,29 @@ describe('AC-DATA-02: every old route behaves as before on the migrated database
     expect(scan.status).toBe(429);
   });
 
+  it('7.0.13e: a path id must be all digits: "12abc" is a 400 on every old route, not item 12', async () => {
+    for (const [method, path] of [
+      ['GET', 'inventory/12abc'],
+      ['PATCH', 'locations/12abc'],
+      ['DELETE', 'categories/12abc'],
+      ['DELETE', 'recipes/12abc'],
+      ['DELETE', 'shopping-list/12abc'],
+      ['DELETE', 'meal-plans/12abc'],
+      ['DELETE', 'waste/12abc'],
+    ] as const) {
+      const res = await callApi(method, path, { user, body: method === 'PATCH' ? { name: 'x' } : undefined });
+      expect(res.status, `${method} ${path}`).toBe(400);
+    }
+  });
+
+  it('7.0.13e: an absurd quantity is a 400', async () => {
+    const res = await callApi('POST', 'inventory', {
+      user,
+      body: { name: 'Huge', categoryId, quantity: 1e12, unit: 'piece', expirationDate: '2026-12-01' },
+    });
+    expect(res.status).toBe(400);
+  });
+
   it('AC-API-22: a receipt path outside her folder is 403', async () => {
     const res = await callApi('POST', 'ai/receipt-scan', {
       user,
