@@ -6,8 +6,8 @@ import { signInRest, type Account } from './supabase'
 
 export type Kitchen = { milkId: number; riceId: number }
 
-export const isoDay = (offset: number) =>
-  new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10)
+export const isoDay = (offset: number, from: Date = new Date()) =>
+  new Date(from.getTime() + offset * 86_400_000).toISOString().slice(0, 10)
 
 /** Calls the real API as the account (the same routes the app uses). */
 export async function call<T>(
@@ -36,12 +36,29 @@ export async function clearKitchen(api: ApiServer, account: Account) {
   }
 }
 
-export async function seedKitchen(api: ApiServer, account: Account): Promise<Kitchen> {
+export type SeedOptions = {
+  /** The day the dates are counted from (default: now). Screenshot specs freeze the browser clock on this day. */
+  today?: Date
+  /** A fixed category name, reused if it exists (default: a random one, so repeated seeds never collide). */
+  categoryName?: string
+}
+
+export async function seedKitchen(
+  api: ApiServer,
+  account: Account,
+  { today = new Date(), categoryName }: SeedOptions = {},
+): Promise<Kitchen> {
   await clearKitchen(api, account)
-  const tag = crypto.randomUUID().slice(0, 6)
-  const category = await call<{ id: number }>(api, account, 'POST', '/api/categories', {
-    name: `Dairy ${tag}`,
-  })
+  const name = categoryName ?? `Dairy ${crypto.randomUUID().slice(0, 6)}`
+  const existing = await call<{ id: number; name: string }[]>(
+    api,
+    account,
+    'GET',
+    '/api/categories',
+  )
+  const category =
+    existing.find((c) => c.name === name) ??
+    (await call<{ id: number }>(api, account, 'POST', '/api/categories', { name }))
   const fridge = await call<{ id: number }>(api, account, 'POST', '/api/locations', {
     name: 'Fridge',
     subLocation: 'Top shelf',
@@ -55,14 +72,14 @@ export async function seedKitchen(api: ApiServer, account: Account): Promise<Kit
     currentQuantity: 10,
     name: 'Milk',
     locationId: fridge.id,
-    expirationDate: isoDay(2),
+    expirationDate: isoDay(2, today),
   })
   const rice = await call<{ id: number }>(api, account, 'POST', '/api/inventory', {
     ...base,
     currentQuantity: 1,
     name: 'Rice',
     locationId: pantry.id,
-    expirationDate: isoDay(300),
+    expirationDate: isoDay(300, today),
   })
   await call(api, account, 'POST', '/api/shopping-list', { name: 'Eggs', quantity: '12' })
   return { milkId: milk.id, riceId: rice.id }

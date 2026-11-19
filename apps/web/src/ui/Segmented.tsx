@@ -58,7 +58,10 @@ export function Segmented<T extends string>({
       disallowEmptySelection
       selectedKeys={[value]}
       onSelectionChange={handleChange}
-      className={cx('inline-flex gap-1 rounded-pill border border-line bg-surface p-1', className)}
+      className={cx(
+        'inline-flex w-fit max-w-full gap-1 rounded-pill border border-line bg-surface p-1',
+        className,
+      )}
     >
       {options.map((option) => (
         <ToggleButton
@@ -67,6 +70,8 @@ export function Segmented<T extends string>({
           onFocus={() => arrowMoved.current && option.id !== value && onChange(option.id)}
           className={cx(
             'inline-flex min-h-touch min-w-16 cursor-pointer items-center justify-center rounded-pill px-4',
+            // Below 400 px a four-option control (Meals) would be wider than the screen: share the width.
+            'max-[400px]:min-w-0 max-[400px]:flex-1 max-[400px]:px-2',
             'text-md font-semibold text-muted select-none data-hovered:text-ink',
             'data-selected:bg-chip-on data-selected:font-bold data-selected:text-chip-on-ink',
           )}

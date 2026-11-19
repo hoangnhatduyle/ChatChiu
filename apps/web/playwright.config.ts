@@ -39,9 +39,15 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      // shell.spec.ts sets its own sizes (390/768/1280), and the Node-only specs (no page) do not depend
+      // shell.spec.ts and visual.spec.ts set their own sizes, and the Node-only specs (no page) do not depend
       // on the form factor, so they run once, in the tablet project.
-      testIgnore: ['ui/**', 'shell.spec.ts', 'auth-core.spec.ts', 'api-client.spec.ts'],
+      testIgnore: [
+        'ui/**',
+        'shell.spec.ts',
+        'visual.spec.ts',
+        'auth-core.spec.ts',
+        'api-client.spec.ts',
+      ],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 390, height: 844 },

@@ -37,3 +37,6 @@ C:*
 
 # The built Fire APK
 apps/fire-shell/*.apk
+
+# Visual regression baselines are local only (roadmap 6.4, 7.0.40c)
+apps/web/e2e/visual.spec.ts-snapshots/
