@@ -3,9 +3,9 @@
 // idempotency key, Discard drops it. AI calls are not writes to the pantry and show their own message.
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { ApiClientError } from '../core/errors'
+import { ApiClientError, userMessage } from '../core/errors'
 import { useToast } from '../core/toast-context'
-import { dismissFailedWrite, retryFailedWrite } from './write'
+import { canRetry, dismissFailedWrite, isSilenced, retryFailedWrite } from './write'
 
 export function FailedWriteToasts() {
   const client = useQueryClient()
@@ -19,6 +19,7 @@ export function FailedWriteToasts() {
       // Replace or Cancel (NC-MP-NO-UNHANDLED-409). A write nobody is waiting for (replayed after a reload,
       // or a Retry) still gets the toast, so a refusal is never silent.
       const error = mutation.state.error
+      if (isSilenced((mutation.state.variables as { requestId: string }).requestId)) return
       if (
         mutation.meta?.handlesConflict === true &&
         error instanceof ApiClientError &&
@@ -26,12 +27,20 @@ export function FailedWriteToasts() {
       )
         return
       const id = String(mutation.mutationId)
-      const label = String(mutation.meta?.label ?? 'a change')
+      const label = String(mutation.meta?.detail ?? mutation.meta?.label ?? 'a change')
+      // Sending the same request again can only get the same answer (gone, or in the way): no Retry.
+      const cannotRetry = !canRetry(error)
       toasts.show({
-        message: `Couldn't save · ${label}`,
+        message: `Couldn't save · ${label}: ${
+          cannotRetry && error instanceof ApiClientError && error.kind === 'not-found'
+            ? 'it was already deleted on another device.'
+            : userMessage(error)
+        }`,
         tone: 'error',
         actions: [
-          { label: 'Retry', onPress: () => void retryFailedWrite(client, id) },
+          ...(cannotRetry
+            ? []
+            : [{ label: 'Retry', onPress: () => void retryFailedWrite(client, id) }]),
           { label: 'Discard', onPress: () => dismissFailedWrite(client, id) },
         ],
       })

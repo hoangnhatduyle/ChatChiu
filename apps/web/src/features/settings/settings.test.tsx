@@ -439,7 +439,7 @@ describe('F-SE-04 export, F-SE-05 reset, sync', () => {
     const list = await within(section('Data')).findByRole('list', {
       name: 'Changes that need attention',
     })
-    expect(list).toHaveTextContent('Add a location')
+    expect(list).toHaveTextContent('Add "Garage"')
     expect(list).toHaveTextContent('That location name is taken')
     expect(within(section('Data')).getByRole('status')).toHaveTextContent(
       '1 change needs attention',
@@ -451,7 +451,7 @@ describe('F-SE-04 export, F-SE-05 reset, sync', () => {
       subLocation: null,
       createdAt: '',
     })
-    await user.click(within(list).getByRole('button', { name: 'Retry Add a location' }))
+    await user.click(within(list).getByRole('button', { name: 'Retry Add "Garage"' }))
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2))
     await waitFor(() =>
       expect(
@@ -466,7 +466,7 @@ describe('F-SE-04 export, F-SE-05 reset, sync', () => {
     await within(await loaded()).findByText('Fridge')
     await user.type(screen.getByRole('textbox', { name: 'Location name' }), 'Garage')
     await user.click(screen.getByRole('button', { name: 'Add location' }))
-    await user.click(await screen.findByRole('button', { name: 'Discard Add a location' }))
+    await user.click(await screen.findByRole('button', { name: 'Discard Add "Garage"' }))
     expect(
       screen.queryByRole('list', { name: 'Changes that need attention' }),
     ).not.toBeInTheDocument()

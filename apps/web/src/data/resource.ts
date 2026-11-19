@@ -60,6 +60,14 @@ export async function deleteRow(
   }
 }
 
+/** The name a body carries (`name`, or `itemName` for waste entries), for words like `Add "Milk"`. */
+function nameIn(value: unknown): string | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const { name, itemName } = value as { name?: unknown; itemName?: unknown }
+  const text = typeof name === 'string' ? name : typeof itemName === 'string' ? itemName : ''
+  return text.trim() === '' ? undefined : text.trim()
+}
+
 export const isTempId = (id: number): boolean => id < 0
 /** A write on a row that is still being created waits for the user to retry: its real id is not known yet. */
 export const tempGuard = (...ids: number[]): string | null =>
@@ -99,6 +107,10 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
     key: `${o.name}/create`,
     refetchOnFailure: o.store.queryKey,
     label: `Add ${o.noun}`,
+    describe: ({ body }) => {
+      const name = nameIn(body)
+      return name ? `Add "${name}"` : `Add ${o.noun}`
+    },
     scope: ({ tempId }) => `${o.name}:${tempId}`,
     request: ({ body }, requestId) => api.post<T>(o.path, body, { idempotencyKey: requestId }),
     apply: (client, { tempId, body }) => {
@@ -132,6 +144,10 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
     refetchOnFailure: o.store.queryKey,
     guard: ({ id }) => tempGuard(id),
     label: `Change ${o.noun}`,
+    describe: ({ patch }) => {
+      const name = nameIn(patch)
+      return name ? `Change "${name}"` : `Change ${o.noun}`
+    },
     scope: ({ id }) => `${o.name}:${id}`,
     request: ({ id, patch }, requestId) =>
       api.patch<T>(`${o.path}/${id}`, patch, { idempotencyKey: requestId }),

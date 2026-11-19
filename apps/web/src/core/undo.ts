@@ -11,6 +11,7 @@
 //
 // This file knows nothing about the API or the cache: the caller passes what to do. data/undoable.ts
 // connects it to the write hooks.
+import { userMessage } from './errors'
 import type { ToastAction, ToastStore } from './toast-store'
 
 export type SendOptions = { keepalive: boolean }
@@ -100,9 +101,9 @@ export function createUndoManager({
         await reverse()
         state = 'reversed'
         return true
-      } catch {
+      } catch (error) {
         state = 'saved'
-        failure("Couldn't undo", () => void run())
+        failure(`Couldn't undo: ${userMessage(error)}`, () => void run())
         return false
       }
     }

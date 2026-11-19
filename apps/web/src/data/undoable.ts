@@ -6,13 +6,19 @@
 //  useHeldWrite       the change is only applied to the cache (the row disappears); the request waits
 //                     for the toast to close, or is sent at once with keepalive when the page is
 //                     hidden. Undo puts the row back and the server is never called.
-import { useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { onlineManager, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useToast, useUndo } from '../core/toast-context'
 import type { ToastAction } from '../core/toast-store'
 import type { UndoHandle, UndoManager } from '../core/undo'
 import { newRequestId } from './query-client'
-import { applyWrite, startWrite, type WriteDefinition, type WriteHandle } from './write'
+import {
+  applyWrite,
+  silenceFailure,
+  startWrite,
+  type WriteDefinition,
+  type WriteHandle,
+} from './write'
 
 export type CommitOptions<TData> = {
   message: string
@@ -37,8 +43,12 @@ export function commitWrite<TInput, TData, TUndo>(
   options: CommitOptions<TData>,
 ): WriteHandle<TData> {
   const handle = startWrite(client, def, input)
+  // Offline, the change is only queued: the toast must not claim it is done on the server (7.0.26e).
+  const message = onlineManager.isOnline()
+    ? options.message
+    : `${options.message} · saves when you're back online`
   const committed = undo.commit({
-    message: options.message,
+    message,
     extraActions: options.extraActions,
     reverse: async () => {
       options.onUndo?.()
@@ -50,9 +60,15 @@ export function commitWrite<TInput, TData, TUndo>(
         return
       }
       if (first.status !== 'saved') return
-      const second = await options.reverse.build(first.data).run().result
-      // A refusal is reported by the failed-write toast; one that never started has no toast, so say it here.
-      if (second.status === 'failed' && second.blocked) throw second.error
+      const reverseHandle = options.reverse.build(first.data).run()
+      silenceFailure(reverseHandle.requestId) // reported below as a failed Undo, once
+      const second = await reverseHandle.result
+      if (second.status === 'failed') {
+        // Say so as a failed Undo (with Retry and the reason), not as a separate failed write: the manager
+        // must not report "Undone", and Retry on a failed-writes entry would send the reverse out of order.
+        reverseHandle.discard()
+        throw second.error
+      }
     },
   })
   // A refused (or blocked) first write was rolled back: the toast must not keep offering Undo, or the

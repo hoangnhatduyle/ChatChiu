@@ -13,6 +13,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { ApiClientError } from '../core/errors'
 import { newRequestId, defineMutation } from './query-client'
 
 /** What a write does. TUndo must be JSON: it is saved with a queued write so a rollback survives a reload. */
@@ -21,6 +22,8 @@ export type WriteDefinition<TInput, TData, TUndo> = {
   key: string
   /** Plain words for the failed-writes list ("Add milk"). */
   label: string
+  /** Words for this one call ("Add milk"): shown instead of `label` in the failed-writes list and toast. */
+  describe?: (input: TInput) => string
   request: (input: TInput, requestId: string, options?: RequestOptions) => Promise<TData>
   /** Updates the cache at once and returns what is needed to undo that. */
   apply?: (client: QueryClient, input: TInput) => TUndo
@@ -160,6 +163,7 @@ export function startWrite<TInput, TData, TUndo>(
       scope: def.scope && !options.keepalive ? { id: def.scope(input) } : undefined,
       meta: {
         label: def.label,
+        ...(def.describe ? { detail: def.describe(input) } : {}),
         writeKey: def.key,
         ...(def.persist === false ? { persist: false } : {}),
         ...(options.handlesConflict ? { handlesConflict: true } : {}),
@@ -210,6 +214,18 @@ export function useWrite<TInput, TData, TUndo>(
   return useCallback((input: TInput) => startWrite(client, def, input), [client, def])
 }
 
+const silenced = new Set<string>()
+/**
+ * The caller reports this write's failure itself (the reverse of an Undo): no failed-write toast for it.
+ * Call it right after starting the write, before the request can answer.
+ */
+export const silenceFailure = (requestId: string): void => void silenced.add(requestId)
+export const isSilenced = (requestId: string): boolean => silenced.has(requestId)
+
+/** False for an answer that a second try would only repeat: the row is gone (404) or in the way (409). */
+export const canRetry = (error: unknown): boolean =>
+  !(error instanceof ApiClientError && (error.kind === 'not-found' || error.kind === 'conflict'))
+
 export type FailedWrite = { id: string; label: string; error: unknown; requestId: string }
 
 const isWrite = (mutation: Mutation) => mutation.options.mutationKey?.[0] === 'write'
@@ -223,7 +239,7 @@ export function useFailedWrites(): FailedWrite[] {
     },
     select: (mutation) => ({
       id: String(mutation.mutationId),
-      label: String(mutation.meta?.label ?? 'A change'),
+      label: String(mutation.meta?.detail ?? mutation.meta?.label ?? 'A change'),
       error: mutation.state.error,
       requestId: String((mutation.state.variables as Variables<unknown>).requestId),
     }),

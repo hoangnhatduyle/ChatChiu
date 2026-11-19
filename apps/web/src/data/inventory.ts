@@ -238,6 +238,7 @@ export const bulkDelete = defineWrite<{ ids: number[] }, unknown, { rows: Invent
   refetchOnFailure: queryKeys.bootstrap,
   guard: ({ ids }) => tempGuard(...ids),
   label: 'Delete items',
+  describe: ({ ids }) => `Delete ${ids.length} ${ids.length === 1 ? 'item' : 'items'}`,
   scope: () => 'inventory:bulk',
   request: ({ ids }, requestId, options) =>
     deleteRow('/api/inventory/bulk', requestId, { ids }, options),
@@ -264,6 +265,7 @@ export const bulkCreate = defineWrite<
   key: 'inventory/bulk-create',
   refetchOnFailure: queryKeys.bootstrap,
   label: 'Add items',
+  describe: ({ body }) => `Add ${body.items.length} ${body.items.length === 1 ? 'item' : 'items'}`,
   scope: () => 'inventory:bulk',
   request: ({ body }, requestId) =>
     api.post<InventoryItem[]>('/api/inventory/bulk', body, { idempotencyKey: requestId }),

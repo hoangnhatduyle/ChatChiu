@@ -129,6 +129,45 @@ describe('commit now, reverse on Undo', () => {
     expect(api.post).not.toHaveBeenCalled()
   })
 
+  it('7.0.26a/b: a refused reverse says "Couldn\'t undo" with the reason; Ctrl+Z does not say "Undone"; no failed write is left to Retry', async () => {
+    api.post.mockResolvedValueOnce({ id: 55, item: item(1, 3) })
+    api.post.mockRejectedValueOnce(
+      new ApiClientError({
+        status: 409,
+        code: 'CONFLICT',
+        message: 'This usage can no longer be undone because the item changed since',
+      }),
+    )
+    const handle = commitWrite(client, undo, inventory.logUsage, usage, {
+      message: 'Used 1',
+      reverse,
+    })
+    await handle.result
+    closeAll(store)
+    const done = await undo.undoLast()
+    expect(done).toBe(false)
+    const messages = store.getItems().map((t) => t.message)
+    expect(messages.some((m) => m.startsWith('Undone'))).toBe(false)
+    expect(messages.some((m) => m.includes("Couldn't undo") && m.includes('changed since'))).toBe(
+      true,
+    )
+    expect(
+      client
+        .getMutationCache()
+        .getAll()
+        .filter((m) => m.state.status === 'error'),
+    ).toHaveLength(0)
+    expect(undo.canUndoLast()).toBe(true) // the change is still there: Retry or Ctrl+Z may try again
+  })
+
+  it('7.0.26e: the toast says the change is only waiting while the write is queued offline', async () => {
+    onlineManager.setOnline(false)
+    commitWrite(client, undo, inventory.logUsage, usage, { message: 'Used 1', reverse })
+    const message = store.getItems().at(-1)?.message ?? ''
+    expect(message).toMatch(/^Used 1/)
+    expect(message).toMatch(/back online/)
+  })
+
   it('Ctrl+Z path: undoLast works after the toast is gone', async () => {
     api.post.mockResolvedValueOnce({ id: 55, item: item(1, 3) })
     api.post.mockResolvedValueOnce(item(1, 4))
