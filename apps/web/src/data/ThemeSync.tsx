@@ -4,12 +4,15 @@
 import { useEffect } from 'react'
 import { usePreferencesQuery } from './preferences'
 import { applyTheme } from '../shell/apply-theme'
+import { rememberTheme } from '../shell/theme-memory'
 
 /** Keeps the document in step with her saved theme. A choice shows at once: the preferences write is optimistic. */
 export function ThemeSync() {
   const theme = usePreferencesQuery().data?.theme
   useEffect(() => {
-    if (theme) applyTheme(theme)
+    if (!theme) return
+    applyTheme(theme)
+    rememberTheme(theme)
   }, [theme])
   return null
 }

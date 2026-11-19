@@ -68,6 +68,15 @@ function nameIn(value: unknown): string | undefined {
   return text.trim() === '' ? undefined : text.trim()
 }
 
+const keyAliases = new Map<string, number>()
+/**
+ * The React key for a row: a row created on this page keeps the key of its temporary id after the server
+ * gives it the real one, so saving does not remount it and drop her focus (7.0.28h). Ids are per table, so
+ * the alias is kept per resource name; it is dropped when the row is deleted.
+ */
+export const rowKey = (resource: string, id: number): number =>
+  keyAliases.get(`${resource}:${id}`) ?? id
+
 export const isTempId = (id: number): boolean => id < 0
 /** A write on a row that is still being created waits for the user to retry: its real id is not known yet. */
 export const tempGuard = (...ids: number[]): string | null =>
@@ -118,6 +127,7 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
       return { tempId }
     },
     reconcile: (client, saved, { tempId }) => {
+      keyAliases.set(`${o.name}:${saved.id}`, tempId)
       o.onSaved?.(client)
       const rows = o.store.read(client)
       // A refetch may have replaced the temporary row, and a realtime event may already have added the
@@ -205,6 +215,7 @@ export function defineResource<T extends Row, TCreate, TUpdate extends object>(
       return { row, index }
     },
     reconcile: (client, _data, _undo, { id }) => {
+      keyAliases.delete(`${o.name}:${id}`)
       o.onSaved?.(client)
       o.onRemoved?.(client, id)
     },

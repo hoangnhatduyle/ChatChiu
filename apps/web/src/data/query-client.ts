@@ -161,6 +161,19 @@ export function createAppQueryClient({ beforeSend }: AppQueryClientOptions = {})
 }
 
 /**
+ * Drops the restored writes this build cannot run (their mutationFn is not defined here), after she chose to.
+ * Returns how many went. Writes this build can run are never touched.
+ */
+export function discardUnsendableWrites(client: QueryClient): number {
+  const cache = client.getMutationCache()
+  const unsendable = cache
+    .getAll()
+    .filter((m) => m.state.status === 'pending' && !m.options.mutationFn)
+  for (const mutation of unsendable) cache.remove(mutation)
+  return unsendable.length
+}
+
+/**
  * Runs the writes a restored cache holds (paused, waiting to retry, or in flight when the app closed).
  * TanStack's own resumePausedMutations only picks up paused ones. A write whose mutationFn this build
  * does not define stays in the cache untouched and is counted as unresolved, never run or dropped.

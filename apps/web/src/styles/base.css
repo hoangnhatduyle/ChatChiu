@@ -28,9 +28,15 @@
   }
 
   /* While any toast shows (the update prompt, Undo, errors: up to three stacked), focus never lands under
-   * them either (a11y review M2, roadmap 7.0.25). */
-  html:has([data-toast]) {
-    scroll-padding-bottom: calc(var(--spacing-nav) + env(safe-area-inset-bottom) + 13rem);
+   * them either (a11y review M2, roadmap 7.0.25). On a phone the toasts sit above the bottom bar; from 768 px
+   * they float at the bottom of the page and the bar is gone, so this padding applies below 768 px only. */
+  @media (width < 768px) {
+    html:has([data-toast]) {
+      --toast-stack-clearance: 13rem; /* three stacked toasts */
+      scroll-padding-bottom: calc(
+        var(--spacing-nav) + env(safe-area-inset-bottom) + var(--toast-stack-clearance)
+      );
+    }
   }
 
   /* The sync bar sticks to the top of the page: a row focused with the keyboard or jumped to never lands under it. */

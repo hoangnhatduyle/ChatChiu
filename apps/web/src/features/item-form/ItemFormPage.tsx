@@ -11,6 +11,7 @@ import { useToast } from '../../core/toast-context'
 import { itemWrites, useBootstrapQuery } from '../../data/inventory'
 import { isTempId, newTempId } from '../../data/resource'
 import { useIsReachable } from '../../data/sync-status'
+import { rememberLocation } from '../receipt-scan/last-location'
 import { useWrite, type WriteHandle } from '../../data/write'
 import { PageTitle } from '../../shell/PageTitle'
 import { Button } from '../../ui/Button'
@@ -109,6 +110,8 @@ export default function ItemFormPage() {
     const prefill = data.locations.some((l) => l.id === wanted) ? wanted : null
     const save = (values: FormValues) => {
       const body = createBody(values)
+      // The next receipt scan starts from the location she last used, here or there (F-RS-06, 7.0.33d).
+      if (body.locationId) rememberLocation(body.locationId)
       announce(
         create({ tempId: newTempId(), body }),
         `Adding ${body.name}…`,

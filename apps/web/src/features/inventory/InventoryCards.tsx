@@ -2,6 +2,7 @@
 // board (F-IN-08, F-KB-04: down only, saved on release, Undo). Tapping the name opens the quick-action
 // panel (F-IN-09). A row still being saved (temporary id) shows "Saving…" and cannot be opened, dragged
 // or selected (7.0.20a). No image and no barcode are shown (D3).
+import { DOWN_ONLY_HINT, USED_UP_STYLE } from '../../ui/usage-slider-shared'
 import type { InventoryItem } from '@chatchiu/contracts'
 import { isUsedUp, lowStockLevel, percentLeft, quantityLabel } from '@chatchiu/domain'
 import { isTempId } from '../../data/resource'
@@ -29,30 +30,33 @@ export type InventoryCardsProps = RowActions & { rows: readonly ListRow[]; total
 
 export function InventoryCards({ rows, total, ...actions }: InventoryCardsProps) {
   return (
-    <VirtualRows
-      rows={rows}
-      role="list"
-      label="Stock"
-      heightOf={(row) => (row.kind === 'header' ? HEADER_HEIGHT : CARD_HEIGHT)}
-      renderRow={(row) =>
-        row.kind === 'header' ? (
-          <div role="presentation" className="flex h-full items-end pb-1.5">
-            <h2 className="text-md font-extrabold text-muted">
-              {row.label} <span className="font-mono text-sm">{row.count}</span>
-            </h2>
-          </div>
-        ) : (
-          <div
-            role="listitem"
-            aria-posinset={row.position}
-            aria-setsize={total}
-            className="h-full pb-2"
-          >
-            <Card item={row.item} {...actions} />
-          </div>
-        )
-      }
-    />
+    <>
+      <p className="sr-only">{DOWN_ONLY_HINT}</p>
+      <VirtualRows
+        rows={rows}
+        role="list"
+        label="Stock"
+        heightOf={(row) => (row.kind === 'header' ? HEADER_HEIGHT : CARD_HEIGHT)}
+        renderRow={(row) =>
+          row.kind === 'header' ? (
+            <div role="presentation" className="flex h-full items-end pb-1.5">
+              <h2 className="text-md font-extrabold text-muted">
+                {row.label} <span className="font-mono text-sm">{row.count}</span>
+              </h2>
+            </div>
+          ) : (
+            <div
+              role="listitem"
+              aria-posinset={row.position}
+              aria-setsize={total}
+              className="h-full pb-2"
+            >
+              <Card item={row.item} {...actions} />
+            </div>
+          )
+        }
+      />
+    </>
   )
 }
 
@@ -83,7 +87,7 @@ function Card({ item, ...actions }: { item: InventoryItem } & RowActions) {
         <ExpiryChip
           expirationDate={item.expirationDate}
           today={actions.today}
-          className={usedUp ? 'opacity-60' : undefined}
+          className={usedUp ? USED_UP_STYLE : undefined}
         />
         {saving ? (
           <span className="min-h-10 min-w-0 flex-1">
@@ -126,7 +130,7 @@ function Card({ item, ...actions }: { item: InventoryItem } & RowActions) {
         tone={level === 'normal' ? 'normal' : 'low'}
         // No accidental use while she is picking items to delete.
         isDisabled={saving || actions.selecting}
-        className={cx('px-1.5', usedUp && 'opacity-60')}
+        className={cx('px-1.5', usedUp && USED_UP_STYLE)}
         onCommit={(next) => actions.onUse(item, next)}
       />
     </div>

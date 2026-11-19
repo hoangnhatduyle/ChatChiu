@@ -79,7 +79,9 @@ export default function StatsPage() {
 
   return frame(
     <>
-      {((overview.isError && overview.data) || (waste.isError && waste.data)) && (
+      {((overview.isError && overview.data) ||
+        (waste.isError && waste.data) ||
+        (log.isError && log.data)) && (
         <div
           role="alert"
           className="flex items-center gap-3 rounded-card border border-line bg-status-soon-bg px-4 py-2 text-md font-semibold text-status-soon-fg"

@@ -6,7 +6,7 @@ import { addDays, todayLocalDateString } from '@chatchiu/domain'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { Link, MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { ToastProvider } from '../../core/toast'
 import '../../data/register'
@@ -91,6 +91,7 @@ function renderPage(items: InventoryItem[], path = '/stock', width = 800) {
           <Routes>
             <Route path="/stock" element={<InventoryPage />} />
           </Routes>
+          <Link to="/stock">Stock nav</Link>
           <LocationProbe />
         </MemoryRouter>
       </ToastProvider>
@@ -456,6 +457,51 @@ describe('F-IN-14 remembered filters', () => {
         {},
       ),
     )
+  })
+
+  it('7.0.28d: opening Stock from the nav while already on /stock?... brings the remembered filters back', async () => {
+    const { user, location } = renderPage(
+      [makeItem(1, { name: 'Milk', expirationDate: inDays(1) })],
+      '/stock?status=expiring',
+    )
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
+    await waitFor(() =>
+      expect(window.localStorage.getItem('chatchiu.inventory.filters')).toContain('expiring'),
+    )
+    await user.click(screen.getByRole('link', { name: 'Stock nav' }))
+    await waitFor(() => expect(location()).toContain('status=expiring'))
+    expect(window.localStorage.getItem('chatchiu.inventory.filters')).toContain('expiring')
+  })
+
+  it('7.0.28d: clearing the filters on the page is not undone by the restore', async () => {
+    const { user, location } = renderPage(
+      [makeItem(1, { name: 'Milk', expirationDate: inDays(1) })],
+      '/stock?status=expiring',
+    )
+    await screen.findByRole('button', { name: /^Open Milk\b/ })
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }))
+    await waitFor(() => expect(location()).not.toContain('status='))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(location()).not.toContain('status=')
+  })
+
+  it('7.0.28i: the stale-filter notice can be dismissed, and the stale id leaves the URL', async () => {
+    const { user, location } = renderPage([makeItem(1, { name: 'Milk' })], '/stock?category=999')
+    expect(await screen.findByText(/no longer exists/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByText(/no longer exists/i)).toBeNull()
+    expect(location()).not.toContain('category=999')
+  })
+
+  it('7.0.28i: Dismiss clears a stale category and a stale location together', async () => {
+    const { user, location } = renderPage(
+      [makeItem(1, { name: 'Milk' })],
+      '/stock?category=998&location=999',
+    )
+    await user.click(await screen.findByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByText(/no longer exists/i)).toBeNull()
+    expect(location()).not.toContain('category=')
+    expect(location()).not.toContain('location=')
   })
 
   it('an unknown ?sort= or ?status= value falls back to the default instead of hiding items', async () => {

@@ -465,6 +465,17 @@ describe('F-IF-16 save returns to the board', () => {
     expect(inToasts(/Adding Butter/)).toBeInTheDocument()
   })
 
+  it('7.0.33d: the location chosen for a new item is remembered for the next receipt scan', async () => {
+    api.post.mockReturnValue(new Promise(() => {}))
+    const { user } = renderForm('/stock/new')
+    await screen.findByRole('textbox', { name: /^Name/ })
+    await fillValid(user) // picks "Fridge" (id 1)
+    await save(user)
+    await waitFor(() =>
+      expect(window.localStorage.getItem('chatchiu.receipt-scan.last-location')).toBe('1'),
+    )
+  })
+
   it('an edit saves with a toast and returns to the board showing the new name', async () => {
     api.patch.mockReturnValue(new Promise(() => {}))
     const { user, location } = renderForm('/stock/5/edit', [makeItem(5, { name: 'Milk' })])

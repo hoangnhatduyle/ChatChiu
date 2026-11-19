@@ -1,7 +1,11 @@
 /** Keyboard and assistive-tech changes save after this pause (CS-NUMBERED-CONSTANTS). */
 export const KEYBOARD_COMMIT_DELAY_MS = 700
 
-export const DOWN_ONLY_HINT = 'Can only go down here; open the item to add more.'
+/**
+ * Said once per list (an sr-only line above it), not by every row's slider (7.0.25iii): a screen reader would
+ * otherwise repeat it on each of dozens of rows.
+ */
+export const DOWN_ONLY_HINT = 'The usage bars here can only go down; open an item to add more.'
 
 export type UsageSliderProps = {
   /** Accessible name, e.g. "How much Whole milk is left". */
@@ -26,3 +30,9 @@ export type UsageSliderProps = {
   isDisabled?: boolean
   className?: string
 }
+
+/**
+ * How a used-up row is set apart. Not `opacity-*`: dimming the text drops it under the 4.5:1 contrast ratio
+ * (7.0.28f). The row's name is muted, its "Used up" cue is text, and the colour is drawn out of the bar.
+ */
+export const USED_UP_STYLE = 'grayscale'

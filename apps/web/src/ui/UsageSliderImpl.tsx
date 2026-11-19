@@ -9,14 +9,21 @@ import { useEffect, useEffectEvent, useId, useRef, useState, type PointerEvent }
 import { snapPercent, TAP_GUARD_PX, USAGE_STEP_PERCENT } from '@chatchiu/domain'
 import { Slider, SliderThumb, SliderTrack } from 'react-aria-components'
 import { cx } from './cx'
-import {
-  DOWN_ONLY_HINT,
-  KEYBOARD_COMMIT_DELAY_MS,
-  type UsageSliderProps,
-} from './usage-slider-shared'
+import { KEYBOARD_COMMIT_DELAY_MS, type UsageSliderProps } from './usage-slider-shared'
 
 type Gesture = { id: number; x: number; moved: number; cancelled: boolean }
 type PendingKey = { timer: ReturnType<typeof setTimeout>; final: number }
+
+/** Half a thumb, in px: a press this close to the thumb's edge grabs the thumb. */
+const THUMB_GRAB_SLACK_PX = 16
+
+function pressedAboveThumb(e: PointerEvent<HTMLDivElement>, value: number): boolean {
+  const track = e.currentTarget.querySelector('[data-usage-track]')
+  if (!track) return false
+  const { left, width } = track.getBoundingClientRect()
+  if (width <= 0) return false
+  return e.clientX - left > (value / 100) * width + THUMB_GRAB_SLACK_PX
+}
 
 const PERCENT_FORMAT: Intl.NumberFormatOptions = { style: 'unit', unit: 'percent' }
 
@@ -78,6 +85,12 @@ export function UsageSliderImpl({
 
   const startGesture = (e: PointerEvent<HTMLDivElement>) => {
     if (!e.isPrimary || e.button !== 0) return
+    // Down-only (7.0.39c): a press on the bar above the thumb does nothing, so it cannot drag the value
+    // relative to a thumb that was never grabbed (it could never go up anyway).
+    if (mode === 'down-only' && pressedAboveThumb(e, value)) {
+      e.stopPropagation()
+      return
+    }
     gesture.current = { id: e.pointerId, x: e.clientX, moved: 0, cancelled: false }
     // Keep receiving moves when a mouse drag leaves the 44 px row (touch captures implicitly).
     if (typeof e.currentTarget.setPointerCapture === 'function') {
@@ -93,9 +106,7 @@ export function UsageSliderImpl({
     if (g && e.pointerId === g.id) g.cancelled = true
   }
 
-  const spoken = [description, mode === 'down-only' ? DOWN_ONLY_HINT : null]
-    .filter(Boolean)
-    .join('. ')
+  const spoken = description ?? ''
   const isBig = size === 'big'
   const colour = tone === 'low' ? 'bg-low' : 'bg-fill'
   return (

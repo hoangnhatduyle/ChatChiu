@@ -1,7 +1,7 @@
 // Locations (F-SE-01): add, edit and delete. Delete tells her first how many items will move to "No location"
 // (it never removes items: NC-SE-NO-ORPHAN-SURPRISE) and is a held write with Undo, never a confirm.
 import type { Location } from '@chatchiu/contracts'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useBootstrapQuery, locationWrites } from '../../data/inventory'
 import { newTempId } from '../../data/resource'
 import { useHeldWrite } from '../../data/undoable'
@@ -11,6 +11,7 @@ import { Field } from '../../ui/Field'
 import { IconButton } from '../../ui/IconButton'
 import { Skeleton } from '../../ui/Skeleton'
 import { SectionCard } from './SectionCard'
+import { focusFirstInput } from './focus-first-input'
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 const NAME_REQUIRED = 'Enter a name for the location.'
@@ -27,13 +28,22 @@ function LocationEditor({ location, onDone }: { location: Location; onDone: () =
   const [name, setName] = useState(location.name)
   const [sub, setSub] = useState(location.subLocation ?? '')
   const [error, setError] = useState<string>()
+  const group = useRef<HTMLDivElement>(null)
   const save = () => {
-    if (!name.trim()) return setError(NAME_REQUIRED)
+    if (!name.trim()) {
+      setError(NAME_REQUIRED)
+      return focusFirstInput(group.current)
+    }
     void update({ id: location.id, patch: { name: name.trim(), subLocation: sub.trim() || null } })
     onDone()
   }
   return (
-    <div role="group" aria-label={`Edit ${location.name}`} className="flex flex-col gap-2 py-2">
+    <div
+      ref={group}
+      role="group"
+      aria-label={`Edit ${location.name}`}
+      className="flex flex-col gap-2 py-2"
+    >
       <Field
         label={`Name of ${location.name}`}
         value={name}
@@ -69,8 +79,12 @@ function AddLocation() {
   const [name, setName] = useState('')
   const [sub, setSub] = useState('')
   const [error, setError] = useState<string>()
+  const group = useRef<HTMLDivElement>(null)
   const add = () => {
-    if (!name.trim()) return setError(NAME_REQUIRED)
+    if (!name.trim()) {
+      setError(NAME_REQUIRED)
+      return focusFirstInput(group.current)
+    }
     void create({
       tempId: newTempId(),
       body: { name: name.trim(), subLocation: sub.trim() || null },
@@ -81,6 +95,7 @@ function AddLocation() {
   }
   return (
     <div
+      ref={group}
       role="group"
       aria-label="Add a location"
       className="flex flex-col gap-2 border-t border-line pt-4"

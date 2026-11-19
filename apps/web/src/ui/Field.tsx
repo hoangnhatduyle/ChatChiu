@@ -28,10 +28,14 @@ export const ERROR = 'flex items-center gap-1.5 text-sm font-semibold text-error
 export function InlineError({ children }: { children?: string }) {
   // Without our own message, React Aria shows the browser's validation text (no lone glyph).
   if (!children) return <FieldError className={ERROR} />
+  // role=alert on the text: a message that appears after pressing a button is announced without moving focus
+  // (7.0.27d). FieldError itself takes no role.
   return (
-    <FieldError className={ERROR}>
-      <Icon name="alert" size={14} strokeWidth={2.4} />
-      {children}
+    <FieldError>
+      <span role="alert" className={ERROR}>
+        <Icon name="alert" size={14} strokeWidth={2.4} />
+        {children}
+      </span>
     </FieldError>
   )
 }

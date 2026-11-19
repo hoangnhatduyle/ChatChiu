@@ -76,7 +76,8 @@ export function useDeviceNotifications(): DeviceNotifications {
         : readDeviceState(defaultPushEnv(), VAPID_PUBLIC_KEY)
       read
         .then((state) => current && setDevice(state))
-        .catch(() => {
+        .catch((cause: unknown) => {
+          console.error('Could not read the notification state of this device', cause)
           if (!current) return
           setDevice({ state: 'UNKNOWN' })
           setError("Couldn't check notifications on this device.")
@@ -102,6 +103,7 @@ export function useDeviceNotifications(): DeviceNotifications {
       try {
         return { value: await action() }
       } catch (e) {
+        console.error(failure, e)
         const message = `${failure} ${userMessage(e)}`
         setError(message)
         return { message }

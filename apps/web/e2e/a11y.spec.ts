@@ -22,7 +22,15 @@ const THEMES = ['light', 'dark'] as const
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 const BLOCKING = new Set(['serious', 'critical'])
 
-type Screen = { name: string; path: (k: Kitchen) => string; ready?: (page: Page) => Locator }
+type Screen = {
+  name: string
+  path: (k: Kitchen) => string
+  ready?: (page: Page) => Locator
+  /** Puts the screen in the state to check (a form with errors, a section expanded), after it is ready. */
+  prepare?: (page: Page) => Promise<void>
+  /** Shown once `prepare` has run. */
+  prepared?: (page: Page) => Locator
+}
 const SCREENS: Screen[] = [
   { name: 'board', path: () => '/', ready: (p) => p.getByRole('button', { name: 'Open Milk' }) },
   {
@@ -44,6 +52,31 @@ const SCREENS: Screen[] = [
     ready: (p) => p.getByRole('region', { name: 'Locations' }).getByText('Fridge'),
   },
   { name: 'more', path: () => '/more' },
+  // States rather than pages (7.0.38a): what a screen shows after she acts.
+  {
+    name: 'panel with Restock and an exact amount open',
+    path: (k) => `/?item=${k.milkId}`,
+    ready: (p) => p.getByRole('dialog'),
+    prepare: async (p) => {
+      await p.getByRole('button', { name: 'Restock' }).click()
+      await p.getByRole('button', { name: 'Enter an exact amount' }).click()
+    },
+    prepared: (p) => p.getByRole('button', { name: 'Enter an exact amount' }),
+  },
+  {
+    name: 'settings with a form error',
+    path: () => '/settings',
+    ready: (p) => p.getByRole('region', { name: 'Locations' }).getByText('Fridge'),
+    prepare: (p) => p.getByRole('button', { name: 'Add location' }).click(),
+    prepared: (p) => p.getByText('Enter a name for the location.').first(),
+  },
+  {
+    name: 'item form with errors',
+    path: () => '/stock/new',
+    ready: (p) => p.getByRole('button', { name: 'Save item' }),
+    prepare: (p) => p.getByRole('button', { name: 'Save item' }).click(),
+    prepared: (p) => p.getByRole('alert').first(),
+  },
   { name: 'add an item', path: () => '/stock/new' },
   { name: 'scan a receipt', path: () => '/scan' },
 ]
@@ -76,6 +109,10 @@ for (const theme of THEMES) {
         await expect(
           (screen.ready?.(page) ?? page.getByRole('heading').first()).first(),
         ).toBeVisible()
+        if (screen.prepare) {
+          await screen.prepare(page)
+          await expect(screen.prepared!(page)).toBeVisible()
+        }
         // Entry animations and the panel's slide must have finished before contrast is measured.
         await page.evaluate(() =>
           Promise.all(
@@ -126,11 +163,15 @@ test('F-AP-02 / CS-ACCESSIBLE-UI: the board works with the keyboard alone', asyn
   await page.keyboard.press('ArrowLeft')
   await page.keyboard.press('ArrowLeft')
   await expect(page.getByRole('button', { name: 'Undo' })).toBeVisible()
-  // While a toast shows, a row focused with the keyboard scrolls clear of the toast stack (7.0.25).
-  const padding = await page.evaluate(() =>
-    parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom),
-  )
-  expect(padding).toBeGreaterThanOrEqual(200)
+  // While a toast shows on a phone, a row focused with the keyboard scrolls clear of the toast stack (7.0.25).
+  // From 768 px the toasts float at the bottom of the page and the bottom bar is gone, so no padding is needed
+  // (7.0.38d: the clearance applies below 768 px only).
+  const { padding, narrow } = await page.evaluate(() => ({
+    padding: parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom),
+    narrow: window.matchMedia('(width < 768px)').matches,
+  }))
+  if (narrow) expect(padding).toBeGreaterThanOrEqual(200)
+  else expect(Number.isNaN(padding) || padding < 200).toBe(true)
 
   // Alt+Shift+T reaches the toast, Enter on Undo restores the level, and no mouse was used.
   await page.keyboard.press('Alt+Shift+T')

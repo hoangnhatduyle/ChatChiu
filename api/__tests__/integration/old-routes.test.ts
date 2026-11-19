@@ -457,6 +457,11 @@ describe('AC-DATA-02: every old route behaves as before on the migrated database
     });
     expect(suggest.status).toBe(429);
     expect((suggest.body as { error: { code: string } }).error.code).toBe('QUOTA_EXCEEDED');
+    // The quota is spent only for a photo that passes validation (7.0.41f), so give her a real one.
+    const photo = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1]);
+    await admin.storage
+      .from('inventory-images')
+      .upload(`${user.id}/receipts/abc-123.jpg`, photo, { contentType: 'image/jpeg', upsert: true });
     const scan = await callApi('POST', 'ai/receipt-scan', {
       user,
       body: { imagePath: `${user.id}/receipts/abc-123.jpg` },

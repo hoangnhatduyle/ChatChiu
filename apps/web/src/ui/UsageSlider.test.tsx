@@ -128,9 +128,9 @@ describe('UsageSlider', () => {
     expect(onCommit).toHaveBeenCalledWith(45)
   })
 
-  it('NC-KB-NO-UP-DRAG: in down-only mode the description says the bar only goes down (a11y review M1)', () => {
+  it('7.0.25iii: the slider says only its own amount; "only goes down" is said once per list, not per row', () => {
     const { slider } = setup()
-    expect(slider).toHaveAccessibleDescription(/0\.6 of 1 L\. Can only go down here/)
+    expect(slider).toHaveAccessibleDescription('0.6 of 1 L')
   })
 
   it(`F-KB-04: a pointer that moves less than ${TAP_GUARD_PX} px is a tap and changes nothing`, () => {
@@ -171,6 +171,26 @@ describe('UsageSlider', () => {
     fireEvent.pointerCancel(track, { ...ev, clientX: at - 20 })
     expect(onCommit).not.toHaveBeenCalled()
     expect(slider).toHaveValue('60')
+  })
+
+  it('7.0.39c: in down-only mode a press on the bar above the thumb does nothing, even if dragged down', () => {
+    const { track, slider, onCommit } = setup() // 60 % left
+    const ev = { pointerId: 1, isPrimary: true, pointerType: 'mouse', clientY: 10 }
+    fireEvent.pointerDown(track, { ...ev, clientX: xAt(96), button: 0 })
+    fireEvent.pointerMove(track, { ...ev, clientX: xAt(30) })
+    fireEvent.pointerUp(track, { ...ev, clientX: xAt(30) })
+    expect(onCommit).not.toHaveBeenCalled()
+    expect(slider).toHaveValue('60')
+  })
+
+  it('7.0.39c: a press just beside the thumb still grabs it and drags down', () => {
+    const { track, onCommit } = setup() // 60 % left; the thumb is about 12 % wide
+    const ev = { pointerId: 1, isPrimary: true, pointerType: 'mouse', clientY: 10 }
+    fireEvent.pointerDown(track, { ...ev, clientX: xAt(64), button: 0 })
+    fireEvent.pointerMove(track, { ...ev, clientX: xAt(30) })
+    fireEvent.pointerUp(track, { ...ev, clientX: xAt(30) })
+    // The drag is relative to where the thumb was grabbed, so it lands a little below the pointer.
+    expect(onCommit).toHaveBeenCalledWith(25)
   })
 
   it('tone: the bar uses the low colour when the item is running low', () => {

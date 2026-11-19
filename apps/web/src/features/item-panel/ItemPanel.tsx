@@ -20,6 +20,7 @@ const LINK_CLASS =
   'inline-flex min-h-touch items-center justify-center rounded-pill border border-field-line bg-surface px-4 text-md font-bold text-ink hover:bg-hover active:bg-pressed'
 
 const RESTOCK_BUTTON_ID = 'panel-restock'
+const RESTOCK_FORM_ID = 'panel-restock-form'
 
 export type ItemPanelProps = {
   item: InventoryItem
@@ -71,6 +72,7 @@ export function ItemPanel({ item, onRemoved }: ItemPanelProps) {
           id={RESTOCK_BUTTON_ID}
           isDisabled={saving}
           aria-expanded={restocking}
+          aria-controls={restocking && !saving ? RESTOCK_FORM_ID : undefined}
           onPress={() => setRestocking((open) => !open)}
         >
           Restock
@@ -87,17 +89,19 @@ export function ItemPanel({ item, onRemoved }: ItemPanelProps) {
         </div>
       )}
       {restocking && !saving && (
-        <RestockForm
-          item={item}
-          categoryName={category?.name}
-          locationName={location?.name}
-          onRestock={actions.restockIt}
-          onDone={() => {
-            setRestocking(false)
-            // The form she was in is gone: keep focus where she can carry on.
-            requestAnimationFrame(() => document.getElementById(RESTOCK_BUTTON_ID)?.focus())
-          }}
-        />
+        <div id={RESTOCK_FORM_ID}>
+          <RestockForm
+            item={item}
+            categoryName={category?.name}
+            locationName={location?.name}
+            onRestock={actions.restockIt}
+            onDone={() => {
+              setRestocking(false)
+              // The form she was in is gone: keep focus where she can carry on.
+              requestAnimationFrame(() => document.getElementById(RESTOCK_BUTTON_ID)?.focus())
+            }}
+          />
+        </div>
       )}
       {!saving && <UsageHistory item={item} />}
       {!saving && needsUsingSoon(item, todayLocalDateString()) && <RecipesUsing item={item} />}

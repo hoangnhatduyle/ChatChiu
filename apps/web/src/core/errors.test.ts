@@ -211,3 +211,17 @@ describe('userMessage (F-AP-03 toasts)', () => {
     expect(userMessage(undefined)).toBe('Something went wrong. Try again.')
   })
 })
+
+describe('7.0.32g: browser errors', () => {
+  it('says what a refused permission means, not the generic text', () => {
+    expect(userMessage(new DOMException('denied', 'NotAllowedError'))).toMatch(/blocked it/i)
+    expect(userMessage(new DOMException('x', 'AbortError'))).toMatch(/push service/i)
+  })
+
+  it('keeps the generic text for an error it does not know', () => {
+    expect(userMessage(new DOMException('x', 'DataCloneError'))).toBe(
+      'Something went wrong. Try again.',
+    )
+    expect(userMessage(new Error('boom'))).toBe('Something went wrong. Try again.')
+  })
+})

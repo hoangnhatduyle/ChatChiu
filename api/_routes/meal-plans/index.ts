@@ -1,5 +1,6 @@
 import { authedHandler, assertMethod } from '../../_lib/handler.js';
 import { ApiError } from '../../_lib/errors.js';
+import { ilikeExact } from '../../_lib/params.js';
 import { parseBody, parseQuery } from '../../_lib/validation.js';
 import { mealPlanCreate, mealPlanListQuery as listQuery } from '../../_lib/schemas.js';
 import { toCamel, toCamelList, toSnake } from '../../_lib/mappers.js';
@@ -38,7 +39,7 @@ export default authedHandler(async ({ user, client }, req) => {
       .limit(1);
     favoriteQuery = body.recipeId
       ? favoriteQuery.eq('recipe_id', body.recipeId)
-      : favoriteQuery.ilike('meal_name', body.mealName);
+      : favoriteQuery.ilike('meal_name', ilikeExact(body.mealName));
     const { data: existingFavorite } = await favoriteQuery.maybeSingle();
     if (existingFavorite) isFavorite = true;
   }

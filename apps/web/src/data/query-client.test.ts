@@ -24,6 +24,7 @@ import {
   persistOptionsFor,
   registerMutation,
   adoptQueuedWrites,
+  discardUnsendableWrites,
   resumeQueuedWrites,
   retryDelay,
   shouldRetry,
@@ -254,6 +255,21 @@ describe('the offline write queue (NC-AP-NO-LOST-WRITES)', () => {
     expect(resumeQueuedWrites(reloaded)).toEqual({ resumed: 0, unresolved: 1 })
     expect(allMutations(reloaded)).toHaveLength(1)
     expect(allMutations(reloaded)[0]?.state.status).toBe('pending')
+  })
+
+  it('7.0.39a: discardUnsendableWrites drops the restored writes this build cannot run, and only those', async () => {
+    const persister = createIdbPersister('u1')
+    const first = createAppQueryClient()
+    registerMutation(first, ['orphan'], { mutationFn: () => new Promise(() => {}) })
+    void mutate(first, 'orphan', vars())
+    await vi.waitFor(() => expect(allMutations(first)).toHaveLength(1))
+    await save(first, persister)
+    const reloaded = createAppQueryClient()
+    await restore(reloaded, persister)
+    registerMutation(reloaded, ['known'], { mutationFn: () => new Promise(() => {}) })
+    void mutate(reloaded, 'known', vars())
+    expect(discardUnsendableWrites(reloaded)).toBe(1)
+    expect(allMutations(reloaded).map((m) => m.options.mutationKey)).toEqual([['known']])
   })
 
   it('queued writes to the same resource replay one at a time, in the order they were made', async () => {

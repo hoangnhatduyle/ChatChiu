@@ -1,5 +1,6 @@
 // Notifications (F-SE-03, SPEC-NT-001): this device's status in words, turn it on or off, a test, and her
 // reminder settings (time zone, hour, the two alert kinds).
+import { DeferredSelect } from './DeferredSelect'
 import type { Preferences, PreferencesUpdate } from '@chatchiu/contracts'
 import { useToast } from '../../core/toast-context'
 import { updatePreferences, usePreferencesQuery } from '../../data/preferences'
@@ -128,31 +129,33 @@ function Reminders({ preferences }: { preferences: Preferences }) {
     <div className="flex flex-col gap-3 border-t border-line pt-4">
       <label className="flex flex-col gap-1.5">
         <span className={LABEL}>Time zone</span>
-        <select
+        <DeferredSelect
           className={NATIVE_SELECT}
           value={preferences.timezone}
-          onChange={(e) => change({ timezone: e.target.value })}
+          parse={(text) => text}
+          onCommit={(timezone) => change({ timezone })}
         >
           {zones.map((zone) => (
             <option key={zone} value={zone}>
               {zone}
             </option>
           ))}
-        </select>
+        </DeferredSelect>
       </label>
       <label className="flex flex-col gap-1.5">
         <span className={LABEL}>Reminder hour</span>
-        <select
+        <DeferredSelect
           className={NATIVE_SELECT}
           value={preferences.notifyHour}
-          onChange={(e) => change({ notifyHour: Number(e.target.value) })}
+          parse={Number}
+          onCommit={(notifyHour) => change({ notifyHour })}
         >
           {Array.from({ length: 24 }, (_, hour) => (
             <option key={hour} value={hour}>
               {hourLabel(hour)}
             </option>
           ))}
-        </select>
+        </DeferredSelect>
       </label>
       <Switch
         label="Expiry reminders"

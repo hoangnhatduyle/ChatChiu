@@ -3,6 +3,7 @@ import { authedHandler, assertMethod } from '../../_lib/handler.js';
 import { ApiError } from '../../_lib/errors.js';
 import { parseBody } from '../../_lib/validation.js';
 import { signUploadRequest } from '../../_lib/schemas.js';
+import { env } from '../../_lib/env.js';
 
 // POST /api/uploads/sign
 // Body: { scope: 'items'|'receipts', contentType, ext }
@@ -16,6 +17,20 @@ import { signUploadRequest } from '../../_lib/schemas.js';
 export default authedHandler(async ({ user, client }, req) => {
   assertMethod(req, ['POST']);
   const body = parseBody(req, signUploadRequest);
+
+  // A user's folder grows without bound otherwise (a receipt that is never read stays): cap what one user keeps per
+  // scope. Listing the capped page is enough to tell whether the cap is reached (7.0.41f).
+  const cap = env.maxStoredUploads;
+  const stored = await client.storage
+    .from('inventory-images')
+    .list(`${user.id}/${body.scope}`, { limit: cap });
+  if (stored.error) throw new ApiError('INTERNAL', 'Failed to check stored photos', stored.error);
+  if (stored.data.length >= cap) {
+    throw new ApiError(
+      'BAD_REQUEST',
+      'You have reached the limit of stored photos. Delete some items or receipts first.',
+    );
+  }
 
   const path = `${user.id}/${body.scope}/${randomUUID()}.${body.ext}`;
 

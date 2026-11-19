@@ -24,7 +24,8 @@ export function PushKeyCheck() {
         if (result.status !== 'saved')
           throw result.status === 'failed' ? result.error : new Error('Cancelled')
       })
-    })().catch(() => {
+    })().catch((cause: unknown) => {
+      console.error('Could not refresh the notification subscription', cause)
       if (current)
         toasts.show({
           message: "Couldn't refresh notifications on this device. Open Settings to fix it.",

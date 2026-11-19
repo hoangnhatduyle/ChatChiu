@@ -125,12 +125,22 @@ export function signOut(): Promise<AuthResult> {
   })
 }
 
+let recoveryActive = false
+
+/** Tells the token source that a password-recovery session is (or is no longer) active. */
+export function setRecoveryActive(active: boolean): void {
+  recoveryActive = active
+}
+
 /**
  * The current access token for API calls, or null when signed out. The client refreshes it when due.
  * Throws when the session cannot be read (storage or refresh trouble), which is not the same as
  * signed out: the API client must not treat it as a 401.
  */
 export async function getAccessToken(): Promise<string | null> {
+  // A recovery link's session proves only that she held the link (a crafted link fragment can carry someone
+  // else's): it must not be used for API calls until she has set a password (7.0.41d).
+  if (recoveryActive) return null
   const { data, error } = await getAuthClient().getSession()
   if (error) throw error
   return data.session?.access_token ?? null

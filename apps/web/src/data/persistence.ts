@@ -37,6 +37,11 @@ function setFlags(patch: Partial<Flags>) {
   for (const listener of [...listeners]) listener()
 }
 
+/** She has read the notice that saved changes were discarded (a copy stays on the device). */
+export function acknowledgeQueueDiscarded(): void {
+  setFlags({ queueDiscarded: false })
+}
+
 export const getPersistenceStatus = (): PersistenceStatus => status
 
 export function subscribePersistenceStatus(listener: () => void): () => void {
@@ -124,7 +129,11 @@ export function createIdbPersister(
         return JSON.parse(raw) as PersistedClient
       } catch {
         // Not deleted: kept aside so it can be recovered, and the app starts fresh.
-        await store.setItem(`${key}${CORRUPT_SUFFIX}`, raw).catch(() => undefined)
+        // If even the copy fails, the unreadable blob (it may have held queued writes) is gone: say so.
+        await store.setItem(`${key}${CORRUPT_SUFFIX}`, raw).catch((error: unknown) => {
+          console.error('Could not keep a copy of the unreadable saved cache', error)
+          setFlags({ queueDiscarded: true })
+        })
         return undefined
       }
     },

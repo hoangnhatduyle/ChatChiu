@@ -32,6 +32,15 @@ beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }))
 afterEach(() => vi.useRealTimers())
 
 describe('ToastProvider', () => {
+  it('7.0.26d: the shortcut to the newest toast is announced, only while a toast is showing', () => {
+    const get = setup()
+    const region = screen.getByRole('region', { name: 'Notifications' })
+    expect(region).toHaveAttribute('aria-keyshortcuts', 'Alt+Shift+T')
+    expect(region).not.toHaveTextContent(/Alt\+Shift\+T/)
+    act(() => void get().toast.show({ message: 'Moved to Pantry' }))
+    expect(region).toHaveTextContent('Press Alt+Shift+T to move to the newest notification.')
+  })
+
   it('F-AP-03: the status and alert live regions exist before anything is announced, and are filled afterwards', () => {
     const get = setup()
     const status = screen.getByRole('status')

@@ -1,6 +1,7 @@
 // The rows of the virtual list (F-IN-04, F-IN-06): group headers and items flattened into one list, so
 // one virtualizer positions both and only a window of rows is in the page.
 import type { InventoryItem } from '@chatchiu/contracts'
+import { rowKey } from '../../data/resource'
 
 export type ListRow =
   | { kind: 'header'; key: string; label: string; count: number }
@@ -29,7 +30,7 @@ export function flattenGroups(
     }
     for (const item of group.items) {
       position += 1
-      rows.push({ kind: 'item', key: `item-${item.id}`, item, position })
+      rows.push({ kind: 'item', key: `item-${rowKey('inventory', item.id)}`, item, position })
     }
   }
   return rows

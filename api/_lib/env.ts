@@ -40,4 +40,6 @@ export const env = {
   cronSecret: optional('CRON_SECRET', ''),
   // Writes (POST, PATCH, PUT, DELETE) one user may make per minute before the API answers 429 (roadmap 7.0.13d).
   writeLimitPerMinute: optionalInt('WRITE_LIMIT_PER_MINUTE', 300),
+  // Stored photos one user may keep per scope (items, receipts) before /api/uploads/sign refuses (roadmap 7.0.41f).
+  maxStoredUploads: optionalInt('MAX_STORED_UPLOADS_PER_USER', 500),
 };

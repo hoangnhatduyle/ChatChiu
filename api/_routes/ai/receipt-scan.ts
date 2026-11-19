@@ -73,12 +73,6 @@ export default authedHandler(async ({ user, client }, req) => {
     throw new ApiError('FORBIDDEN', 'imagePath does not belong to caller');
   }
 
-  await consumeAiQuotaOrThrow({
-    client,
-    requestType: 'receipt',
-    max: env.quotaReceipt,
-  });
-
   // Download the receipt from Storage using the user-bound client so RLS still
   // applies.
   const dl = await client.storage.from('inventory-images').download(body.imagePath);
@@ -86,6 +80,10 @@ export default authedHandler(async ({ user, client }, req) => {
     throw new ApiError('NOT_FOUND', 'Receipt image not found in storage');
   }
 
+  // Check the size before reading the body into memory.
+  if (dl.data.size > 5 * 1024 * 1024) {
+    throw new ApiError('PAYLOAD_TOO_LARGE', 'Receipt image exceeds 5 MiB limit');
+  }
   const buffer = Buffer.from(await dl.data.arrayBuffer());
   if (buffer.byteLength > 5 * 1024 * 1024) {
     throw new ApiError('PAYLOAD_TOO_LARGE', 'Receipt image exceeds 5 MiB limit');
@@ -104,6 +102,13 @@ export default authedHandler(async ({ user, client }, req) => {
       'Receipt image MIME type does not match its contents',
     );
   }
+  // The photo is valid: only now does the scan spend a unit of her monthly quota (7.0.41f). A refused or
+  // unreadable photo costs nothing.
+  await consumeAiQuotaOrThrow({
+    client,
+    requestType: 'receipt',
+    max: env.quotaReceipt,
+  });
   const dataUrl = `data:${sniffedMime};base64,${buffer.toString('base64')}`;
 
   const system =

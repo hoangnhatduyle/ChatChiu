@@ -3,7 +3,7 @@
 import 'fake-indexeddb/auto'
 import type { Bootstrap, StatsOverview, WasteEntry } from '@chatchiu/contracts'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -11,6 +11,7 @@ import { ApiClientError } from '../../core/errors'
 import { ToastProvider } from '../../core/toast'
 import '../../data/register'
 import { FailedWriteToasts } from '../../data/failed-write-toasts'
+import { queryKeys } from '../../data/query'
 import { createAppQueryClient } from '../../data/query-client'
 import StatsPage from './StatsPage'
 
@@ -238,6 +239,22 @@ describe('after a delete and on partial failures', () => {
     })
     await userEvent.setup().click(screen.getByRole('radio', { name: 'Month' }))
     expect(await screen.findByText(/Couldn.t load the waste figures/)).toBeInTheDocument()
+  })
+
+  it('7.0.31a: a failed background refresh of the waste log says so, since the log may be older than the totals', async () => {
+    renderPage({ waste: [entry('Milk', '2026-11-10T09:00:00Z')] }, '/stats')
+    await within(await screen.findByRole('group', { name: 'Waste log' })).findByText('Milk')
+    api.get.mockImplementation((route: string) => {
+      if (route === '/api/waste')
+        return Promise.reject(new ApiClientError({ status: 500, code: 'INTERNAL', message: 'no' }))
+      if (route === '/api/stats/overview') return Promise.resolve(server.overview)
+      if (route === '/api/preferences') return Promise.resolve({ timezone: 'UTC' })
+      return Promise.resolve(bootstrap)
+    })
+    // A background refresh of the log fails; the old rows stay on screen and she is told.
+    await act(() => client.invalidateQueries({ queryKey: queryKeys.waste }))
+    expect(await screen.findByText(/Couldn.t refresh/)).toBeInTheDocument()
+    expect(screen.getByText('Milk')).toBeInTheDocument()
   })
 
   it('ignores a category id that cannot exist (0)', async () => {

@@ -1,6 +1,7 @@
 // One item on the board (F-KB-03/05/07/08): expiry chip, name, amount left, percent with a text cue,
 // and the down-only usage bar. A row that is still being saved (temporary id) cannot be opened or
 // dragged yet (7.0.20a); a row at 0% stays, greyed, until she removes it (NC-KB-NO-AUTO-DELETE).
+import { USED_UP_STYLE } from '../../ui/usage-slider-shared'
 import type { InventoryItem } from '@chatchiu/contracts'
 import { isUsedUp, lowStockLevel, percentLeft, quantityLabel } from '@chatchiu/domain'
 import { isTempId } from '../../data/resource'
@@ -33,7 +34,7 @@ export function BoardRow({ item, today, onOpen, onUse }: BoardRowProps) {
         <ExpiryChip
           expirationDate={item.expirationDate}
           today={today}
-          className={usedUp ? 'opacity-60' : undefined}
+          className={usedUp ? USED_UP_STYLE : undefined}
         />
         {saving ? (
           <span className="min-h-10 min-w-0 flex-1">
@@ -72,7 +73,7 @@ export function BoardRow({ item, today, onOpen, onUse }: BoardRowProps) {
         description={amount}
         tone={level === 'normal' ? 'normal' : 'low'}
         isDisabled={saving}
-        className={cx('px-1.5', usedUp && 'opacity-60')}
+        className={cx('px-1.5', usedUp && USED_UP_STYLE)}
         onCommit={(next) => onUse(item, next)}
       />
     </li>

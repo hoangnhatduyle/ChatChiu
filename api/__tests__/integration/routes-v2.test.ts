@@ -450,6 +450,63 @@ describe('meal plans', () => {
   });
 });
 
+describe('meal plans: recipe library and favourites on PATCH (7.0.30a, 7.0.30b)', () => {
+  it('7.0.30a: renaming a plan to a new typed name adds it to the recipe library once', async () => {
+    const plan = data<{ id: number }>(
+      await callApi('POST', 'meal-plans', {
+        user: alice,
+        body: { planDate: addDays(today, 40), mealType: 'breakfast', mealName: 'Plain rice' },
+      }),
+    );
+    data(
+      await callApi('PATCH', `meal-plans/${plan.id}`, {
+        user: alice,
+        body: { mealName: 'Banh Mi Patch' },
+      }),
+    );
+    data(
+      await callApi('PATCH', `meal-plans/${plan.id}`, {
+        user: alice,
+        body: { mealName: 'banh mi patch' },
+      }),
+    );
+    const recipes = data<Array<{ name: string }>>(await callApi('GET', 'recipes', { user: alice }));
+    expect(recipes.filter((r) => r.name.toLowerCase() === 'banh mi patch')).toHaveLength(1);
+  });
+
+  it('7.0.30b: % and _ in a meal name are not wildcards, and the name is trimmed', async () => {
+    // A favourite plan named "PhoXbo" must not be inherited by a new plan whose name is the pattern "Pho_bo".
+    data(
+      await callApi('POST', 'meal-plans', {
+        user: alice,
+        body: { planDate: addDays(today, 41), mealType: 'lunch', mealName: 'PhoXbo', isFavorite: true },
+      }),
+    );
+    const lookalike = data<{ isFavorite: boolean }>(
+      await callApi('POST', 'meal-plans', {
+        user: alice,
+        body: { planDate: addDays(today, 42), mealType: 'lunch', mealName: 'Pho_bo' },
+      }),
+    );
+    expect(lookalike.isFavorite).toBe(false);
+    const percent = data<{ isFavorite: boolean }>(
+      await callApi('POST', 'meal-plans', {
+        user: alice,
+        body: { planDate: addDays(today, 43), mealType: 'lunch', mealName: '%' },
+      }),
+    );
+    expect(percent.isFavorite).toBe(false);
+    // The same name, with spaces and another case, still inherits.
+    const same = data<{ isFavorite: boolean }>(
+      await callApi('POST', 'meal-plans', {
+        user: alice,
+        body: { planDate: addDays(today, 44), mealType: 'lunch', mealName: ' phoxbo ' },
+      }),
+    );
+    expect(same.isFavorite).toBe(true);
+  });
+});
+
 describe('GET /api/waste', () => {
   it('AC-API-14: each entry carries its category name', async () => {
     await callApi('POST', 'waste', {

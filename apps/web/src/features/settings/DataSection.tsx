@@ -8,6 +8,8 @@ import { useSession } from '../../core/session-context'
 import { useToast } from '../../core/toast-context'
 import { resetAppCache } from '../../data/cache'
 import { useBootstrapQuery } from '../../data/inventory'
+import { acknowledgeQueueDiscarded } from '../../data/persistence'
+import { discardUnsendableWrites } from '../../data/query-client'
 import { useSyncSummary } from '../../data/sync-status'
 import { Button } from '../../ui/Button'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -18,6 +20,10 @@ import { SectionCard } from './SectionCard'
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 function syncText(s: ReturnType<typeof useSyncSummary>): string {
+  if (s.persistence === 'queue-discarded')
+    return "Some unsent changes couldn't be restored on this device. A copy was kept."
+  if (s.unresolved > 0)
+    return `${plural(s.unresolved, 'change')} from an earlier version can't be sent`
   switch (s.state) {
     case 'SYNC_FAILED':
       return `${plural(s.failed, 'change')} ${s.failed === 1 ? 'needs' : 'need'} attention`
@@ -37,6 +43,7 @@ export function DataSection() {
   const bootstrap = useBootstrapQuery().data
   const sync = useSyncSummary()
   const [confirming, setConfirming] = useState(false)
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
 
@@ -100,6 +107,20 @@ export function DataSection() {
           them.
         </p>
       )}
+      {sync.persistence === 'queue-discarded' && (
+        <div>
+          <Button variant="secondary" onPress={acknowledgeQueueDiscarded}>
+            Got it
+          </Button>
+        </div>
+      )}
+      {sync.unresolved > 0 && (
+        <div>
+          <Button variant="secondary" onPress={() => setConfirmingDiscard(true)}>
+            Discard changes that can&apos;t be sent
+          </Button>
+        </div>
+      )}
       <FailedWritesList />
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" onPress={exportCsv}>
@@ -114,6 +135,20 @@ export function DataSection() {
           {resetError}
         </p>
       )}
+      <ConfirmDialog
+        isOpen={confirmingDiscard}
+        onOpenChange={setConfirmingDiscard}
+        title="Discard these changes?"
+        confirmLabel="Discard"
+        onConfirm={() => {
+          const n = discardUnsendableWrites(client)
+          setConfirmingDiscard(false)
+          toasts.show({ message: `Discarded ${plural(n, 'change')}` })
+        }}
+      >
+        They were made in an earlier version of the app and can no longer be sent to the server.
+        This cannot be undone.
+      </ConfirmDialog>
       <ConfirmDialog
         isOpen={confirming}
         onOpenChange={setConfirming}

@@ -25,7 +25,11 @@ export const shoppingWrites = defineResource<ShoppingItem, ShoppingItemCreate, S
 })
 
 /** Removes ticked items in one call (up to CLEAR_PURCHASED_MAX). */
-export const clearPurchased = defineWrite<{ ids: number[] }, unknown, { rows: ShoppingItem[] }>({
+export const clearPurchased = defineWrite<
+  { ids: number[] },
+  unknown,
+  { rows: ShoppingItem[]; order: number[] }
+>({
   key: 'shopping/clear-purchased',
   refetchOnFailure: queryKeys.shopping,
   label: 'Clear bought items',
@@ -43,11 +47,23 @@ export const clearPurchased = defineWrite<{ ids: number[] }, unknown, { rows: Sh
       client,
       all.filter((r) => !gone.has(r.id)),
     )
-    return { rows: all.filter((r) => gone.has(r.id)) }
+    return { rows: all.filter((r) => gone.has(r.id)), order: all.map((r) => r.id) }
   },
-  rollback: (client, { rows }) => {
+  rollback: (client, { rows, order }) => {
     const back = new Set(rows.map((r) => r.id))
-    store.write(client, [...store.read(client).filter((r) => !back.has(r.id)), ...rows])
+    // Back in the places they had (rows added since keep to the end): `order` is the list before the clear.
+    const place = (id: number) => {
+      const at = order.indexOf(id)
+      return at === -1 ? order.length : at
+    }
+    const merged = [...store.read(client).filter((r) => !back.has(r.id)), ...rows]
+    store.write(
+      client,
+      merged
+        .map((r, i) => ({ r, i }))
+        .sort((a, b) => place(a.r.id) - place(b.r.id) || a.i - b.i)
+        .map(({ r }) => r),
+    )
   },
 })
 

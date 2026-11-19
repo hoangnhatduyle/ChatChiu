@@ -4,6 +4,7 @@ import 'fake-indexeddb/auto'
 import type { PersistedClient } from '@tanstack/react-query-persist-client'
 import { beforeEach, vi } from 'vitest'
 import {
+  acknowledgeQueueDiscarded,
   createIdbPersister,
   deletePersistedCache,
   getPersistenceStatus,
@@ -64,6 +65,35 @@ describe('restore', () => {
     const persister = createIdbPersister('u', { store })
     await expect(persister.restoreClient()).resolves.toBeUndefined()
     expect(store.data.get('cache:u:corrupt')).toBe('{not json')
+  })
+})
+
+describe('7.0.39: what she is told', () => {
+  it('(a) the discarded-queue notice can be acknowledged, and a later discard brings it back', async () => {
+    const blob = JSON.stringify(client([{ requestId: 'r1' }]))
+    const persister = createIdbPersister('u', { store: memoryStore({ 'cache:u': blob }) })
+    await persister.restoreClient()
+    await persister.removeClient()
+    expect(getPersistenceStatus()).toBe('queue-discarded')
+    acknowledgeQueueDiscarded()
+    expect(getPersistenceStatus()).toBe('ok')
+  })
+
+  it('(b) a failed write-ahead save makes the status unavailable instead of failing silently', async () => {
+    const store = memoryStore()
+    store.setItem = () => Promise.reject(new Error('quota'))
+    const persister = createIdbPersister('u', { store })
+    await persister.restoreClient()
+    await persister.persistClient(client([{ requestId: 'r1' }]))
+    expect(getPersistenceStatus()).toBe('unavailable')
+  })
+
+  it('(b) an unreadable blob whose copy could not be kept is reported as a discarded queue', async () => {
+    const store = memoryStore({ 'cache:u': '{not json' })
+    store.setItem = () => Promise.reject(new Error('quota'))
+    const persister = createIdbPersister('u', { store })
+    await expect(persister.restoreClient()).resolves.toBeUndefined()
+    expect(getPersistenceStatus()).toBe('queue-discarded')
   })
 })
 

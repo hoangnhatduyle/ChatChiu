@@ -273,9 +273,26 @@ function serverText(message: string): string {
   return text || GENERIC_MESSAGE
 }
 
+/** What a browser API (the push service, the camera) says when it refuses, in plain words (7.0.32g). */
+function browserErrorMessage(error: unknown): string {
+  if (!(error instanceof DOMException)) return GENERIC_MESSAGE
+  switch (error.name) {
+    case 'NotAllowedError':
+      return 'This browser blocked it. Allow notifications for this site in the browser settings, then try again.'
+    case 'AbortError':
+      return "The browser's push service didn't answer. Try again in a moment."
+    case 'InvalidStateError':
+      return 'This device is in a state that cannot do that right now. Reload the app and try again.'
+    case 'NotSupportedError':
+      return "This browser doesn't support that."
+    default:
+      return GENERIC_MESSAGE
+  }
+}
+
 /** Plain-language text for a toast (F-AP-03). Server wording is shown for 4xx only: a 5xx may carry internals. */
 export function userMessage(error: unknown): string {
-  if (!(error instanceof ApiClientError)) return GENERIC_MESSAGE
+  if (!(error instanceof ApiClientError)) return browserErrorMessage(error)
   switch (error.kind) {
     case 'quota':
       return "You've used this month's allowance for this feature. It resets next month."

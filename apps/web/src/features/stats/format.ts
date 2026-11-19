@@ -20,6 +20,10 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 // `|| 0` turns -0 into 0, so a rounded-away loss never reads "-$0.00".
 export const money = (value: number): string => MONEY.format(Math.round(value * 100) / 100 || 0)
 
+// A value from the server that is not a real date or month is shown as it is, never as "NaN undefined NaN".
+const DATE_SHAPE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
+const MONTH_SHAPE = /^\d{4}-(0[1-9]|1[0-2])$/
+
 const parts = (date: string) => ({
   year: Number(date.slice(0, 4)),
   month: Number(date.slice(5, 7)) - 1,
@@ -29,18 +33,21 @@ const parts = (date: string) => ({
 
 /** "10 Nov 2026" from YYYY-MM-DD. */
 export function dateLabel(date: string): string {
+  if (!DATE_SHAPE.test(date)) return date
   const p = parts(date)
   return `${p.day} ${MONTHS[p.month]} ${p.year}`
 }
 
 /** "Sun 22 Nov" from YYYY-MM-DD. */
 export function dayLabel(date: string): string {
+  if (!DATE_SHAPE.test(date)) return date
   const p = parts(date)
   return `${WEEKDAYS[p.weekday]} ${p.day} ${MONTHS[p.month]}`
 }
 
 /** "Oct 2026" from YYYY-MM. */
 export function monthLabel(month: string): string {
+  if (!MONTH_SHAPE.test(month)) return month
   return `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`
 }
 

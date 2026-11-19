@@ -3,15 +3,11 @@
 // cards, a tap that opens the quick-action panel, and select mode with ONE bulk delete and Undo.
 // Reads and writes only through the data hooks (AR-NO-DIRECT-API); all filtering is the domain's
 // filter.ts (NC-IN-ONE-FILTER-IMPL).
-import {
-  countByStatus,
-  filterItems,
-  groupItems,
-  locationLabel,
-  todayLocalDateString,
-} from '@chatchiu/domain'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { lazyRetry } from '../../core/lazy-retry'
+import { countByStatus, filterItems, groupItems, locationLabel } from '@chatchiu/domain'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
+import { useToday } from '../../core/use-today'
 import { useToast } from '../../core/toast-context'
 import { bulkDelete, useBootstrapQuery } from '../../data/inventory'
 import { isTempId } from '../../data/resource'
@@ -43,7 +39,7 @@ import { useMediaQuery } from './use-media-query'
 import { flattenGroups } from './virtual-rows'
 
 // The panel is its own chunk, fetched only when an item is opened (?item=).
-const ItemPanelHost = lazy(() => import('../item-panel/ItemPanelHost'))
+const ItemPanelHost = lazyRetry(() => import('../item-panel/ItemPanelHost'))
 
 /** The most ids one DELETE /api/inventory/bulk accepts (BULK_MAX in packages/contracts). */
 export const BULK_DELETE_MAX = 200
@@ -51,16 +47,26 @@ const WIDE_QUERY = '(min-width: 1024px)'
 
 export default function InventoryPage() {
   const query = useBootstrapQuery()
-  const [params, setParams] = useSearchParams()
+  const [params, setRawParams] = useSearchParams()
+  const { key: locationKey } = useLocation()
+  // The search this page last wrote itself: a change to anything else is a navigation from outside (the nav).
+  const ownSearch = useRef<string | null>(null)
+  const setParams = useCallback(
+    (update: (prev: URLSearchParams) => URLSearchParams, options?: { replace?: boolean }) =>
+      setRawParams((prev) => {
+        const next = update(prev)
+        ownSearch.current = next.toString()
+        return next
+      }, options),
+    [setRawParams],
+  )
   const navigate = useNavigate()
   const toasts = useToast()
   const { logUse } = useBoardActions()
   const holdBulk = useHeldWrite(bulkDelete)
   const wide = useMediaQuery(WIDE_QUERY)
-  // Read once: what was saved on this device (F-IN-14, F-IN-05).
-  const [savedFilters] = useState(loadRemembered)
+  // Read once: her card/table choice saved on this device (F-IN-05).
   const [savedView, setSavedView] = useState(loadView)
-  const restored = useRef(false)
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<ReadonlySet<number>>(new Set())
   const [capped, setCapped] = useState(false)
@@ -82,20 +88,24 @@ export default function InventoryPage() {
   const setParam = (key: string, value: string | null, defaultValue?: string) =>
     setParams((prev) => withParam(prev, key, value, defaultValue), { replace: true })
 
-  // Opened from the nav with no filters in the URL: bring back the ones she used last (F-IN-14).
+  // Opened from the nav with no filters in the URL: bring back the ones she used last (F-IN-14). This also
+  // runs when the nav is pressed while already on /stock?...; what the page wrote itself (a cleared filter)
+  // is not a visit and must not be undone.
   useEffect(() => {
-    if (restored.current) return
-    restored.current = true
-    if (hasFilterParams(params) || Object.keys(savedFilters).length === 0) return
+    if (ownSearch.current === params.toString()) return
+    if (hasFilterParams(params)) return
+    const saved = loadRemembered()
+    if (Object.keys(saved).length === 0) return
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        for (const [key, value] of Object.entries(savedFilters)) next.set(key, value)
+        for (const [key, value] of Object.entries(saved)) next.set(key, value)
         return next
       },
       { replace: true },
     )
-  }, [params, savedFilters, setParams])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs per navigation (the location key), not per param
+  }, [locationKey])
   // Whatever the URL holds is remembered for the next visit; clearing is remembered too.
   const { category: savedCategory, location: savedLocation, ...savedRest } = rememberedFrom(params)
   const remembered = JSON.stringify({
@@ -107,6 +117,7 @@ export default function InventoryPage() {
     saveRemembered(JSON.parse(remembered) as ReturnType<typeof rememberedFrom>)
   }, [remembered])
 
+  const today = useToday()
   const title = <PageTitle>Stock</PageTitle>
   const frame = (children: React.ReactNode) => (
     <div className="px-4 pt-5 pb-6 md:px-6 md:pt-6">
@@ -135,7 +146,6 @@ export default function InventoryPage() {
     )
   }
 
-  const today = todayLocalDateString()
   const total = data.items.length
   // The counters count what the other filters leave, so a chip never promises more than it shows.
   const beforeStatus = filterItems(
@@ -318,9 +328,27 @@ export default function InventoryPage() {
         </div>
       )}
       {staleFilter && (
-        <p role="status" className="text-md font-semibold text-muted">
-          A category or location you filtered by no longer exists, so that filter was ignored.
-        </p>
+        <div role="status" className="flex items-center gap-3 text-md font-semibold text-muted">
+          <p className="flex-1">
+            A category or location you filtered by no longer exists, so that filter was ignored.
+          </p>
+          <Button
+            variant="secondary"
+            onPress={() =>
+              setParams(
+                (prev) => {
+                  let next = prev
+                  if (categoryId !== parsed.categoryId) next = withParam(next, 'category', null)
+                  if (locationId !== parsed.locationId) next = withParam(next, 'location', null)
+                  return next
+                },
+                { replace: true },
+              )
+            }
+          >
+            Dismiss
+          </Button>
+        </div>
       )}
       {/* Announces how many items the filters leave (WCAG 4.1.3). */}
       <p role="status" data-testid="inventory-result-count" className="sr-only">
@@ -359,7 +387,11 @@ export default function InventoryPage() {
         <InventoryCards rows={rows} total={shown.length} {...actions} />
       )}
       {params.has('item') && (
-        <PanelLoadBoundary key={params.get('item')} onError={panelFailed}>
+        <PanelLoadBoundary
+          key={params.get('item')}
+          onError={panelFailed}
+          reset={ItemPanelHost.reset}
+        >
           <Suspense fallback={null}>
             <ItemPanelHost />
           </Suspense>

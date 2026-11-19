@@ -16,6 +16,7 @@ vi.mock('./supabase.client', () => ({ getAuthClient: () => auth }))
 import {
   consumeSessionExpiring,
   getAccessToken,
+  setRecoveryActive,
   handleUnauthorized,
   markSessionExpiring,
   MAX_USERNAME_LENGTH,
@@ -328,6 +329,17 @@ describe('getAccessToken', () => {
     await expect(getAccessToken()).resolves.toBe('tok')
     auth.getSession.mockResolvedValueOnce({ data: { session: null }, error: null })
     await expect(getAccessToken()).resolves.toBeNull()
+  })
+
+  it('7.0.41d: no token is handed out while a password-recovery session is active, and again after', async () => {
+    auth.getSession.mockResolvedValue({
+      data: { session: { access_token: 'recovery-tok' } },
+      error: null,
+    })
+    setRecoveryActive(true)
+    await expect(getAccessToken()).resolves.toBeNull()
+    setRecoveryActive(false)
+    await expect(getAccessToken()).resolves.toBe('recovery-tok')
   })
 
   it('F-AU-04: a storage or refresh error is thrown, not mistaken for "signed out"', async () => {

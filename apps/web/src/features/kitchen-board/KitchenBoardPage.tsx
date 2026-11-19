@@ -1,15 +1,12 @@
 // The kitchen board (SPEC-KB-001): one column per location, every item visible, the usage bar saved on
 // release with Undo. Reads and writes only through the data hooks (AR-NO-DIRECT-API); a change from
 // another device arrives in the same cache, so the board updates itself (F-KB-16).
-import {
-  boardChipCounts,
-  boardColumns,
-  boardFilter,
-  filterItems,
-  todayLocalDateString,
-} from '@chatchiu/domain'
-import { lazy, Suspense } from 'react'
+import { DOWN_ONLY_HINT } from '../../ui/usage-slider-shared'
+import { lazyRetry } from '../../core/lazy-retry'
+import { boardChipCounts, boardColumns, boardFilter, filterItems } from '@chatchiu/domain'
+import { Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { useToday } from '../../core/use-today'
 import { useToast } from '../../core/toast-context'
 import { useBootstrapQuery } from '../../data/inventory'
 import { PageTitle } from '../../shell/PageTitle'
@@ -24,7 +21,7 @@ import { LocationColumn } from './LocationColumn'
 import { useBoardActions } from './use-board-actions'
 
 // The panel is its own chunk, fetched only when an item is opened (?item=).
-const ItemPanelHost = lazy(() => import('../item-panel/ItemPanelHost'))
+const ItemPanelHost = lazyRetry(() => import('../item-panel/ItemPanelHost'))
 
 const DATE_FORMAT: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' }
 
@@ -58,6 +55,7 @@ export default function KitchenBoardPage() {
     setParam('item', null, true)
   }
 
+  const today = useToday()
   const title = <PageTitle>Kitchen</PageTitle>
   if (!data) {
     return (
@@ -68,7 +66,6 @@ export default function KitchenBoardPage() {
     )
   }
 
-  const today = todayLocalDateString()
   const counts = boardChipCounts(data.items, today)
   const shown = boardFilter(filterItems(data.items, { q: text }, today), chip, today)
   const columns = boardColumns(shown, data.locations)
@@ -109,6 +106,7 @@ export default function KitchenBoardPage() {
           </div>
         )}
         {/* Announces how many items the chip and search leave on the board (WCAG 4.1.3). */}
+        <p className="sr-only">{DOWN_ONLY_HINT}</p>
         <p role="status" data-testid="board-result-count" className="sr-only">
           {shownCount} {shownCount === 1 ? 'item' : 'items'} shown
         </p>
@@ -138,7 +136,11 @@ export default function KitchenBoardPage() {
         </div>
       )}
       {params.has('item') && (
-        <PanelLoadBoundary key={params.get('item')} onError={panelFailed}>
+        <PanelLoadBoundary
+          key={params.get('item')}
+          onError={panelFailed}
+          reset={ItemPanelHost.reset}
+        >
           <Suspense fallback={null}>
             <ItemPanelHost />
           </Suspense>

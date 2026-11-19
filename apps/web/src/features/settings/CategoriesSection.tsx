@@ -2,7 +2,7 @@
 // (NC-SE-NO-SYSTEM-EDIT) and the section never assumes any exist (NC-SE-NO-SYSTEM-ASSUMPTION). A category
 // that items still use is refused with a readable reason before anything is sent; the API says the same.
 import type { Category } from '@chatchiu/contracts'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { categoryWrites, useBootstrapQuery } from '../../data/inventory'
 import { newTempId } from '../../data/resource'
 import { useHeldWrite } from '../../data/undoable'
@@ -12,6 +12,7 @@ import { IconButton } from '../../ui/IconButton'
 import { Skeleton } from '../../ui/Skeleton'
 import { CategoryFields, type CategoryDraft } from './CategoryFields'
 import { SectionCard } from './SectionCard'
+import { focusFirstInput } from './focus-first-input'
 
 const NAME_REQUIRED = 'Enter a name for the category.'
 const HEADING_ID = 'categories-heading'
@@ -32,13 +33,22 @@ function CategoryEditor({ category, onDone }: { category: Category; onDone: () =
     color: category.color,
   })
   const [error, setError] = useState<string>()
+  const group = useRef<HTMLDivElement>(null)
   const save = () => {
-    if (!draft.name.trim()) return setError(NAME_REQUIRED)
+    if (!draft.name.trim()) {
+      setError(NAME_REQUIRED)
+      return focusFirstInput(group.current)
+    }
     void update({ id: category.id, patch: { ...draft, name: draft.name.trim() } })
     onDone()
   }
   return (
-    <div role="group" aria-label={`Edit ${category.name}`} className="flex flex-col gap-2 py-2">
+    <div
+      ref={group}
+      role="group"
+      aria-label={`Edit ${category.name}`}
+      className="flex flex-col gap-2 py-2"
+    >
       <CategoryFields
         draft={draft}
         onChange={(next) => {
@@ -65,14 +75,19 @@ function AddCategory() {
   const create = useWrite(categoryWrites.create)
   const [draft, setDraft] = useState<CategoryDraft>(EMPTY)
   const [error, setError] = useState<string>()
+  const group = useRef<HTMLDivElement>(null)
   const add = () => {
-    if (!draft.name.trim()) return setError(NAME_REQUIRED)
+    if (!draft.name.trim()) {
+      setError(NAME_REQUIRED)
+      return focusFirstInput(group.current)
+    }
     void create({ tempId: newTempId(), body: { ...draft, name: draft.name.trim() } })
     setDraft(EMPTY)
     setError(undefined)
   }
   return (
     <div
+      ref={group}
       role="group"
       aria-label="Add a category"
       className="flex flex-col gap-2 border-t border-line pt-4"

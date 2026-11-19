@@ -179,13 +179,17 @@ export function ItemForm({
       <div className="flex flex-col gap-3">
         <Button
           aria-expanded={moreOpen}
+          aria-controls={moreOpen ? 'item-form-more' : undefined}
           onPress={() => setMoreOpen((open) => !open)}
           className="self-start"
         >
           More options
         </Button>
         {moreOpen && (
-          <div className="flex flex-col gap-3 rounded-card border border-line p-3">
+          <div
+            id="item-form-more"
+            className="flex flex-col gap-3 rounded-card border border-line p-3"
+          >
             <Switch
               label="Expiry notifications"
               isSelected={values.notify}

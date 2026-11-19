@@ -3,7 +3,12 @@
 // React has no function-component error boundary (see shell/RouteErrorBoundary.tsx).
 import { Component, type ReactNode } from 'react'
 
-type Props = { children: ReactNode; onError: (error: unknown) => void }
+type Props = {
+  children: ReactNode
+  onError: (error: unknown) => void
+  /** Makes the lazy chunk load again on the next open (`lazyRetry(...).reset`). */
+  reset?: () => void
+}
 
 export class PanelLoadBoundary extends Component<Props, { failed: boolean }> {
   override state = { failed: false }
@@ -13,6 +18,7 @@ export class PanelLoadBoundary extends Component<Props, { failed: boolean }> {
   }
 
   override componentDidCatch(error: unknown) {
+    this.props.reset?.()
     this.props.onError(error ?? new Error('The panel failed to load.'))
   }
 

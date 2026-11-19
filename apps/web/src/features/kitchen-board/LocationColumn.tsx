@@ -1,5 +1,6 @@
 // One location's column (F-KB-01): its name and count, a + that opens the item form with this
 // location chosen (F-KB-12), and its rows, soonest expiry first.
+import { rowKey } from '../../data/resource'
 import type { InventoryItem } from '@chatchiu/contracts'
 import { Link } from 'react-router'
 import { Icon } from '../../ui/Icon'
@@ -56,7 +57,13 @@ export function LocationColumn({
       </div>
       <ul className="min-h-0 flex-1 overflow-y-auto">
         {items.map((item) => (
-          <BoardRow key={item.id} item={item} today={today} onOpen={onOpen} onUse={onUse} />
+          <BoardRow
+            key={rowKey('inventory', item.id)}
+            item={item}
+            today={today}
+            onOpen={onOpen}
+            onUse={onUse}
+          />
         ))}
       </ul>
       {items.length === 0 && (

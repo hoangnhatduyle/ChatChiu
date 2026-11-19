@@ -3,6 +3,7 @@
 // data hooks (AR-NO-DIRECT-API); the ordering, grouping, counts and share text are the domain's
 // shopping-list.ts. Items sent from the quick-action panel arrive through the same list (F-QP-04, F-SL-07);
 // a change from another device arrives through realtime.
+import { rowKey } from '../../data/resource'
 import type { ShoppingItem } from '@chatchiu/contracts'
 import {
   groupShoppingByCategory,
@@ -216,7 +217,12 @@ export default function ShoppingPage() {
               )}
               <ul className="rounded-card border border-line bg-surface">
                 {group.items.map((item) => (
-                  <ShoppingRow key={item.id} item={item} onTick={tick} onDelete={remove} />
+                  <ShoppingRow
+                    key={rowKey('shopping', item.id)}
+                    item={item}
+                    onTick={tick}
+                    onDelete={remove}
+                  />
                 ))}
               </ul>
             </section>

@@ -91,6 +91,7 @@ export function AddablePicker({
       <Button
         id={openerId}
         aria-expanded={adding}
+        aria-controls={adding && reachable ? `${openerId}-form` : undefined}
         isDisabled={!reachable}
         onPress={() => setAdding((open) => !open)}
         className="self-start"
@@ -100,6 +101,7 @@ export function AddablePicker({
       {!reachable && <p className="text-sm text-muted">Adding a {noun} needs a connection.</p>}
       {adding && reachable && (
         <div
+          id={`${openerId}-form`}
           role="group"
           aria-label={`Add a new ${noun}`}
           className="flex flex-col gap-2 rounded-card border border-line p-3"

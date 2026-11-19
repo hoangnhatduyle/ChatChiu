@@ -1,5 +1,6 @@
 import { authedHandler, assertMethod } from '../../_lib/handler.js';
 import { ApiError } from '../../_lib/errors.js';
+import { ilikeExact } from '../../_lib/params.js';
 import { parseBody } from '../../_lib/validation.js';
 import { mealPlanUpdate } from '../../_lib/schemas.js';
 import { toCamel, toSnake } from '../../_lib/mappers.js';
@@ -15,6 +16,13 @@ export default authedHandler(async ({ client }, req) => {
     const body = parseBody(req, mealPlanUpdate);
     if (Object.keys(body).length === 0) {
       throw new ApiError('BAD_REQUEST', 'No fields to update');
+    }
+    // A name typed here goes into her recipe library too, as on create (F-MP-05, AC-API-13; 7.0.30a).
+    if (!body.recipeId && body.mealName) {
+      const ensured = await client.rpc('ensure_recipe', { p_name: body.mealName });
+      if (ensured.error) {
+        throw new ApiError('INTERNAL', 'Failed to add the meal to recipes', ensured.error);
+      }
     }
     const { data, error } = await client
       .from('meal_plans')
@@ -40,7 +48,7 @@ export default authedHandler(async ({ client }, req) => {
         .neq('id', id);
       siblingQuery = data.recipe_id
         ? siblingQuery.eq('recipe_id', data.recipe_id)
-        : siblingQuery.ilike('meal_name', data.meal_name);
+        : siblingQuery.ilike('meal_name', ilikeExact(data.meal_name));
       await siblingQuery;
     }
 

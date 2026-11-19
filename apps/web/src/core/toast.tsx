@@ -82,7 +82,15 @@ function ToastRegion({ store }: { store: ToastStore }) {
       <div role="alert" className="sr-only">
         {alert}
       </div>
-      <div role="region" aria-label="Notifications" className="contents">
+      <div
+        role="region"
+        aria-label="Notifications"
+        aria-keyshortcuts="Alt+Shift+T"
+        className="contents"
+      >
+        {items.length > 0 && (
+          <p className="sr-only">Press Alt+Shift+T to move to the newest notification.</p>
+        )}
         {items.map((item) => (
           <div key={item.id} className="pointer-events-auto flex w-full justify-center">
             <Toast

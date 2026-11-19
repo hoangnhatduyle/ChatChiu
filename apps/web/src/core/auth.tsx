@@ -1,9 +1,10 @@
 // AuthProvider + useSession (SPEC-AU-001): one subscription to Supabase auth events, folded into the
 // session state machine (session-machine.ts). Ported from OLD supabase-auth.service.ts.
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import {
   consumeSessionExpiring,
   consumeUserSignOut,
+  setRecoveryActive,
   markUserSignOut,
   requestPasswordReset,
   signIn,
@@ -34,6 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ...INITIAL_SNAPSHOT, state: 'PASSWORD_RECOVERY' }
     return INITIAL_SNAPSHOT
   })
+
+  // No API calls with a recovery session's token (7.0.41d). A layout effect: it runs before any passive effect
+  // (the queries that start when the protected pages mount), so the flag is never one render behind.
+  useLayoutEffect(() => {
+    setRecoveryActive(snapshot.state === 'PASSWORD_RECOVERY')
+  }, [snapshot.state])
 
   // Subscribing to an external system (Supabase auth events) is what an effect is for.
   useEffect(() => {

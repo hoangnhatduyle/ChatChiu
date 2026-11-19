@@ -1,15 +1,10 @@
 // The meal plan (SPEC-MP-001, route /meals): week and month calendars, the meal dialog, drop to copy,
 // the recipe library, the summary and suggestions. Reads and writes only through the data hooks
 // (AR-NO-DIRECT-API). The tab and the day are in the URL (CS-STATE-HOMES), so Back and a refresh keep them.
+import { lazyRetry } from '../../core/lazy-retry'
 import type { MealPlan, Recipe } from '@chatchiu/contracts'
-import {
-  addDays,
-  shiftMonth,
-  todayLocalDateString,
-  weekStartMonday,
-  type MealSlotType,
-} from '@chatchiu/domain'
-import { lazy, Suspense, useState } from 'react'
+import { addDays, shiftMonth, weekStartMonday, type MealSlotType } from '@chatchiu/domain'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useMealsQuery } from '../../data/meals'
 import { useRecipesQuery, useRecipeSuggestionsQuery } from '../../data/recipes'
@@ -19,6 +14,7 @@ import { IconButton } from '../../ui/IconButton'
 import { Segmented } from '../../ui/Segmented'
 import { Skeleton } from '../../ui/Skeleton'
 import { dayLabel, MEAL_TYPE_LABEL, monthLabel, weekRangeLabel } from './format'
+import { useToday } from '../../core/use-today'
 import { useToast } from '../../core/toast-context'
 import { PanelLoadBoundary } from '../item-panel/PanelLoadBoundary'
 import type { MealDialogTarget } from './MealDialog'
@@ -32,7 +28,7 @@ import { useMealActions, type MealDraft } from './use-meal-actions'
 import { WeekGrid } from './WeekGrid'
 
 // The dialog carries the date field and pickers (about 90 KB): its own chunk, fetched when it is first opened.
-const MealDialog = lazy(() => import('./MealDialog'))
+const MealDialog = lazyRetry(() => import('./MealDialog'))
 
 const TAB_LABEL: Record<MealsTab, string> = {
   week: 'Week',
@@ -48,7 +44,7 @@ type Conflict = { existingId: number; draft: MealDraft }
 
 export default function MealsPage() {
   const [params, setParams] = useSearchParams()
-  const today = todayLocalDateString()
+  const today = useToday()
   const { tab, date } = parseMealsParams(params, today)
   const toasts = useToast()
   const query = useMealsQuery()
@@ -213,6 +209,7 @@ export default function MealsPage() {
 
       {dialogTarget && (
         <PanelLoadBoundary
+          reset={MealDialog.reset}
           key={dialogTarget.kind === 'edit' ? `edit-${dialogTarget.plan.id}` : 'add'}
           onError={() => {
             setDialog(null)

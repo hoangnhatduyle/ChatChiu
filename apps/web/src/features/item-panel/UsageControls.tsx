@@ -69,6 +69,7 @@ export function UsageControls({ item, isDisabled, onLevel, onQuick, onExact }: U
       </div>
       <Button
         aria-expanded={exactOpen}
+        aria-controls={exactOpen && !usedUp ? EXACT_FORM_ID : undefined}
         isDisabled={isDisabled || usedUp}
         onPress={() => setExactOpen((open) => !open)}
         className="self-start"
@@ -76,11 +77,15 @@ export function UsageControls({ item, isDisabled, onLevel, onQuick, onExact }: U
         Enter an exact amount
       </Button>
       {exactOpen && !usedUp && (
-        <ExactAmountForm item={item} isDisabled={isDisabled} onExact={onExact} />
+        <div id={EXACT_FORM_ID}>
+          <ExactAmountForm item={item} isDisabled={isDisabled} onExact={onExact} />
+        </div>
       )}
     </section>
   )
 }
+
+const EXACT_FORM_ID = 'panel-exact-form'
 
 function ExactAmountForm({
   item,

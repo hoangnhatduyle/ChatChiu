@@ -2,7 +2,7 @@
 // against a mocked API client. Titles name the acceptance criteria and negative constraints.
 import 'fake-indexeddb/auto'
 import type { Bootstrap, Preferences } from '@chatchiu/contracts'
-import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
+import { hydrate, QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -11,6 +11,7 @@ import { ApiClientError } from '../../core/errors'
 import { ToastProvider } from '../../core/toast'
 import '../../data/register'
 import { FailedWriteToasts } from '../../data/failed-write-toasts'
+import { createIdbPersister, resetPersistenceStatus } from '../../data/persistence'
 import { createAppQueryClient } from '../../data/query-client'
 import { ThemeSync } from '../../data/ThemeSync'
 import SettingsPage from './SettingsPage'
@@ -413,6 +414,64 @@ describe('F-SE-04 export, F-SE-05 reset, sync', () => {
     expect(text).toContain('"Milk","Dairy"')
   })
 
+  it('7.0.39a: a discarded queue is explained in Data and can be acknowledged', async () => {
+    const queued = JSON.stringify({ clientState: { mutations: [{ requestId: 'r' }], queries: [] } })
+    const store = new Map([['cache:u', queued]])
+    const persister = createIdbPersister('u', {
+      store: {
+        getItem: (k) => Promise.resolve(store.get(k) ?? null),
+        setItem: (k, v) => Promise.resolve(void store.set(k, v)),
+        removeItem: (k) => Promise.resolve(void store.delete(k)),
+      },
+    })
+    await persister.restoreClient()
+    await persister.removeClient()
+    const { user } = renderPage()
+    await within(await loaded()).findByText('Fridge')
+    const data = section('Data')
+    expect(within(data).getByRole('status')).toHaveTextContent(/couldn't be restored/i)
+    await user.click(within(data).getByRole('button', { name: 'Got it' }))
+    expect(within(data).getByRole('status')).toHaveTextContent('All changes saved')
+    resetPersistenceStatus()
+  })
+
+  it('7.0.39a: writes from an earlier version are named in Data, and can be discarded after a confirmation', async () => {
+    const { user } = renderPage()
+    await within(await loaded()).findByText('Fridge')
+    hydrate(client, {
+      mutations: [
+        {
+          mutationKey: ['write', 'gone/old-kind'],
+          state: {
+            status: 'pending',
+            variables: { requestId: 'r1', input: {} },
+            context: undefined,
+            data: undefined,
+            error: null,
+            failureCount: 0,
+            failureReason: null,
+            isPaused: false,
+            submittedAt: 1,
+          },
+        },
+      ],
+      queries: [],
+    } as never)
+    const data = section('Data')
+    expect(await within(data).findByRole('status')).toHaveTextContent(
+      "1 change from an earlier version can't be sent",
+    )
+    await user.click(
+      within(data).getByRole('button', { name: "Discard changes that can't be sent" }),
+    )
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Discard' }),
+    )
+    await waitFor(() =>
+      expect(within(section('Data')).getByRole('status')).toHaveTextContent('All changes saved'),
+    )
+  })
+
   it('F-SE-05: Reset app cache asks first (it cannot be undone) and only then clears', async () => {
     cache.resetAppCache.mockResolvedValue(undefined)
     const { user } = renderPage()
@@ -471,6 +530,35 @@ describe('F-SE-04 export, F-SE-05 reset, sync', () => {
       screen.queryByRole('list', { name: 'Changes that need attention' }),
     ).not.toBeInTheDocument()
     expect(api.post).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('7.0.32 forms', () => {
+  it('(b) arrowing through the time zone select saves once, with the value she stopped on', async () => {
+    const { user } = renderPage()
+    await within(await loaded()).findByText('Fridge')
+    const zone = screen.getByLabelText('Time zone')
+    await user.selectOptions(zone, 'UTC')
+    await user.selectOptions(zone, 'Asia/Tokyo')
+    expect(api.patch).not.toHaveBeenCalled()
+    await user.tab() // leaving the select saves it at once
+    await waitFor(() => expect(api.patch).toHaveBeenCalledTimes(1))
+    expect(api.patch).toHaveBeenCalledWith(
+      '/api/preferences',
+      { timezone: 'Asia/Tokyo' },
+      expect.anything(),
+    )
+  })
+
+  it('(c) an empty location name is announced as an alert and focus goes to the name field', async () => {
+    const { user } = renderPage()
+    await within(await loaded()).findByText('Fridge')
+    await user.click(screen.getByRole('button', { name: 'Add location' }))
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts.some((a) => a.textContent?.includes('Enter a name for the location.'))).toBe(true)
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'Location name' })).toHaveFocus(),
+    )
   })
 })
 
