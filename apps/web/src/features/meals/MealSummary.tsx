@@ -3,7 +3,9 @@
 import type { MealPlan } from '@chatchiu/contracts'
 import { mealSummary } from '@chatchiu/domain'
 import { useId } from 'react'
+import { cx } from '../../ui/cx'
 import { dayLabel, MEAL_TYPE_LABEL, monthLabel } from './format'
+import { MEAL_TONE } from './meal-style'
 
 // The old getSummary() counts slots from the first plan to today, so plans planned ahead can exceed 100%; the number is kept, the display is capped.
 const PERCENT = 100
@@ -69,9 +71,12 @@ export function MealSummary({
           value={`${Math.min(PERCENT, Math.round(s.completionRate * PERCENT))}%`}
         />
       </dl>
-      <p className="text-md text-muted">
-        Breakfast {s.byMealType.breakfast} · Lunch {s.byMealType.lunch} · Dinner{' '}
-        {s.byMealType.dinner}
+      <p className="flex flex-wrap gap-2 text-md font-semibold">
+        {(['breakfast', 'lunch', 'dinner'] as const).map((type) => (
+          <span key={type} className={cx('rounded-pill px-3 py-0.5', MEAL_TONE[type])}>
+            {MEAL_TYPE_LABEL[type]} {s.byMealType[type]}
+          </span>
+        ))}
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         <Block title="Top meals">

@@ -613,3 +613,72 @@ describe('F-MP-12 suggestions', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+describe('UI refresh: colours, today and the suggestions rail', () => {
+  it('F-MP-01: today is marked (aria-current="date", a Today pill) and no other day is', async () => {
+    renderPage({ plans: [] })
+    await screen.findByRole('heading', { name: /16.*22 Nov 2026/ })
+    const marked = document.querySelectorAll('li[aria-current="date"]')
+    expect(marked).toHaveLength(1)
+    expect(marked[0]).toHaveTextContent('Wed 18 Nov')
+    expect(within(marked[0] as HTMLElement).getByText('Today')).toBeInTheDocument()
+  })
+
+  it('F-MP-01: a planned meal carries its type (colour by type, and the word stays in its name)', async () => {
+    renderPage({
+      plans: [
+        plan('2026-11-18', 'breakfast', 'Toast'),
+        plan('2026-11-18', 'lunch', 'Salad'),
+        plan('2026-11-18', 'dinner', 'Pho bo'),
+      ],
+    })
+    for (const [name, type] of [
+      ['Toast', 'breakfast'],
+      ['Salad', 'lunch'],
+      ['Pho bo', 'dinner'],
+    ] as const) {
+      const button = await screen.findByRole('button', { name: new RegExp(`^${name}, ${type},`) })
+      expect(button).toHaveAttribute('data-meal-type', type)
+    }
+  })
+
+  it('F-MP-12: the suggestions are a rail above the week (before it in the page)', async () => {
+    const omelette = {
+      ...recipe(1, 'Omelette', 'eggs, milk'),
+      matchCount: 1,
+      matchingItems: ['Eggs'],
+    }
+    renderPage({ suggestions: [omelette] })
+    const rail = await screen.findByRole('region', { name: 'Cook with what expires soon' })
+    const week = screen.getByRole('region', { name: 'Week' })
+    expect(rail.compareDocumentPosition(week) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('F-MP-09: a recipe card shows its tinted initial, serves and time, and its ingredients', async () => {
+    renderPage(
+      {
+        recipes: [
+          recipe(1, 'Omelette', 'eggs, milk', { servings: 2, prepTime: '10 min' }),
+          recipe(2, 'Toast', 'bread'),
+        ],
+      },
+      '/meals?tab=recipes',
+    )
+    expect(await screen.findByText('Serves 2')).toBeInTheDocument()
+    expect(screen.getByText('10 min')).toBeInTheDocument()
+    expect(screen.getByText('eggs, milk')).toBeInTheDocument()
+    expect(screen.getByText('O')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Plan Toast' })).toBeInTheDocument()
+  })
+
+  it('F-MP-02: a month day shows a dot for each meal type planned', async () => {
+    renderPage(
+      {
+        plans: [plan('2026-11-18', 'breakfast', 'Toast'), plan('2026-11-18', 'dinner', 'Pho bo')],
+      },
+      '/meals?tab=month&date=2026-11-18',
+    )
+    const day = await screen.findByRole('button', { name: 'Wed 18 Nov, 2 meals' })
+    expect(day.querySelectorAll('span[aria-hidden="true"] > span.rounded-pill')).toHaveLength(2)
+  })
+})

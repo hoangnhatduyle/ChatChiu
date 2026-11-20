@@ -7,6 +7,7 @@ import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { cx } from '../../ui/cx'
 import { Icon } from '../../ui/Icon'
 import { dayLabel, MEAL_TYPE_LABEL } from './format'
+import { MEAL_TONE } from './meal-style'
 
 export type SlotTarget = { date: string; type: MealSlotType }
 
@@ -27,27 +28,29 @@ function DraggableMeal({ plan, onOpen }: { plan: MealPlan; onOpen: (plan: MealPl
       aria-label={label}
       aria-disabled={saving || undefined}
       onClick={() => !saving && onOpen(plan)}
+      data-meal-type={plan.mealType}
       className={cx(
-        'flex min-h-touch w-full cursor-grab flex-col items-start gap-0.5 rounded-control border border-line',
-        'bg-surface px-2.5 py-2 text-left shadow-pop outline-none transition-transform duration-fast',
+        'flex min-h-touch w-full cursor-grab flex-col items-start gap-0.5 rounded-control',
+        MEAL_TONE[plan.mealType],
+        'px-2.5 py-2 text-left shadow-card outline-none transition-transform duration-fast',
         // A touch hold starts the drag: no text selection or system menu, and scrolling still works.
         'touch-manipulation select-none [-webkit-touch-callout:none]',
-        'hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]',
+        'hover:-translate-y-px hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]',
         isDragging && 'opacity-40',
       )}
     >
-      <span className="line-clamp-2 text-md font-bold text-ink">
+      <span className="line-clamp-2 text-md font-bold">
         {plan.isFavorite && (
-          <span aria-hidden="true" className="mr-1 text-accent">
+          <span aria-hidden="true" className="mr-1">
             ★
           </span>
         )}
         {plan.mealName}
       </span>
       {saving ? (
-        <span className="text-sm text-muted">Saving…</span>
+        <span className="text-sm">Saving…</span>
       ) : (
-        plan.notes && <span className="line-clamp-1 text-sm text-muted">{plan.notes}</span>
+        plan.notes && <span className="line-clamp-1 text-sm">{plan.notes}</span>
       )}
     </button>
   )

@@ -11,7 +11,9 @@ import { useWrite } from '../../data/write'
 import { Button } from '../../ui/Button'
 import { CONTROL, LABEL } from '../../ui/Field'
 import { EmptyState } from '../../ui/EmptyState'
+import { cx } from '../../ui/cx'
 import { IconButton } from '../../ui/IconButton'
+import { recipeInitial, recipeTone } from './meal-style'
 import { RecipeForm } from './RecipeForm'
 
 export function RecipeLibrary({
@@ -50,47 +52,71 @@ export function RecipeLibrary({
       ) : shown.length === 0 ? (
         <p className="text-md text-muted">No recipe matches “{query}”.</p>
       ) : (
-        <ul className="rounded-card border border-line bg-surface">
+        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {shown.map((recipe) => {
             const saving = recipe.id < 0
-            const meta = [recipe.prepTime, recipe.servings ? `serves ${recipe.servings}` : null]
-              .filter(Boolean)
-              .join(' · ')
             return (
               <li
                 key={recipe.id}
-                className="flex items-center gap-2 border-b border-line px-3 py-2 last:border-b-0"
+                className="flex flex-col gap-2.5 rounded-panel border border-line bg-surface p-3.5 shadow-card"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="text-base font-bold text-ink">{recipe.name}</p>
-                  <p className="line-clamp-1 text-sm text-muted">
-                    {saving ? 'Saving…' : parseIngredients(recipe.ingredients).join(', ')}
-                    {meta && !saving ? ` · ${meta}` : ''}
+                <div className="flex items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className={cx(
+                      'flex size-11 shrink-0 items-center justify-center rounded-control font-display text-xl font-extrabold',
+                      recipeTone(recipe.name),
+                    )}
+                  >
+                    {recipeInitial(recipe.name)}
+                  </span>
+                  <p className="min-w-0 flex-1 font-display text-lg leading-tight font-bold text-ink">
+                    {recipe.name}
                   </p>
                 </div>
-                <Button
-                  isDisabled={saving}
-                  aria-label={`Plan ${recipe.name}`}
-                  onPress={() => onPlan(recipe)}
-                >
-                  Plan
-                </Button>
-                <IconButton
-                  icon="edit"
-                  label={`Edit ${recipe.name}`}
-                  isDisabled={saving}
-                  onPress={() => setForm({ recipe })}
-                />
-                <IconButton
-                  icon="trash"
-                  label={`Delete ${recipe.name}`}
-                  isDisabled={saving}
-                  onPress={() => {
-                    // The row she pressed goes away: focus moves to the button that adds a recipe.
-                    if (holdRemove({ id: recipe.id }, `${recipe.name} deleted`))
-                      requestAnimationFrame(() => document.getElementById('add-recipe')?.focus())
-                  }}
-                />
+                {!saving && (recipe.servings || recipe.prepTime) && (
+                  <p className="flex flex-wrap gap-1.5">
+                    {recipe.servings ? (
+                      <span className="rounded-pill bg-tint-neutral px-2.5 py-0.5 text-sm font-semibold text-tint-neutral-ink">
+                        Serves {recipe.servings}
+                      </span>
+                    ) : null}
+                    {recipe.prepTime ? (
+                      <span className="rounded-pill bg-tint-neutral px-2.5 py-0.5 text-sm font-semibold text-tint-neutral-ink">
+                        {recipe.prepTime}
+                      </span>
+                    ) : null}
+                  </p>
+                )}
+                <p className="line-clamp-2 min-h-10 text-sm text-muted">
+                  {saving ? 'Saving…' : parseIngredients(recipe.ingredients).join(', ')}
+                </p>
+                <div className="mt-auto flex items-center gap-2">
+                  <Button
+                    isDisabled={saving}
+                    aria-label={`Plan ${recipe.name}`}
+                    onPress={() => onPlan(recipe)}
+                    className="mr-auto"
+                  >
+                    Plan
+                  </Button>
+                  <IconButton
+                    icon="edit"
+                    label={`Edit ${recipe.name}`}
+                    isDisabled={saving}
+                    onPress={() => setForm({ recipe })}
+                  />
+                  <IconButton
+                    icon="trash"
+                    label={`Delete ${recipe.name}`}
+                    isDisabled={saving}
+                    onPress={() => {
+                      // The card she pressed goes away: focus moves to the button that adds a recipe.
+                      if (holdRemove({ id: recipe.id }, `${recipe.name} deleted`))
+                        requestAnimationFrame(() => document.getElementById('add-recipe')?.focus())
+                    }}
+                  />
+                </div>
               </li>
             )
           })}

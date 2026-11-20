@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/core'
 import { useState } from 'react'
 import { cx } from '../../ui/cx'
+import { ScrollFade } from '../../ui/ScrollFade'
 import { dayLabel, MEAL_TYPE_LABEL } from './format'
 import { MealSlot, type SlotTarget } from './MealSlot'
 import { slotKeyboardCoordinates } from './slot-keyboard'
@@ -96,36 +97,49 @@ export function WeekGrid({
         },
       }}
     >
-      <ol className="grid gap-3 md:grid-cols-7 md:gap-2">
-        {weekDates(date).map((day) => (
-          <li
-            key={day}
-            className={cx(
-              'min-w-0 rounded-card border bg-surface/60 p-2',
-              day === today ? 'border-accent' : 'border-line',
-            )}
-          >
-            <h3 className="px-1 pb-1 text-md font-extrabold text-ink">
-              {dayLabel(day)}
-              {day === today && (
-                <span className="ml-1.5 text-sm font-semibold text-accent">Today</span>
+      {/* Seven columns from 768 px (a swipe row only if the window is narrower than that, with a quiet bar); one day after another on a phone. */}
+      <ScrollFade
+        label="Week"
+        tone="bg"
+        axis="x"
+        scrollerClassName="-mx-1.5 -mt-1.5 -mb-6 px-1.5 pt-1.5 pb-8"
+      >
+        <ol className="grid gap-3 md:grid-cols-[repeat(7,minmax(112px,1fr))] md:gap-2.5">
+          {weekDates(date).map((day) => (
+            <li
+              key={day}
+              aria-current={day === today ? 'date' : undefined}
+              className={cx(
+                'min-w-0 rounded-panel p-2.5',
+                day === today
+                  ? 'border-2 border-accent bg-tint-teal shadow-lift'
+                  : 'border border-line bg-surface shadow-card',
               )}
-            </h3>
-            <div className="flex flex-col gap-1">
-              {MEAL_TYPES.map((type) => (
-                <MealSlot
-                  key={type}
-                  date={day}
-                  type={type}
-                  plan={bySlot.get(slotKey(day, type))}
-                  onAdd={onAdd}
-                  onOpen={onOpen}
-                />
-              ))}
-            </div>
-          </li>
-        ))}
-      </ol>
+            >
+              <h3 className="flex items-center gap-1.5 px-1 pb-1.5 font-display text-md font-bold text-ink">
+                {dayLabel(day)}
+                {day === today && (
+                  <span className="ml-auto rounded-pill bg-accent px-2 text-xs font-bold text-accent-ink">
+                    Today
+                  </span>
+                )}
+              </h3>
+              <div className="flex flex-col gap-1.5">
+                {MEAL_TYPES.map((type) => (
+                  <MealSlot
+                    key={type}
+                    date={day}
+                    type={type}
+                    plan={bySlot.get(slotKey(day, type))}
+                    onAdd={onAdd}
+                    onOpen={onOpen}
+                  />
+                ))}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </ScrollFade>
       <DragOverlay>
         {dragging && (
           <div className="rounded-control border border-accent bg-surface px-3 py-2 text-md font-bold shadow-pop">

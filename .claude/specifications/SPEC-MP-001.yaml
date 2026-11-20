@@ -5,18 +5,18 @@ title: Meal plan and recipe library (feature.meals)
 status: active
 context_and_scope:
   in_scope:
-    - Weekly calendar 7 days × breakfast/lunch/dinner with prev/next/Today (F-MP-01)
-    - Monthly calendar that jumps to a week (F-MP-02)
+    - Weekly calendar 7 days × breakfast/lunch/dinner with prev/next/Today, today highlighted, meals coloured by type (F-MP-01)
+    - Monthly calendar that jumps to a week, with a dot per meal type planned (F-MP-02)
     - Add a meal to a slot with library autocomplete (F-MP-03)
     - One meal per slot with Replace (F-MP-04)
     - Typed meal names added to the recipe library (F-MP-05)
     - Edit, and delete with Undo (F-MP-06)
     - Favourite belongs to the meal and is inherited (F-MP-07)
     - Drag to copy with Replace or Cancel on a filled slot (F-MP-08)
-    - "Recipe library: list, search, add, edit, delete (F-MP-09)"
+    - "Recipe library as cards with a tinted initial, serves and time chips and the ingredients: search, add, edit, delete (F-MP-09)"
     - Summary numbers (F-MP-10)
     - Recipe manager folded into Meal plan → Recipes (F-MP-11)
-    - Recipe suggestions from items expiring within 3 days (F-MP-12)
+    - Recipe suggestions from items expiring within 3 days, as a rail above the plan (F-MP-12)
     - "Files: features/meals/{MealsPage, WeekGrid, MonthGrid, MealDialog, RecipeLibrary, RecipeForm, MealSummary, RecipeSuggestions}.tsx; packages/domain/src/meal-summary.ts, recipe-match.ts"
   out_of_scope:
     - AI-generated recipes or any paid API call for suggestions
@@ -82,7 +82,7 @@ acceptance_criteria:
   - id: F-MP-01
     given: the meal plan on the tablet
     when: it opens
-    then: the whole week (7 days × breakfast, lunch, dinner) is visible, with prev/next week and Today
+    then: the whole week (7 days × breakfast, lunch, dinner) is visible, with prev/next week and Today; today's day is marked (aria-current=\"date\", a Today pill, a teal edge); a planned meal is coloured by its type (breakfast amber, lunch green, dinner indigo) and the type word stays written; seven columns from 768 px, one day after another on a phone
     invariant: false
   - id: F-MP-02
     given: the monthly view
@@ -122,7 +122,7 @@ acceptance_criteria:
   - id: F-MP-09
     given: the Recipes tab
     when: she searches by name or ingredient, adds, edits or deletes a recipe (name, comma-separated ingredients, prep time, servings, instructions)
-    then: the library reflects it
+    then: the library reflects it; each recipe is a card with a badge (its initial, tinted from its name, always the same tint), Serves and time chips and its ingredients, with Plan, Edit and Delete
     invariant: false
   - id: F-MP-10
     given: planned meals across months
@@ -137,7 +137,7 @@ acceptance_criteria:
   - id: F-MP-12
     given: 'recipes "Omelette: eggs, milk, cheese" and "Toast: bread, butter" and items Eggs and Milk expiring within 3 days'
     when: suggestions load
-    then: Omelette is suggested first (2 matches) and Toast is not, without any AI call; suggestions show at the top of Meal plan and in the quick panel
+    then: Omelette is suggested first (2 matches) and Toast is not, without any AI call; suggestions show as a horizontal rail at the top of Meal plan (above the tab's content, scrolling sideways with a quiet bar when there are many) and in the quick panel
     invariant: false
 depends_on:
   - SPEC-DATA-001

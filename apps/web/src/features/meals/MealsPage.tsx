@@ -8,7 +8,8 @@ import { Suspense, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useMealsQuery } from '../../data/meals'
 import { useRecipesQuery, useRecipeSuggestionsQuery } from '../../data/recipes'
-import { PageTitle } from '../../shell/PageTitle'
+import { PAGE_FRAME } from '../../shell/page-frame'
+import { PageHeader } from '../../shell/PageHeader'
 import { Button } from '../../ui/Button'
 import { IconButton } from '../../ui/IconButton'
 import { Segmented } from '../../ui/Segmented'
@@ -60,10 +61,14 @@ export default function MealsPage() {
   const go = (nextTab: MealsTab, nextDate: string) =>
     setParams(new URLSearchParams(mealsSearch(nextTab, nextDate, today)))
 
-  const frame = (children: React.ReactNode) => (
-    <div className="px-4 pt-5 pb-6 md:px-6 md:pt-6">
-      <PageTitle>Meals</PageTitle>
-      <div className="mt-3 flex flex-col gap-4">{children}</div>
+  const frame = (children: React.ReactNode, actions?: React.ReactNode) => (
+    <div className={PAGE_FRAME}>
+      <PageHeader
+        title="Meals"
+        subtitle="Plan the week around what you already have"
+        actions={actions}
+      />
+      <div className="flex flex-col gap-4">{children}</div>
     </div>
   )
   if (!plans) {
@@ -138,22 +143,6 @@ export default function MealsPage() {
 
   return frame(
     <>
-      <div className="flex flex-wrap items-center gap-3">
-        <Segmented
-          label="View"
-          options={TAB_OPTIONS}
-          value={tab}
-          onChange={(next) => go(next, date)}
-        />
-        <Button
-          id="add-meal"
-          variant="primary"
-          className="md:ml-auto"
-          onPress={() => setDialog({ target: { kind: 'add', date, type: DEFAULT_TYPE } })}
-        >
-          Add meal
-        </Button>
-      </div>
       {query.isError && (
         <p role="alert" className="text-md font-semibold text-status-soon-fg">
           Couldn&apos;t refresh. You are seeing what was saved on this device.
@@ -246,6 +235,21 @@ export default function MealsPage() {
           onCancel={() => setConflict(null)}
         />
       )}
+    </>,
+    <>
+      <Segmented
+        label="View"
+        options={TAB_OPTIONS}
+        value={tab}
+        onChange={(next) => go(next, date)}
+      />
+      <Button
+        id="add-meal"
+        variant="primary"
+        onPress={() => setDialog({ target: { kind: 'add', date, type: DEFAULT_TYPE } })}
+      >
+        Add meal
+      </Button>
     </>,
   )
 }
