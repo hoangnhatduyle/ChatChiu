@@ -192,11 +192,6 @@ describe('UsageSlider', () => {
     // The drag is relative to where the thumb was grabbed, so it lands a little below the pointer.
     expect(onCommit).toHaveBeenCalledWith(25)
   })
-
-  it('tone: the bar uses the low colour when the item is running low', () => {
-    setup({ tone: 'low' })
-    expect(document.querySelector('[data-usage-track]')).toHaveAttribute('data-tone', 'low')
-  })
 })
 
 describe('UsageSlider onDraft (F-KB-18: the number follows the finger)', () => {

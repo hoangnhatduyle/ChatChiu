@@ -75,10 +75,7 @@ export function UsageSlider(props: UsageSliderProps) {
           isBig ? 'h-3' : 'h-2',
         )}
       >
-        <span
-          className={cx('block h-full rounded-pill', props.tone === 'low' ? 'bg-low' : 'bg-fill')}
-          style={{ width: `${props.value}%` }}
-        />
+        <span className="block h-full rounded-pill bg-fill" style={{ width: `${props.value}%` }} />
       </span>
     </span>
   )

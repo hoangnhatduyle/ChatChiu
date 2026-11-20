@@ -7,12 +7,10 @@ import { DOWN_ONLY_HINT, USED_UP_STYLE } from '../../ui/usage-slider-shared'
 import type { InventoryItem } from '@chatchiu/contracts'
 import type { GroupKey } from '@chatchiu/domain'
 import { isTempId } from '../../data/resource'
-import { categoryVars } from '../../ui/category-colours'
-import { CategoryEdge, CategoryPill } from '../../ui/CategoryStyle'
 import { cx } from '../../ui/cx'
 import { ExpiryChip } from '../../ui/ExpiryChip'
 import { LocationHeader } from '../../ui/LocationHeader'
-import type { LocationLike } from '../../ui/location-style'
+import { LOCATION_EDGE_CLASS, locationStyle, type LocationLike } from '../../ui/location-style'
 import { UsageSlider } from '../../ui/UsageSlider'
 import { useLiveUsage } from '../kitchen-board/use-live-usage'
 import { SelectBox } from './SelectBox'
@@ -33,8 +31,6 @@ export type RowActions = {
   onUse: (item: InventoryItem, percent: number) => void
   categoryName: (id: number) => string
   locationName: (id: number | null) => string
-  /** The category's colour, for the edge, pill and group header (decorative: the name is always written). */
-  categoryColour: (id: number) => string | null
   /** What picks a place's icon and tint. */
   locationOf: (id: number | null) => LocationLike
   /** How the list is grouped: decides what a group header looks like and whether a card names its place. */
@@ -44,7 +40,7 @@ export type RowActions = {
 export type InventoryCardsProps = RowActions & {
   rows: readonly ListRow[]
   total: number
-  /** Cards per row: 1 on a phone, 2 from 768 px, 3 from 1280 px. */
+  /** Cards per row: 1 on a phone, 2 from 768 px, 3 from 1280 px, 4 from 1700 px, 5 from 2200 px. */
   columns: number
 }
 
@@ -109,10 +105,7 @@ function GroupHeader({
     )
   }
   return (
-    <div
-      style={categoryVars(row.groupKey === null ? null : actions.categoryColour(row.groupKey))}
-      className="cat-tint flex w-full items-center gap-3 rounded-card px-3.5 py-3"
-    >
+    <div className="flex w-full items-center gap-3 rounded-card bg-tint-neutral px-3.5 py-3">
       <h2 className="min-w-0 flex-1 truncate font-display text-lg font-bold text-ink">
         {row.label}
       </h2>
@@ -126,12 +119,18 @@ function Card({ item, ...actions }: { item: InventoryItem } & RowActions) {
   const saving = isTempId(item.id)
   const category = actions.categoryName(item.categoryId)
   const place = actions.group === 'location' ? '' : actions.locationName(item.locationId)
+  // The left stripe is the place's own colour, the same one its header wears on the Kitchen board.
+  const { color: edgeColour } = locationStyle(actions.locationOf(item.locationId))
   return (
     <div
       data-used-up={usedUp}
       className="relative flex h-full flex-col justify-between overflow-hidden rounded-card border border-line bg-surface py-1.5 pr-3 pl-4.5 shadow-card"
     >
-      <CategoryEdge colour={actions.categoryColour(item.categoryId)} />
+      <span
+        aria-hidden="true"
+        data-location-edge={edgeColour}
+        className={cx('absolute inset-y-0 left-0 w-1.5', LOCATION_EDGE_CLASS[edgeColour])}
+      />
       <div className="flex items-center gap-2">
         {actions.selecting && !saving && (
           <SelectBox
@@ -166,7 +165,10 @@ function Card({ item, ...actions }: { item: InventoryItem } & RowActions) {
               className="pointer-events-none -mt-2 flex items-center gap-2 pb-1"
             >
               {category && (
-                <CategoryPill name={category} colour={actions.categoryColour(item.categoryId)} />
+                // Outlined, no fill: a filled pill would read as a status chip (Expired, Today, 20d).
+                <span className="inline-flex max-w-full items-center rounded-control border border-line px-2 py-0.5 text-xs font-semibold text-muted">
+                  <span className="truncate">{category}</span>
+                </span>
               )}
               <span className="truncate text-sm text-muted">
                 {amount}
@@ -187,7 +189,6 @@ function Card({ item, ...actions }: { item: InventoryItem } & RowActions) {
           value={stored}
           mode="down-only"
           description={amount}
-          tone={level === 'normal' ? 'normal' : 'low'}
           // No accidental use while she is picking items to delete.
           isDisabled={saving || actions.selecting}
           onDraft={setLive}

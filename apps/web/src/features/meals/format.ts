@@ -52,6 +52,11 @@ export function weekRangeLabel(start: string): string {
   return `${from} – ${b.day} ${MONTHS[b.month]} ${b.year}`
 }
 
+/** "Nov" */
+export function monthShortLabel(date: string): string {
+  return MONTHS[parts(date).month] as string
+}
+
 /** "November 2026" */
 export function monthLabel(date: string): string {
   const p = parts(date)

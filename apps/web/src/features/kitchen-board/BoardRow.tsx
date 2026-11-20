@@ -60,7 +60,6 @@ export function BoardRow({ item, today, categoryColour, onOpen, onUse }: BoardRo
           value={stored}
           mode="down-only"
           description={amount}
-          tone={level === 'normal' ? 'normal' : 'low'}
           isDisabled={saving}
           onDraft={setLive}
           className={cx('min-w-0 flex-1 px-1.5', usedUp && USED_UP_STYLE)}

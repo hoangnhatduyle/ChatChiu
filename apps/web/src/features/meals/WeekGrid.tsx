@@ -104,13 +104,14 @@ export function WeekGrid({
         axis="x"
         scrollerClassName="-mx-1.5 -mt-1.5 -mb-6 px-1.5 pt-1.5 pb-8"
       >
-        <ol className="grid gap-3 md:grid-cols-[repeat(7,minmax(112px,1fr))] md:gap-2.5">
+        {/* From 1024 px the columns stretch to the bottom of the window, so the slots are big enough to read a whole meal. */}
+        <ol className="grid gap-3 md:grid-cols-[repeat(7,minmax(112px,1fr))] md:gap-2.5 lg:min-h-[calc(100dvh-16rem)]">
           {weekDates(date).map((day) => (
             <li
               key={day}
               aria-current={day === today ? 'date' : undefined}
               className={cx(
-                'min-w-0 rounded-panel p-2.5',
+                'flex min-w-0 flex-col rounded-panel p-2.5',
                 day === today
                   ? 'border-2 border-accent bg-tint-teal shadow-lift'
                   : 'border border-line bg-surface shadow-card',
@@ -124,7 +125,7 @@ export function WeekGrid({
                   </span>
                 )}
               </h3>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-1 flex-col gap-1.5">
                 {MEAL_TYPES.map((type) => (
                   <MealSlot
                     key={type}

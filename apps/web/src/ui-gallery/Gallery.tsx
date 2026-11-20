@@ -72,7 +72,6 @@ function SliderDemo({
         value={value}
         mode={mode}
         size={size}
-        tone={value <= 20 ? 'low' : 'normal'}
         onCommit={(v) => {
           setValue(v)
           setCommits((c) => [...c, v])

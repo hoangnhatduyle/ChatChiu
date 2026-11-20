@@ -33,7 +33,6 @@ export function UsageSliderImpl({
   onCommit,
   mode,
   description,
-  tone = 'normal',
   size = 'row',
   isDisabled = false,
   onDraft,
@@ -114,7 +113,6 @@ export function UsageSliderImpl({
 
   const spoken = description ?? ''
   const isBig = size === 'big'
-  const colour = tone === 'low' ? 'bg-low' : 'bg-fill'
   return (
     <div
       className={className}
@@ -139,7 +137,6 @@ export function UsageSliderImpl({
       >
         <SliderTrack
           data-usage-track
-          data-tone={tone}
           className={cx(
             'relative h-touch w-full touch-pan-y',
             isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-ew-resize',
@@ -152,10 +149,7 @@ export function UsageSliderImpl({
               isBig ? 'h-3' : 'h-2',
             )}
           >
-            <span
-              className={cx('block h-full rounded-pill', colour)}
-              style={{ width: `${shown}%` }}
-            />
+            <span className="block h-full rounded-pill bg-fill" style={{ width: `${shown}%` }} />
           </span>
           <SliderThumb
             data-usage-thumb
@@ -163,7 +157,7 @@ export function UsageSliderImpl({
             className={cx(
               'top-1/2 rounded-pill border-3 border-surface shadow-pop',
               isBig ? 'size-[30px]' : 'size-6',
-              colour,
+              'bg-fill',
               'transition-transform duration-fast data-dragging:scale-110',
               'data-focus-visible:shadow-[0_0_0_3px_var(--surface)]',
             )}

@@ -49,7 +49,6 @@ export function UsageControls({ item, isDisabled, onLevel, onQuick, onExact }: U
         mode="free"
         size="big"
         description={amount}
-        tone={low ? 'low' : 'normal'}
         isDisabled={isDisabled}
         onCommit={onLevel}
       />

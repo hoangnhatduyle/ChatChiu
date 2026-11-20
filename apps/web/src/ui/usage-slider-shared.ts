@@ -22,8 +22,6 @@ export type UsageSliderProps = {
   mode: 'down-only' | 'free'
   /** Spoken after the value, e.g. "0.6 of 1 L". */
   description?: string
-  /** `low` draws the bar in the low-stock colour; the caller also shows a text cue. */
-  tone?: 'normal' | 'low'
   /** `row` on the board, `big` in the panel. */
   size?: 'row' | 'big'
   /**

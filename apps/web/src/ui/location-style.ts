@@ -52,6 +52,18 @@ export const LOCATION_TINT_CLASS: Record<LocationColor, string> = {
   lilac: 'bg-loc-lilac',
 }
 
+/** The stronger shade of a place's colour, for a thin edge or stripe (the tint is too pale to draw on a card). */
+export const LOCATION_EDGE_CLASS: Record<LocationColor, string> = {
+  sand: 'bg-loc-sand-edge',
+  ice: 'bg-loc-ice-edge',
+  mint: 'bg-loc-mint-edge',
+  clay: 'bg-loc-clay-edge',
+  teal: 'bg-loc-teal-edge',
+  rose: 'bg-loc-rose-edge',
+  saffron: 'bg-loc-saffron-edge',
+  lilac: 'bg-loc-lilac-edge',
+}
+
 export const LOCATION_COLOR_LABEL: Record<LocationColor, string> = {
   sand: 'Sand',
   ice: 'Ice',

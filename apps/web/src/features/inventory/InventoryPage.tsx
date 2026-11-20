@@ -48,6 +48,8 @@ const ItemPanelHost = lazyRetry(() => import('../item-panel/ItemPanelHost'))
 /** The most ids one DELETE /api/inventory/bulk accepts (BULK_MAX in packages/contracts). */
 export const BULK_DELETE_MAX = 200
 /** Cards per row in the Shelves view: 3 from 1280 px, 2 from 768 px, else 1. */
+const FIVE_COLUMNS_QUERY = '(min-width: 2200px)'
+const FOUR_COLUMNS_QUERY = '(min-width: 1700px)'
 const THREE_COLUMNS_QUERY = '(min-width: 1280px)'
 const TWO_COLUMNS_QUERY = '(min-width: 768px)'
 
@@ -70,9 +72,11 @@ export default function InventoryPage() {
   const toasts = useToast()
   const { logUse } = useBoardActions()
   const holdBulk = useHeldWrite(bulkDelete)
+  const fiveColumns = useMediaQuery(FIVE_COLUMNS_QUERY)
+  const fourColumns = useMediaQuery(FOUR_COLUMNS_QUERY)
   const threeColumns = useMediaQuery(THREE_COLUMNS_QUERY)
   const twoColumns = useMediaQuery(TWO_COLUMNS_QUERY)
-  const columns = threeColumns ? 3 : twoColumns ? 2 : 1
+  const columns = fiveColumns ? 5 : fourColumns ? 4 : threeColumns ? 3 : twoColumns ? 2 : 1
   // Read once: her card/table choice saved on this device (F-IN-05).
   const [savedView, setSavedView] = useState(loadView)
   const [selecting, setSelecting] = useState(false)
@@ -257,7 +261,6 @@ export default function InventoryPage() {
     onUse: logUse,
     categoryName,
     locationName,
-    categoryColour: (id: number) => data.categories.find((c) => c.id === id)?.color ?? null,
     locationOf: (id: number | null): LocationLike =>
       data.locations.find((l) => l.id === id) ?? { name: 'No location' },
     group: filters.group,
