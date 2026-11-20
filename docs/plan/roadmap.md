@@ -152,6 +152,8 @@ Status 2026-11-18: **7.0 wrap-up done on the code side** (not pushed; commits ar
 
 **Completed rows** (removed from the table to keep it short; other documents still refer to these numbers):
 
+- UI refresh 03-shopping (2026-11-19, implemented and checked with unit tests, the a11y and shopping e2e and the visual baselines; **not committed yet**): two panes on a wide screen (quick add and list left, bought ring and Running low suggestions right), round ticks, grouped by category from the start, Share list / Clear bought; SPEC-SL-001 F-SL-05/06/08 amended, F-SL-09 added.
+
 - UI refresh 01-dashboard and 02-stock (2026-11-19, implemented and checked with their unit tests, the a11y, board and inventory e2e and the visual baselines; **not committed yet**): see `docs/plan/ui-refresh/` and SPEC-KB-001 (F-KB-17 to 19) and SPEC-IN-001 (F-IN-04 to 08). The full e2e suite is run once at the end, when all page plans are done.
 
 - UI refresh 00-foundation (2026-11-19, implemented and verified, **not committed yet**: waiting for the user to read the pictures): Style A tokens in light and dark, Bricolage Grotesque replaces IBM Plex Mono, shared UI pieces, labelled sidebar from 1024 px with the Stock expired count; initial JS gate raised 175 -> 185 KB (user decision), now 175.4 KB. Pages 01 to 06 are next, see `docs/plan/ui-refresh/`.

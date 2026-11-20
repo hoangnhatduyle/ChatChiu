@@ -40,8 +40,28 @@ const categories = [
   { id: 2, name: 'Grains', icon: null, color: null, userId: 'u', isSystem: false },
 ]
 const locations = [{ id: 1, userId: 'u', name: 'Fridge', subLocation: null, createdAt: 'x' }]
-const bootstrap = (items: InventoryItem[] = []): Bootstrap =>
-  ({ items, locations, categories, summary: {} }) as unknown as Bootstrap
+type LowRow = {
+  id: number
+  name: string
+  unit: string
+  categoryId: number
+  currentQuantity: number
+  initialQuantity: number
+  percentLeft: number
+  lowStockThreshold: number
+}
+const lowRow = (id: number, name: string, percentLeft: number): LowRow => ({
+  id,
+  name,
+  unit: 'L',
+  categoryId: 1,
+  currentQuantity: percentLeft / 100,
+  initialQuantity: 1,
+  percentLeft,
+  lowStockThreshold: 20,
+})
+const bootstrap = (items: InventoryItem[] = [], lowStock: LowRow[] = []): Bootstrap =>
+  ({ items, locations, categories, summary: { lowStock } }) as unknown as Bootstrap
 
 function GoToShopping() {
   const navigate = useNavigate()
@@ -53,16 +73,16 @@ function GoToShopping() {
 let client: QueryClient
 function renderPage(
   list: ShoppingItem[],
-  options: { path?: string; items?: InventoryItem[] } = {},
+  options: { path?: string; items?: InventoryItem[]; lowStock?: LowRow[] } = {},
 ) {
   client = createAppQueryClient()
   client.mount()
-  client.setQueryData(queryKeys.bootstrap, bootstrap(options.items))
+  client.setQueryData(queryKeys.bootstrap, bootstrap(options.items, options.lowStock))
   client.setQueryData(queryKeys.shopping, list)
   api.get.mockImplementation((path: string) => {
     if (path === '/api/shopping-list') return Promise.resolve(list)
     if (path.endsWith('/usage') || path === '/api/recipes') return Promise.resolve([])
-    return Promise.resolve(bootstrap(options.items))
+    return Promise.resolve(bootstrap(options.items, options.lowStock))
   })
   const view = render(
     <QueryClientProvider client={client}>
@@ -229,7 +249,7 @@ describe('F-SL-04 clear purchased', () => {
     api.patch.mockResolvedValue({ ...makeRow(4, 'Rice'), isPurchased: true })
     const { user } = renderPage(list())
     await screen.findByText('Eggs')
-    await user.click(screen.getByRole('button', { name: 'Clear purchased (3)' }))
+    await user.click(screen.getByRole('button', { name: 'Clear bought (3)' }))
     expect(rowNames()).toEqual(['Rice'])
     expect((await screen.findAllByRole('button', { name: 'Undo' })).length).toBe(1)
     expect(api.post).not.toHaveBeenCalled()
@@ -253,7 +273,7 @@ describe('F-SL-04 clear purchased', () => {
   it('Undo of Clear purchased brings all three back and sends nothing', async () => {
     const { user } = renderPage(list())
     await screen.findByText('Eggs')
-    await user.click(screen.getByRole('button', { name: 'Clear purchased (3)' }))
+    await user.click(screen.getByRole('button', { name: 'Clear bought (3)' }))
     await user.click(await screen.findByRole('button', { name: 'Undo' }))
     expect(rowNames().sort()).toEqual(['Bread', 'Eggs', 'Milk', 'Rice'])
     await new Promise((resolve) => setTimeout(resolve, HOLD_WINDOW_WAIT_MS))
@@ -263,7 +283,7 @@ describe('F-SL-04 clear purchased', () => {
   it('Clear purchased is off when nothing is purchased', async () => {
     renderPage([makeRow(1, 'Eggs')])
     await screen.findByText('Eggs')
-    expect(screen.getByRole('button', { name: /^Clear purchased/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Clear bought/ })).toBeDisabled()
   })
 })
 
@@ -277,6 +297,10 @@ describe('F-SL-05 show purchased and group by category', () => {
   ]
 
   it('F-SL-05: purchased rows sink to the bottom, and Show purchased hides them', async () => {
+    window.localStorage.setItem(
+      'chatchiu.shopping.view',
+      JSON.stringify({ showPurchased: true, groupByCategory: false }),
+    )
     const { user } = renderPage(list())
     await screen.findByText('Eggs')
     expect(rowNames()).toEqual(['Milk', 'Rice', 'Soap', 'Eggs', 'Flour'])
@@ -286,13 +310,16 @@ describe('F-SL-05 show purchased and group by category', () => {
     expect(rowNames()).toHaveLength(5)
   })
 
-  it('F-SL-05: grouping by category shows a header per category, purchased last in each, no category last', async () => {
+  it('F-SL-05: the list is grouped by category from the start: a header per category, purchased last in each, no category last', async () => {
     const { user } = renderPage(list())
     await screen.findByText('Eggs')
-    await user.click(screen.getByRole('switch', { name: 'Group by category' }))
+    expect(screen.getByRole('switch', { name: 'Group by category' })).toBeChecked()
     const headers = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(headers.join('|')).toMatch(/Dairy.*\|.*Grains.*\|.*No category/)
     expect(rowNames()).toEqual(['Milk', 'Eggs', 'Rice', 'Flour', 'Soap'])
+    await user.click(screen.getByRole('switch', { name: 'Group by category' }))
+    expect(screen.queryAllByRole('heading', { level: 2, name: /Dairy/ })).toHaveLength(0)
+    expect(rowNames()).toEqual(['Milk', 'Rice', 'Soap', 'Eggs', 'Flour'])
   })
 
   it('F-SL-05: the two switches are remembered on this device', async () => {
@@ -325,7 +352,7 @@ describe('F-SL-06 share', () => {
     Object.defineProperty(navigator, 'share', { value: share, configurable: true })
     const { user } = renderPage(list())
     await screen.findByText('Eggs')
-    await user.click(screen.getByRole('button', { name: 'Share' }))
+    await user.click(screen.getByRole('button', { name: 'Share list' }))
     expect(share).toHaveBeenCalledWith({ title: 'Shopping List', text: TEXT })
   })
 
@@ -334,7 +361,7 @@ describe('F-SL-06 share', () => {
     const { user } = renderPage(list())
     const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
     await screen.findByText('Eggs')
-    await user.click(screen.getByRole('button', { name: 'Share' }))
+    await user.click(screen.getByRole('button', { name: 'Share list' }))
     expect(write).toHaveBeenCalledWith(TEXT)
     expect(await screen.findByText('Copied to the clipboard')).toBeInTheDocument()
   })
@@ -347,7 +374,7 @@ describe('F-SL-06 share', () => {
     })
     const first = renderPage(list())
     await screen.findByText('Eggs')
-    await first.user.click(screen.getByRole('button', { name: 'Share' }))
+    await first.user.click(screen.getByRole('button', { name: 'Share list' }))
     await new Promise((resolve) => setTimeout(resolve, 100))
     expect(screen.queryByText(/couldn.t share/i)).toBeNull()
     first.unmount()
@@ -356,14 +383,14 @@ describe('F-SL-06 share', () => {
     const second = renderPage(list())
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
     await screen.findByText('Eggs')
-    await second.user.click(screen.getByRole('button', { name: 'Share' }))
+    await second.user.click(screen.getByRole('button', { name: 'Share list' }))
     expect(await screen.findByText(/couldn.t share/i)).toBeInTheDocument()
   })
 
   it('Share is off when nothing is pending', async () => {
     renderPage([makeRow(1, 'Bread', { isPurchased: true })])
     await screen.findByText('Bread')
-    expect(screen.getByRole('button', { name: 'Share' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Share list' })).toBeDisabled()
   })
 })
 
@@ -528,17 +555,70 @@ describe('review fixes', () => {
   })
 
   it('a category that no longer exists is shown under No category, not as a made-up heading', async () => {
-    const { user } = renderPage([makeRow(1, 'Eggs', { categoryId: 99 }), makeRow(2, 'Milk')])
+    renderPage([makeRow(1, 'Eggs', { categoryId: 99 }), makeRow(2, 'Milk')])
     await screen.findByText('Eggs')
-    await user.click(screen.getByRole('switch', { name: 'Group by category' }))
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent ?? '')
-    expect(headings).toHaveLength(1)
-    expect(headings[0]).toMatch(/No category/)
+    expect(headings.filter((h) => !/Running low/.test(h))).toHaveLength(1)
+    expect(headings.find((h) => !/Running low/.test(h))).toMatch(/No category/)
   })
 
   it('Clear purchased counts only rows that can be cleared (not ones still being saved)', async () => {
     renderPage([makeRow(-3, 'New eggs', { isPurchased: true })])
     await screen.findByText('New eggs')
-    expect(screen.getByRole('button', { name: 'Clear purchased (0)' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Clear bought (0)' })).toBeDisabled()
+  })
+})
+
+describe('F-SL-08 / F-SL-09 progress ring and Running low suggestions', () => {
+  it('F-SL-08: the ring says how much is bought, in words', async () => {
+    renderPage([makeRow(1, 'Eggs', { isPurchased: true }), makeRow(2, 'Milk'), makeRow(3, 'Rice')])
+    await screen.findByText('Eggs')
+    expect(screen.getByRole('img', { name: '1 of 3 bought' })).toBeInTheDocument()
+  })
+
+  it('F-SL-09: lists what the kitchen says is low, lowest first, minus what is already on the list', async () => {
+    renderPage([makeRow(1, 'Milk')], {
+      lowStock: [lowRow(11, 'Milk', 5), lowRow(12, 'Butter', 15), lowRow(13, 'Yeast', 8)],
+    })
+    await screen.findByRole('heading', { level: 2, name: 'Running low' })
+    const aside = screen.getByRole('complementary', { name: /progress and suggestions/i })
+    const adds = within(aside).getAllByRole('button', { name: /^Add .* to the shopping list$/ })
+    expect(adds.map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Add Yeast to the shopping list',
+      'Add Butter to the shopping list',
+    ])
+    expect(within(aside).queryByText('Milk')).toBeNull()
+  })
+
+  it('F-SL-09: one tap adds the item with its category and why, it joins the list at once and leaves the suggestions', async () => {
+    api.post.mockResolvedValue(makeRow(50, 'Butter', { categoryId: 1 }))
+    const { user } = renderPage([], { lowStock: [lowRow(12, 'Butter', 15)] })
+    await user.click(await screen.findByRole('button', { name: 'Add Butter to the shopping list' }))
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1))
+    expect(api.post).toHaveBeenCalledWith(
+      '/api/shopping-list',
+      expect.objectContaining({
+        name: 'Butter',
+        categoryId: 1,
+        quantity: '1 L',
+        notes: 'Low stock (15% left)',
+      }),
+      expect.anything(),
+    )
+    expect(tickBox('Butter')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add Butter to the shopping list' })).toBeNull()
+    expect(screen.getByText('Everything running low is already on your list.')).toBeInTheDocument()
+  })
+
+  it('F-SL-09: says so when nothing is running low', async () => {
+    renderPage([makeRow(1, 'Eggs')])
+    await screen.findByText('Eggs')
+    expect(screen.getByText('Everything running low is already on your list.')).toBeInTheDocument()
+  })
+
+  it('F-SL-08: an empty list says so with the app icon and points at the quick add', async () => {
+    renderPage([])
+    expect(await screen.findByRole('heading', { name: 'Your list is empty' })).toBeInTheDocument()
+    expect(document.querySelector('img[src="/icons/icon-192x192.png"]')).not.toBeNull()
   })
 })

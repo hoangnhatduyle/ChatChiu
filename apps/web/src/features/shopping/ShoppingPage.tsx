@@ -7,6 +7,7 @@ import { rowKey } from '../../data/resource'
 import type { ShoppingItem } from '@chatchiu/contracts'
 import {
   groupShoppingByCategory,
+  isOnShoppingList,
   shoppingCounts,
   shoppingShareText,
   sinkPurchased,
@@ -16,14 +17,21 @@ import { useToast } from '../../core/toast-context'
 import { useBootstrapQuery } from '../../data/inventory'
 import { newTempId } from '../../data/resource'
 import { clearPurchased, shoppingWrites, useShoppingQuery } from '../../data/shopping'
+import { useStatsOverviewQuery } from '../../data/stats'
 import { useHeldWrite } from '../../data/undoable'
 import { useWrite, type WriteHandle } from '../../data/write'
-import { PageTitle } from '../../shell/PageTitle'
+import { PAGE_FRAME } from '../../shell/page-frame'
+import { PageHeader } from '../../shell/PageHeader'
 import { Button } from '../../ui/Button'
+import { Card } from '../../ui/Card'
+import { CategoryPill } from '../../ui/CategoryStyle'
 import { EmptyState } from '../../ui/EmptyState'
 import { Skeleton } from '../../ui/Skeleton'
 import { Switch } from '../../ui/Switch'
+import { BoughtRing } from './BoughtRing'
+import { lowSuggestions, suggestionEntry, type LowSuggestion } from './low-suggestions'
 import { QuickAdd, type NewItem } from './QuickAdd'
+import { RunningLowSuggestions } from './RunningLowSuggestions'
 import { shareText } from './share-list'
 import { ShoppingRow } from './ShoppingRow'
 import { loadView, saveView, type ShoppingView } from './shopping-view'
@@ -44,12 +52,18 @@ export default function ShoppingPage() {
   const [view, setView] = useState<ShoppingView>(loadView)
   const headingId = useId()
 
+  // What the kitchen says is low: the stats overview has run-out dates, the bootstrap summary is what the board
+  // already holds (so the suggestions also work offline and before the overview has loaded).
+  const stats = useStatsOverviewQuery('all')
   const items = query.data
-  const title = <PageTitle>Shopping</PageTitle>
-  const frame = (children: React.ReactNode) => (
-    <div className="px-4 pt-5 pb-6 md:px-6 md:pt-6">
-      {title}
-      <div className="mt-3 flex max-w-3xl flex-col gap-4">{children}</div>
+  const frame = (children: React.ReactNode, actions?: React.ReactNode) => (
+    <div className={PAGE_FRAME}>
+      <PageHeader
+        title="Shopping"
+        subtitle="What to buy, and what your kitchen is asking for"
+        actions={actions}
+      />
+      {children}
     </div>
   )
   if (!items) {
@@ -151,84 +165,121 @@ export default function ShoppingPage() {
     }
   }
 
+  const suggestions = lowSuggestions(stats.data?.lowStock ?? bootstrap?.summary?.lowStock, items)
+  const addSuggestion = (row: LowSuggestion) => {
+    if (isOnShoppingList(items, row.name)) {
+      toasts.show({ message: 'Already on your list' })
+      return
+    }
+    // Not "added": the write may wait offline or be refused, and a refusal has its own toast.
+    toasts.show({ message: `Adding ${row.name} to the shopping list` })
+    reportRefusal(create({ tempId: newTempId(), body: suggestionEntry(row) }))
+  }
+  const categoryOf = (id: number | null) => {
+    const category = id === null ? undefined : bootstrap?.categories.find((c) => c.id === id)
+    return category ? { name: category.name, colour: category.color } : undefined
+  }
+
   return frame(
-    <>
-      <p role="status" className="text-md text-muted">
-        {counts.pending} pending · {counts.purchased} purchased
-      </p>
-      <QuickAdd onAdd={add} />
-      {query.isError && (
-        <div
-          role="alert"
-          className="flex items-center gap-3 rounded-card border border-line bg-status-soon-bg px-4 py-2 text-md font-semibold text-status-soon-fg"
-        >
-          <p className="flex-1">
-            Couldn&apos;t refresh. You are seeing what was saved on this device.
-          </p>
-          <Button variant="secondary" onPress={() => void query.refetch()}>
-            Retry
-          </Button>
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-        <Switch
-          label="Show purchased"
-          isSelected={view.showPurchased}
-          onChange={(showPurchased) => changeView({ ...view, showPurchased })}
-        />
-        <Switch
-          label="Group by category"
-          isSelected={view.groupByCategory}
-          onChange={(groupByCategory) => changeView({ ...view, groupByCategory })}
-        />
-        <div className="flex gap-2 md:ml-auto">
-          <Button isDisabled={counts.pending === 0} onPress={() => void share()}>
-            Share
-          </Button>
-          <Button isDisabled={clearable.length === 0} onPress={clear}>
-            {`Clear purchased (${clearable.length})`}
-          </Button>
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      <div className="flex flex-col gap-4 lg:col-start-1">
+        <p role="status" className="text-md text-muted">
+          {counts.pending} pending · {counts.purchased} purchased
+        </p>
+        <QuickAdd onAdd={add} />
+        {query.isError && (
+          <div
+            role="alert"
+            className="flex items-center gap-3 rounded-card border border-line bg-status-soon-bg px-4 py-2 text-md font-semibold text-status-soon-fg"
+          >
+            <p className="flex-1">
+              Couldn&apos;t refresh. You are seeing what was saved on this device.
+            </p>
+            <Button variant="secondary" onPress={() => void query.refetch()}>
+              Retry
+            </Button>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+          <Switch
+            label="Show purchased"
+            isSelected={view.showPurchased}
+            onChange={(showPurchased) => changeView({ ...view, showPurchased })}
+          />
+          <Switch
+            label="Group by category"
+            isSelected={view.groupByCategory}
+            onChange={(groupByCategory) => changeView({ ...view, groupByCategory })}
+          />
         </div>
       </div>
-      {items.length === 0 ? (
-        <EmptyState icon="cart" title="Your list is empty" align="start">
-          Add what you need above. Items that run low in your kitchen can be sent here from their
-          panel.
-        </EmptyState>
-      ) : visible.length === 0 ? (
-        <p className="text-md text-muted">
-          Everything on the list is bought. Turn on Show purchased to see it.
-        </p>
-      ) : (
-        groups.map((group) => {
-          const id = `${headingId}-${group.key ?? 'none'}`
-          return (
-            <section key={group.key ?? 'all'} aria-labelledby={grouped ? id : undefined}>
-              {grouped && (
-                <h2 id={id} className="mb-1 text-md font-extrabold text-muted">
-                  {categoryName(group.key)}{' '}
-                  <span aria-hidden="true" className="tabular text-sm">
-                    {group.items.length}
-                  </span>
-                  <span className="sr-only">
-                    , {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
-                  </span>
-                </h2>
-              )}
-              <ul className="rounded-card border border-line bg-surface">
-                {group.items.map((item) => (
-                  <ShoppingRow
-                    key={rowKey('shopping', item.id)}
-                    item={item}
-                    onTick={tick}
-                    onDelete={remove}
-                  />
-                ))}
-              </ul>
-            </section>
-          )
-        })
-      )}
+      <aside
+        aria-label="Progress and suggestions"
+        className="order-2 flex flex-col gap-4 lg:sticky lg:top-6 lg:order-none lg:col-start-2 lg:row-span-2 lg:row-start-1"
+      >
+        <Card className="rounded-panel p-4">
+          <BoughtRing bought={counts.purchased} total={items.length} />
+        </Card>
+        <Card className="rounded-panel p-4">
+          <RunningLowSuggestions rows={suggestions} onAdd={addSuggestion} />
+        </Card>
+      </aside>
+      <div className="order-3 flex flex-col gap-4 lg:order-none lg:col-start-1">
+        {items.length === 0 ? (
+          <EmptyState brand icon="cart" title="Your list is empty">
+            Nothing to buy right now. Add something above, or pull in what is running low.
+          </EmptyState>
+        ) : visible.length === 0 ? (
+          <p className="text-md text-muted">
+            Everything on the list is bought. Turn on Show purchased to see it.
+          </p>
+        ) : (
+          groups.map((group) => {
+            const id = `${headingId}-${group.key ?? 'none'}`
+            const category = categoryOf(group.key)
+            return (
+              <section key={group.key ?? 'all'} aria-labelledby={grouped ? id : undefined}>
+                {grouped && (
+                  <h2 id={id} className="mb-1.5 flex items-center gap-2 text-md font-bold">
+                    {category ? (
+                      <CategoryPill name={category.name} colour={category.colour} />
+                    ) : (
+                      <span className="rounded-control bg-tint-neutral px-2 py-0.5 text-xs font-bold text-tint-neutral-ink">
+                        {categoryName(group.key)}
+                      </span>
+                    )}
+                    <span aria-hidden="true" className="text-sm font-semibold text-muted tabular">
+                      {group.items.length}
+                    </span>
+                    <span className="sr-only">
+                      , {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
+                    </span>
+                  </h2>
+                )}
+                <ul className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+                  {group.items.map((item) => (
+                    <ShoppingRow
+                      key={rowKey('shopping', item.id)}
+                      item={item}
+                      onTick={tick}
+                      onDelete={remove}
+                      category={grouped ? undefined : categoryOf(item.categoryId)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )
+          })
+        )}
+      </div>
+    </div>,
+    <>
+      <Button isDisabled={counts.pending === 0} onPress={() => void share()}>
+        Share list
+      </Button>
+      <Button isDisabled={clearable.length === 0} onPress={clear}>
+        {`Clear bought (${clearable.length})`}
+      </Button>
     </>,
   )
 }

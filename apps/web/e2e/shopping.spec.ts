@@ -129,7 +129,7 @@ test('F-SL-04 / NC-SL-ONE-CLEAR: Clear purchased sends one request with exactly 
   })
   await page.goto('/shopping')
   await expect(page.getByText(/1 pending · 3 purchased/)).toBeVisible()
-  await page.getByRole('button', { name: 'Clear purchased (3)' }).click()
+  await page.getByRole('button', { name: 'Clear bought (3)' }).click()
   await expect(page.getByRole('checkbox', { name: 'Eggs' })).toHaveCount(0)
   await expect(page.getByRole('checkbox', { name: 'Rice' })).toBeVisible()
   expect(requests).toEqual([]) // nothing sent inside the Undo window
@@ -178,7 +178,7 @@ test('F-SL-06: Share copies the pending items as "Shopping List:\\n- name (quant
   })
   await page.goto('/shopping')
   await expect(page.getByRole('checkbox', { name: 'Eggs' })).toBeVisible()
-  await page.getByRole('button', { name: 'Share' }).click()
+  await page.getByRole('button', { name: 'Share list' }).click()
   await expect(toast(page, 'Copied to the clipboard')).toBeVisible()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     // The text follows the list as shown: the API returns the newest row first.
@@ -199,7 +199,7 @@ test('F-SL-05: group by category with purchased last in each group; no sideways 
   ])
   await routeApi(context)
   await page.goto('/shopping')
-  await page.getByText('Group by category', { exact: true }).click()
+  // Grouped by category from the start (F-SL-05): no click needed.
   await expect(page.getByRole('heading', { level: 2, name: /Shopping goods/ })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: /No category/ })).toBeVisible()
   const names = await page
@@ -207,9 +207,11 @@ test('F-SL-05: group by category with purchased last in each group; no sideways 
     .evaluateAll((boxes) => boxes.map((b) => b.getAttribute('aria-label')))
   // "Shopping goods" holds Eggs (bought), Flour; "No category" holds Milk, Soap (bought).
   expect(names).toEqual(['Flour', 'Eggs', 'Milk', 'Soap'])
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  )
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true)
   if (SHOTS) {
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme })

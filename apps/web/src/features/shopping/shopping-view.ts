@@ -2,7 +2,8 @@
 // Storage can be blocked or edited: anything unreadable falls back to the defaults.
 export type ShoppingView = { showPurchased: boolean; groupByCategory: boolean }
 
-export const DEFAULT_VIEW: ShoppingView = { showPurchased: true, groupByCategory: false }
+/** Grouped by category from the start (the list reads like aisles); a saved choice always wins. */
+export const DEFAULT_VIEW: ShoppingView = { showPurchased: true, groupByCategory: true }
 export const VIEW_STORAGE_KEY = 'chatchiu.shopping.view'
 
 export function loadView(): ShoppingView {

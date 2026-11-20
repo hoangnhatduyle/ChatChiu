@@ -42,7 +42,7 @@ export function QuickAdd({ onAdd }: { onAdd: (item: NewItem) => void }) {
     <form
       noValidate
       aria-label="Add to the shopping list"
-      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-3 md:flex-row md:items-start"
+      className="flex flex-col gap-3 rounded-panel border border-line bg-surface p-4 shadow-card md:flex-row md:items-end"
       onSubmit={(event) => {
         event.preventDefault()
         submit()
@@ -80,7 +80,7 @@ export function QuickAdd({ onAdd }: { onAdd: (item: NewItem) => void }) {
         onChange={setNotes}
         className="md:flex-[2]"
       />
-      <Button type="submit" variant="primary" className="self-start md:mt-6">
+      <Button type="submit" variant="primary" className="self-start">
         Add
       </Button>
       {/* The inline error is linked to the field; this makes sure it is also spoken. */}
