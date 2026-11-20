@@ -104,8 +104,8 @@ export function WeekGrid({
         axis="x"
         scrollerClassName="-mx-1.5 -mt-1.5 -mb-6 px-1.5 pt-1.5 pb-8"
       >
-        {/* From 1024 px the columns stretch to the bottom of the window, so the slots are big enough to read a whole meal. */}
-        <ol className="grid gap-3 md:grid-cols-[repeat(7,minmax(112px,1fr))] md:gap-2.5 lg:min-h-[calc(100dvh-16rem)]">
+        {/* From 1024 px the columns grow to about half of the room below the header (a full-height week looked empty), so a slot has room for a whole meal. */}
+        <ol className="grid gap-3 md:grid-cols-[repeat(7,minmax(112px,1fr))] md:gap-2.5 lg:min-h-[calc((100dvh-16rem)/2)]">
           {weekDates(date).map((day) => (
             <li
               key={day}
