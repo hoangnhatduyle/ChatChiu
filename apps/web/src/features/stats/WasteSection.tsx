@@ -8,7 +8,7 @@ import { Select } from '../../ui/Select'
 import { NO_CATEGORY } from './category-name'
 import { BarChart, type BarRow } from './charts/BarChart'
 import { monthLabel, money } from './format'
-import { Block } from './Overview'
+import { Block } from './Block'
 import { RANGES } from './stats-params'
 
 const RANGE_LABEL: Record<WasteRange, string> = {

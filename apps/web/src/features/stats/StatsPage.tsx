@@ -4,11 +4,13 @@
 // stock, run-out) lives in one place (AR-ONE-DEFINITION).
 import { todayInTimeZone, filterWasteEntries } from '@chatchiu/domain'
 import { useSearchParams } from 'react-router'
+import { useToday } from '../../core/use-today'
 import { useBootstrapQuery } from '../../data/inventory'
 import { usePreferencesQuery } from '../../data/preferences'
 import { useStatsOverviewQuery } from '../../data/stats'
 import { useWasteQuery } from '../../data/waste'
-import { PageTitle } from '../../shell/PageTitle'
+import { PAGE_FRAME } from '../../shell/page-frame'
+import { PageHeader } from '../../shell/PageHeader'
 import { Button } from '../../ui/Button'
 import { Skeleton } from '../../ui/Skeleton'
 import { money } from './format'
@@ -21,7 +23,9 @@ const browserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 
 export default function StatsPage() {
   const [params, setParams] = useSearchParams()
-  const categories = useBootstrapQuery().data?.categories
+  const bootstrap = useBootstrapQuery().data
+  const categories = bootstrap?.categories
+  const today = useToday()
   const { range, categoryId } = parseStatsParams(
     params,
     categories?.map((c) => c.id),
@@ -35,9 +39,9 @@ export default function StatsPage() {
   const log = useWasteQuery()
 
   const frame = (children: React.ReactNode) => (
-    <div className="px-4 pt-5 pb-6 md:px-6 md:pt-6">
-      <PageTitle>Waste & Stats</PageTitle>
-      <div className="mt-3 flex flex-col gap-4">{children}</div>
+    <div className={PAGE_FRAME}>
+      <PageHeader title="Waste & Stats" subtitle="How your kitchen is doing" />
+      <div className="flex flex-col gap-4">{children}</div>
     </div>
   )
   const retry = () => {
@@ -98,7 +102,13 @@ export default function StatsPage() {
         <h2 id="overview-heading" className="text-lg font-extrabold">
           Overview
         </h2>
-        <Overview overview={overview.data} />
+        <Overview
+          overview={overview.data}
+          items={bootstrap?.items}
+          categories={categories ?? []}
+          locations={bootstrap?.locations ?? []}
+          today={today}
+        />
       </section>
       <section aria-labelledby="waste-heading" className="flex flex-col gap-3">
         <h2 id="waste-heading" className="text-lg font-extrabold">

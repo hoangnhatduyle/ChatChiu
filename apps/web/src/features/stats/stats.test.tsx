@@ -72,17 +72,17 @@ function makeOverview(extra: Partial<StatsOverview> = {}): StatsOverview {
   }
 }
 
-type Server = { overview: StatsOverview; waste: WasteEntry[] }
+type Server = { overview: StatsOverview; waste: WasteEntry[]; items: object[] }
 let server: Server
 let client: QueryClient
 
 function renderPage(init: Partial<Server> = {}, path = '/stats') {
-  server = { overview: makeOverview(), waste: [], ...init }
+  server = { overview: makeOverview(), waste: [], items: [], ...init }
   api.get.mockImplementation((route: string) => {
     if (route === '/api/stats/overview') return Promise.resolve(server.overview)
     if (route === '/api/waste') return Promise.resolve(server.waste)
     if (route === '/api/preferences') return Promise.resolve({ timezone: 'UTC' })
-    return Promise.resolve(bootstrap)
+    return Promise.resolve({ ...bootstrap, items: server.items })
   })
   client = createAppQueryClient()
   client.mount()
@@ -470,5 +470,87 @@ describe('loading and failure', () => {
     )
     await user.click(screen.getAllByRole('button', { name: 'Retry' })[0]!)
     expect(await screen.findByText('Stock value')).toBeInTheDocument()
+  })
+})
+
+describe('UI refresh: headline, tiles, ring, next two weeks, places', () => {
+  it('F-ST-10: opens with a headline in plain words', async () => {
+    renderPage()
+    expect(
+      await screen.findByText('1 thing is past its date, 3 more need using this week.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/You have \$2\.40 in the kitchen across 12 items\./),
+    ).toBeInTheDocument()
+  })
+
+  it('F-ST-05: the stock-value ring is described by its legend: every category, its items and its value', async () => {
+    renderPage({
+      overview: makeOverview({
+        byCategory: [
+          { categoryId: 1, category: 'Dairy', count: 7, value: 2.4 },
+          { categoryId: 2, category: 'Meat', count: 2, value: 7.6 },
+        ],
+      }),
+    })
+    const group = await screen.findByRole('group', { name: 'Stock by category' })
+    const rows = within(group).getAllByRole('button', { pressed: false })
+    expect(rows.map((b) => b.textContent)).toEqual(['Meat2 · $7.60', 'Dairy7 · $2.40'])
+    // The picture itself is hidden from assistive tech; the legend and the table say the same in words.
+    expect(within(group).getByTestId('value-ring')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('F-ST-05: tapping a legend row shows that category in the ring centre; tapping again goes back', async () => {
+    const { user } = renderPage({
+      overview: makeOverview({
+        byCategory: [
+          { categoryId: 1, category: 'Dairy', count: 7, value: 2.4 },
+          { categoryId: 2, category: 'Meat', count: 2, value: 7.6 },
+        ],
+      }),
+    })
+    const ring = await screen.findByTestId('value-ring')
+    expect(ring).toHaveTextContent('$2.40in stock')
+    const meat = screen.getByRole('button', { name: /^Meat/ })
+    await user.click(meat)
+    expect(meat).toHaveAttribute('aria-pressed', 'true')
+    expect(ring).toHaveTextContent('$7.60Meat')
+    await user.click(meat)
+    expect(ring).toHaveTextContent('in stock')
+  })
+
+  it('NC-ST-NO-COLOUR-ONLY-CHARTS: the ring has its figures as a table too', async () => {
+    const { user } = renderPage()
+    const group = await screen.findByRole('group', { name: 'Stock by category' })
+    await user.click(within(group).getByRole('button', { name: 'Show as a table' }))
+    const table = within(group).getByRole('table', { name: 'Stock by category' })
+    expect(within(table).getByRole('rowheader', { name: 'Dairy' })).toBeInTheDocument()
+    expect(table).toHaveTextContent('$2.40')
+  })
+
+  it('F-ST-09: the next two weeks show a cell per day with its count, and today is marked', async () => {
+    const item = (id: number, expirationDate: string) => ({ id, expirationDate, categoryId: 1 })
+    renderPage({
+      items: [
+        item(1, '2026-11-18'),
+        item(2, '2026-11-18'),
+        item(3, '2026-11-20'),
+        item(4, '2026-12-30'),
+      ],
+    })
+    const strip = await screen.findByRole('group', { name: 'The next two weeks' })
+    const cells = within(strip).getAllByRole('listitem')
+    expect(cells).toHaveLength(14)
+    expect(cells[0]).toHaveAttribute('aria-current', 'date')
+    expect(cells[0]).toHaveTextContent('Wed 18 Nov, 2 items, today')
+    expect(cells[2]).toHaveTextContent('Fri 20 Nov, 1 item')
+    expect(cells[1]).toHaveTextContent('Thu 19 Nov, 0 items')
+  })
+
+  it('F-ST-05: items by place carry the place name and count', async () => {
+    renderPage()
+    const places = await screen.findByRole('group', { name: 'Stock by location' })
+    expect(within(places).getByText('Fridge')).toBeInTheDocument()
+    expect(within(places).getByText('9')).toBeInTheDocument()
   })
 })

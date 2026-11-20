@@ -152,6 +152,8 @@ Status 2026-11-18: **7.0 wrap-up done on the code side** (not pushed; commits ar
 
 **Completed rows** (removed from the table to keep it short; other documents still refer to these numbers):
 
+- UI refresh 05-stats (2026-11-19, implemented and checked with unit tests, the a11y and stats e2e and the visual baselines; **not committed yet**): headline in plain words, five coloured tiles, stock-value ring with a written legend and a table, running-low meters, the next two weeks, places with icons; SPEC-ST-001 F-ST-05 amended, F-ST-09 and F-ST-10 added. The ring is a CSS conic gradient (Chrome 69, Safari 12.1).
+
 - UI refresh 04-meals (2026-11-19, implemented and checked with unit tests, the a11y and meals e2e (drag to copy included) and the visual baselines; **not committed yet**): header with tabs and Add meal, today highlighted, meals coloured by type, suggestions as a rail above the week, recipe cards, month dots; SPEC-MP-001 F-MP-01/09/12 amended.
 
 - UI refresh 03-shopping (2026-11-19, implemented and checked with unit tests, the a11y and shopping e2e and the visual baselines; **not committed yet**): two panes on a wide screen (quick add and list left, bought ring and Running low suggestions right), round ticks, grouped by category from the start, Share list / Clear bought; SPEC-SL-001 F-SL-05/06/08 amended, F-SL-09 added.

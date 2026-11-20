@@ -9,12 +9,13 @@ context_and_scope:
     - Time-range and category filters with real category names (F-ST-02)
     - "Totals: items wasted and value lost (F-ST-03)"
     - Waste by month and by category charts (F-ST-04)
-    - "Overview: total items, expiring within 7 days, expired, stock value, by category, by location, recently added, waste 30 days (F-ST-05)"
+    - "Overview: five coloured number tiles (total items, stock value, expiring within 7 days, expired, waste 30 days), stock value by category as a ring with a written legend, by location with each place's icon and tint, recently added (F-ST-05)"
+    - A plain-language headline above the numbers (F-ST-10) and the next two weeks of expiry dates, one cell per day (F-ST-09)
     - Low stock list with usage rate and run-out (F-ST-06)
     - Most wasted items by count and by value (F-ST-07)
     - Old quick-actions card dropped (F-ST-08)
     - Money shown in $ (open-questions Q6 default); recently added and by category/location kept (Q9 default)
-    - "Files: features/stats/{StatsPage, Overview, WasteLog}.tsx, features/stats/charts/*.tsx (dataviz rules, both themes)"
+    - "Files: features/stats/{StatsPage, Overview, StatsHero, StatTiles, ValueRing, ExpiryStrip, PlaceBars, RunningLowList, WasteLog}.tsx, headline.ts, ring.ts, features/stats/charts/*.tsx (dataviz rules, both themes); packages/domain/src/expiry-strip.ts"
   out_of_scope:
     - Currency conversion or locale currency other than $
     - Exporting stats (CSV export is inventory-only, SPEC-SE-001)
@@ -80,7 +81,7 @@ acceptance_criteria:
   - id: F-ST-05
     given: 10 eggs at 0.40 with 6 left
     when: the overview renders
-    then: stock value counts $2.40 for them (price × current), alongside total items, expiring ≤ 7 d, expired, by category, by location, recently added and waste over 30 days
+    then: "stock value counts $2.40 for them (price × current), alongside total items, expiring ≤ 7 d, expired, by category, by location, recently added and waste over 30 days; by category is a ring (a CSS conic gradient, no chart library) hidden from assistive tech whose legend names every category with its items and value, a press on a legend row shows that category in the centre, and \"Show as a table\" gives the same figures as a table; by location shows each place's icon and tint"
     invariant: false
   - id: F-ST-06
     given: items at or below their percent threshold with 30 days of usage history
@@ -96,6 +97,16 @@ acceptance_criteria:
     given: the stats page
     when: it renders
     then: there is no quick-actions card (the nav covers it)
+    invariant: false
+  - id: F-ST-09
+    given: items expiring today and on later days, one already expired and one more than two weeks away
+    when: the overview renders
+    then: "\"The next two weeks\" shows 14 cells from today, each with its weekday, date and item count written (read out as \"Fri 20 Nov, 1 item\"), a dot for each kind of food and today marked (aria-current=date); expired and far-away items are not in it"
+    invariant: false
+  - id: F-ST-10
+    given: 7 expired items, 3 more expiring within 7 days, $289.56 in 71 items and 16 items ($16.96) wasted over time, 4 of them in the last 30 days
+    when: the overview renders
+    then: it opens with "7 things are past their date, 3 more need using this week." and a sentence with the stock value, item count and waste, using the singular for one, leaving out a zero half, adding the recent cost only when there was one and "Nice." only when nothing was thrown away in 30 days
     invariant: false
 depends_on:
   - SPEC-DATA-001

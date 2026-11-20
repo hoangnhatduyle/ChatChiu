@@ -24,7 +24,7 @@ cases:
   - id: T-SPEC-ST-001-AC-F_ST_05
     kind: acceptance
     traces_to: SPEC-ST-001#F-ST-05
-    assertion: given 10 eggs at 0.40 with 6 left, when the overview renders, then stock value counts $2.40 for them (price × current), alongside total items, expiring ≤ 7 d, expired, by category, by location, recently added and waste over 30 days
+    assertion: "given 10 eggs at 0.40 with 6 left, when the overview renders, then stock value counts $2.40 for them (price × current), alongside total items, expiring ≤ 7 d, expired, by category, by location, recently added and waste over 30 days; by category is a ring (a CSS conic gradient, no chart library) hidden from assistive tech whose legend names every category with its items and value, a press on a legend row shows that category in the centre, and \"Show as a table\" gives the same figures as a table; by location shows each place's icon and tint"
     invariant: false
   - id: T-SPEC-ST-001-AC-F_ST_06
     kind: acceptance
@@ -40,6 +40,16 @@ cases:
     kind: acceptance
     traces_to: SPEC-ST-001#F-ST-08
     assertion: given the stats page, when it renders, then there is no quick-actions card (the nav covers it)
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_09
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-09
+    assertion: "given items expiring today and on later days, one already expired and one more than two weeks away, when the overview renders, then \"The next two weeks\" shows 14 cells from today, each with its weekday, date and item count written (read out as \"Fri 20 Nov, 1 item\"), a dot for each kind of food and today marked (aria-current=date); expired and far-away items are not in it"
+    invariant: false
+  - id: T-SPEC-ST-001-AC-F_ST_10
+    kind: acceptance
+    traces_to: SPEC-ST-001#F-ST-10
+    assertion: "given 7 expired items, 3 more expiring within 7 days, $289.56 in 71 items and 16 items ($16.96) wasted over time, 4 of them in the last 30 days, when the overview renders, then it opens with \"7 things are past their date, 3 more need using this week.\" and a sentence with the stock value, item count and waste, using the singular for one, leaving out a zero half, adding the recent cost only when there was one and \"Nice.\" only when nothing was thrown away in 30 days"
     invariant: false
   - id: T-SPEC-ST-001-FORBID-waste_entry_delete_DELETED_LISTED
     kind: forbidden-transition

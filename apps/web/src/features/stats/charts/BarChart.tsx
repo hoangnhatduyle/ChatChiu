@@ -2,9 +2,9 @@
 // themes), thin bars with a rounded data end, every value written next to its bar, and the same data as a
 // table on request, so nothing is carried by colour alone (NC-ST-NO-COLOUR-ONLY-CHARTS). A single series
 // needs no legend: the title names it.
-import { useId, useState } from 'react'
-import { Button } from '../../../ui/Button'
+import { useId } from 'react'
 import { money } from '../format'
+import { ChartTable } from './ChartTable'
 
 export interface BarRow {
   key: string
@@ -31,7 +31,6 @@ export function BarChart({
   rows: readonly BarRow[]
 }) {
   const titleId = useId()
-  const [showTable, setShowTable] = useState(false)
   const max = Math.max(0, ...rows.map((r) => r.value))
   return (
     <figure aria-labelledby={titleId} className="rounded-card border border-line bg-surface p-3">
@@ -68,46 +67,12 @@ export function BarChart({
           ))}
         </ul>
       )}
-      {rows.length > 0 && (
-        <div className="mt-2">
-          <Button
-            variant="ghost"
-            aria-expanded={showTable}
-            onPress={() => setShowTable((open) => !open)}
-          >
-            {showTable ? 'Hide the table' : 'Show as a table'}
-          </Button>
-          {showTable && (
-            <table className="mt-1 w-full text-left text-md">
-              <caption className="sr-only">{title}</caption>
-              <thead>
-                <tr className="text-sm text-muted">
-                  <th scope="col" className="py-1 font-semibold">
-                    {labelHeading}
-                  </th>
-                  <th scope="col" className="py-1 text-right font-semibold">
-                    Items
-                  </th>
-                  <th scope="col" className="py-1 text-right font-semibold">
-                    {valueHeading}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.key} className="border-t border-line">
-                    <th scope="row" className="py-1 font-normal">
-                      {row.label}
-                    </th>
-                    <td className="py-1 text-right tabular">{row.count}</td>
-                    <td className="py-1 text-right tabular">{money(row.value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+      <ChartTable
+        title={title}
+        labelHeading={labelHeading}
+        valueHeading={valueHeading}
+        rows={rows}
+      />
     </figure>
   )
 }
