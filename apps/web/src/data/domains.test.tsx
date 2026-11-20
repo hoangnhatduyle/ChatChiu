@@ -66,7 +66,17 @@ const item = (id: number, extra: Partial<InventoryItem> = {}): InventoryItem => 
 })
 const bootstrap = (items: InventoryItem[]): Bootstrap => ({
   items,
-  locations: [{ id: 1, userId: 'u', name: 'Fridge', subLocation: null, createdAt: 'x' }],
+  locations: [
+    {
+      id: 1,
+      userId: 'u',
+      name: 'Fridge',
+      subLocation: null,
+      icon: null,
+      color: null,
+      createdAt: 'x',
+    },
+  ],
   categories: [{ id: 1, name: 'Dairy', icon: null, color: null, userId: 'u', isSystem: false }],
   summary: {} as Bootstrap['summary'],
 })
@@ -259,6 +269,8 @@ describe('inventory', () => {
       userId: 'u',
       name: 'Pantry',
       subLocation: null,
+      icon: null,
+      color: null,
       createdAt: 'x',
     })
     await startWrite(client, inventory.locationWrites.create, {
@@ -277,6 +289,18 @@ describe('inventory', () => {
     )
     await startWrite(client, inventory.categoryWrites.remove, { id: 1 }).result
     expect(client.getQueryData<Bootstrap>(queryKeys.bootstrap)?.categories).toHaveLength(1)
+  })
+
+  it('F-SE-01: a new location shows its icon and colour at once, before the server answers', () => {
+    api.post.mockReturnValue(new Promise(() => undefined))
+    startWrite(client, inventory.locationWrites.create, {
+      tempId: -3,
+      body: { name: 'Larder', icon: 'jar', color: 'mint' },
+    })
+    const drafted = client
+      .getQueryData<Bootstrap>(queryKeys.bootstrap)
+      ?.locations.find((l) => l.id === -3)
+    expect([drafted?.icon, drafted?.color]).toEqual(['jar', 'mint'])
   })
 
   it('a write on a row that is still being created fails at once and changes nothing', async () => {

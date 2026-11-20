@@ -8,6 +8,8 @@ import type {
   InventoryItem,
   InventoryItemCreate,
   InventoryItemUpdate,
+  LocationColor,
+  LocationIcon,
   Preferences,
   Restock,
   UsageEntry,
@@ -88,8 +90,18 @@ export const itemWrites = defineResource<InventoryItem, InventoryItemCreate, Inv
 
 export const locationWrites = defineResource<
   Bootstrap['locations'][number],
-  { name: string; subLocation?: string | null },
-  { name?: string; subLocation?: string | null }
+  {
+    name: string
+    subLocation?: string | null
+    icon?: LocationIcon | null
+    color?: LocationColor | null
+  },
+  {
+    name?: string
+    subLocation?: string | null
+    icon?: LocationIcon | null
+    color?: LocationColor | null
+  }
 >({
   name: 'locations',
   noun: 'a location',
@@ -107,6 +119,8 @@ export const locationWrites = defineResource<
     userId: '',
     name: body.name,
     subLocation: body.subLocation ?? null,
+    icon: body.icon ?? null,
+    color: body.color ?? null,
     createdAt: new Date().toISOString(),
   }),
 })

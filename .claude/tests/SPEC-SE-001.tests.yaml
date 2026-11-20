@@ -51,3 +51,8 @@ cases:
     traces_to: SPEC-SE-001#NC-SE-NO-SYSTEM-ASSUMPTION
     assertion: The categories section MUST NOT assume system categories exist (production has none after 7.0.10)
     invariant: true
+  - id: T-SPEC-SE-001-AC-F_SE_08
+    kind: acceptance
+    traces_to: SPEC-SE-001#F-SE-08
+    assertion: "given the add or edit form of a location, when she picks an icon and a colour (each also has Automatic), then a preview shows the Kitchen header as it will look; the choice is saved with the location (only what changed is sent), shows on its Kitchen card and survives a reload; a place with nothing chosen keeps the name-based guess, never a blank square; the chosen option is marked by a tick as well as colour"
+    invariant: false

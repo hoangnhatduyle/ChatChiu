@@ -108,6 +108,64 @@ describe('GET /api/bootstrap', () => {
   });
 });
 
+describe('locations: icon and colour (UI refresh 06, migration 0021)', () => {
+  type Loc = { id: number; name: string; icon: string | null; color: string | null };
+
+  it('a place made without a style reads back with null icon and colour', async () => {
+    const loc = data<Loc>(
+      await callApi('POST', 'locations', { user: alice, body: { name: 'Plain shelf' } }),
+    );
+    expect(loc.icon).toBeNull();
+    expect(loc.color).toBeNull();
+  });
+
+  it('creates and changes the icon and colour, and clears them with null', async () => {
+    const made = data<Loc>(
+      await callApi('POST', 'locations', {
+        user: alice,
+        body: { name: 'Styled', icon: 'fridge', color: 'ice' },
+      }),
+    );
+    expect([made.icon, made.color]).toEqual(['fridge', 'ice']);
+    const changed = data<Loc>(
+      await callApi('PATCH', `locations/${made.id}`, { user: alice, body: { color: 'rose' } }),
+    );
+    expect([changed.icon, changed.color]).toEqual(['fridge', 'rose']);
+    const cleared = data<Loc>(
+      await callApi('PATCH', `locations/${made.id}`, {
+        user: alice,
+        body: { icon: null, color: null },
+      }),
+    );
+    expect([cleared.icon, cleared.color]).toEqual([null, null]);
+  });
+
+  it('refuses an icon or colour that is not on the list with 400', async () => {
+    error(
+      await callApi('POST', 'locations', { user: alice, body: { name: 'Bad', icon: 'rocket' } }),
+      400,
+      'BAD_REQUEST',
+    );
+    error(
+      await callApi('PATCH', `locations/${aliceLoc}`, { user: alice, body: { color: '#fff' } }),
+      400,
+      'BAD_REQUEST',
+    );
+  });
+
+  it('the bootstrap carries them', async () => {
+    const made = data<Loc>(
+      await callApi('POST', 'locations', {
+        user: alice,
+        body: { name: 'In bootstrap', icon: 'jar', color: 'mint' },
+      }),
+    );
+    const boot = data<{ locations: Loc[] }>(await callApi('GET', 'bootstrap', { user: alice }));
+    const found = boot.locations.find((l) => l.id === made.id);
+    expect([found?.icon, found?.color]).toEqual(['jar', 'mint']);
+  });
+});
+
 describe('usage and usage-undo', () => {
   it('AC-API-07: atomic usage with crossedLowStock, then undo restores 0.6 and removes the row', async () => {
     const milk = await item(alice, aliceCat, {

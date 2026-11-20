@@ -1,6 +1,7 @@
 // Settings (SPEC-SE-001, SPEC-NT-001; route /settings): locations, categories, notifications, appearance,
 // data and sign out. Everything goes through the data hooks and core/notify (AR-NO-DIRECT-API).
-import { PageTitle } from '../../shell/PageTitle'
+import { PAGE_FRAME } from '../../shell/page-frame'
+import { PageHeader } from '../../shell/PageHeader'
 import { AccountSection } from './AccountSection'
 import { AppearanceSection } from './AppearanceSection'
 import { CategoriesSection } from './CategoriesSection'
@@ -12,15 +13,19 @@ import { useDeviceNotifications } from './use-device-notifications'
 export default function SettingsPage() {
   const notifications = useDeviceNotifications()
   return (
-    <div className="max-w-3xl px-4 pt-5 pb-8 md:px-6 md:pt-6">
-      <PageTitle>Settings</PageTitle>
-      <div className="mt-4 flex flex-col gap-6">
-        <NotificationsSection notifications={notifications} />
-        <AppearanceSection />
+    <div className={PAGE_FRAME}>
+      <PageHeader title="Settings" subtitle="Your places, categories, reminders and look" />
+      <div className="flex flex-col gap-6">
+        <div className="flex max-w-3xl flex-col gap-6">
+          <NotificationsSection notifications={notifications} />
+          <AppearanceSection />
+        </div>
         <LocationsSection />
-        <CategoriesSection />
-        <DataSection />
-        <AccountSection notifications={notifications} />
+        <div className="flex max-w-3xl flex-col gap-6">
+          <CategoriesSection />
+          <DataSection />
+          <AccountSection notifications={notifications} />
+        </div>
       </div>
     </div>
   )

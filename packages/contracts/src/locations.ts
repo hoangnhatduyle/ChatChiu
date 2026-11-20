@@ -37,6 +37,8 @@ export type LocationColor = (typeof LOCATION_COLORS)[number]
 export const locationCreate = z.object({
   name: requiredText(100),
   subLocation: optionalText(100),
+  icon: z.enum(LOCATION_ICONS).optional().nullable(),
+  color: z.enum(LOCATION_COLORS).optional().nullable(),
 })
 export type LocationCreate = z.infer<typeof locationCreate>
 
@@ -48,5 +50,7 @@ export interface Location {
   userId: string
   name: string
   subLocation: string | null
+  icon: LocationIcon | null
+  color: LocationColor | null
   createdAt: string
 }

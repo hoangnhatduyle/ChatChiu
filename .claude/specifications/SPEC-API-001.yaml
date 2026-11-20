@@ -12,7 +12,7 @@ context_and_scope:
     - OLD unchanged — GET /api/health (public) -> { status, time }
     - "OLD unchanged — GET|POST /api/inventory; GET|PATCH|DELETE /api/inventory/:id  [contracts: inventory — inventoryItemCreate, inventoryItemUpdate]"
     - "OLD changed — GET|POST /api/inventory/:id/usage: POST uses log_item_usage (atomic) and adds crossedLowStock + the updated item to the response; same request body { amountUsed, currentQuantity, notes? }  [contracts: inventory]"
-    - "OLD unchanged — GET|POST /api/locations; PATCH|DELETE /api/locations/:id  [contracts: locations]"
+    - "GET|POST /api/locations; PATCH|DELETE /api/locations/:id  [contracts: locations] — the body and the row also carry optional icon and color (from LOCATION_ICONS / LOCATION_COLORS, null clears; any other value is 400)"
     - "OLD unchanged — GET|POST /api/categories; PATCH|DELETE /api/categories/:id (409 on duplicate name, 404 when not editable)  [contracts: categories]"
     - "OLD changed — DELETE /api/categories/:id: a category still used by items answers 409 CONFLICT with a readable message instead of 500 (AC-DATA-14; added to architecture.md §3.4 on 2026-11-16)"
     - "OLD unchanged — GET|POST /api/shopping-list; PATCH|DELETE /api/shopping-list/:id  [contracts: shopping — shoppingItemCreate, shoppingItemUpdate]"

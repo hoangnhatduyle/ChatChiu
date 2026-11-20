@@ -5,7 +5,7 @@ title: Settings (feature.settings)
 status: active
 context_and_scope:
   in_scope:
-    - Locations add, edit, delete with an affected-items count (F-SE-01)
+    - "Locations add, edit, delete with an affected-items count, each with an optional icon and colour and a live preview (F-SE-01, F-SE-08)"
     - "Categories: own ones editable, system ones read-only when any exist (F-SE-02)"
     - Notifications section (F-SE-03, detailed in SPEC-NT-001)
     - CSV export of the inventory (F-SE-04)
@@ -84,6 +84,11 @@ acceptance_criteria:
     given: location Fridge with 7 items
     when: she deletes it
     then: she sees that 7 items will move to No location, the delete has Undo, and afterwards the 7 items are on the board under No location
+    invariant: false
+  - id: F-SE-08
+    given: the add or edit form of a location
+    when: she picks an icon and a colour (each also has Automatic)
+    then: a preview shows the Kitchen header as it will look; the choice is saved with the location (only what changed is sent), shows on its Kitchen card and survives a reload; a place with nothing chosen keeps the name-based guess, never a blank square; the chosen option is marked by a tick as well as colour
     invariant: false
   - id: F-SE-02
     given: her own categories and possibly some is_system ones

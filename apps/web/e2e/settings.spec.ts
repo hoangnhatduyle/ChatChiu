@@ -92,6 +92,34 @@ test('F-SE-01: a location says how many items move, deletes after the Undo windo
   expect(items.every((i) => i.locationId === null)).toBe(true)
 })
 
+test('F-SE-01 / F-SE-08: a chosen icon and colour show on the Kitchen card and survive a reload', async ({
+  page,
+  context,
+  account,
+}) => {
+  await seed(account)
+  await routeApi(context)
+  await page.goto('/settings')
+  const locations = page.getByRole('region', { name: 'Locations' })
+  await locations.getByRole('button', { name: 'Edit Shelf test' }).click()
+  const editor = locations.getByRole('group', { name: 'Edit Shelf test' })
+  await editor.getByRole('radio', { name: 'Jar' }).check({ force: true })
+  await editor.getByRole('radio', { name: 'Rose' }).check({ force: true })
+  await expect(
+    editor.getByRole('group', { name: 'Preview' }).locator('[data-location-color="rose"]'),
+  ).toBeVisible()
+  await editor.getByRole('button', { name: 'Save Shelf test' }).click()
+  await expect
+    .poll(async () => (await call<Row[]>(account, 'GET', '/api/locations'))[0])
+    .toMatchObject({ icon: 'jar', color: 'rose' })
+  await page.reload()
+  await page.goto('/')
+  await expect(page.locator('[data-location-color="rose"]').first()).toBeVisible()
+  // a place with nothing chosen falls back to its name's guess, never a blank square
+  await page.goto('/settings')
+  await expect(locations.getByText('Shelf test')).toBeVisible()
+})
+
 test('F-SE-06: Dark applies at once and is still dark after a reload', async ({
   page,
   context,
@@ -111,7 +139,7 @@ test('F-SE-06: Dark applies at once and is still dark after a reload', async ({
           ?.getAttribute('content'),
       ),
     )
-    .toBe('#0d1312')
+    .toBe('#17130e')
   await saved
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')

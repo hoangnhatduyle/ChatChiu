@@ -5,6 +5,7 @@ import {
   categoryUpdate,
   clearPurchased,
   defaultPreferences,
+  locationCreate,
   locationUpdate,
   mealPlanCreate,
   mealPlanListQuery,
@@ -221,5 +222,19 @@ describe('location style lists (UI refresh)', () => {
     expect(new Set(contracts.LOCATION_ICONS).size).toBe(15)
     expect(contracts.LOCATION_COLORS).toHaveLength(8)
     expect(new Set(contracts.LOCATION_COLORS).size).toBe(8)
+  })
+  it('accepts an icon and a colour on a location, both optional and nullable', () => {
+    expect(locationCreate.parse({ name: 'Fridge' })).toEqual({ name: 'Fridge' })
+    expect(locationCreate.parse({ name: 'Fridge', icon: 'fridge', color: 'ice' })).toEqual({
+      name: 'Fridge',
+      icon: 'fridge',
+      color: 'ice',
+    })
+    expect(locationUpdate.parse({ icon: null, color: null })).toEqual({ icon: null, color: null })
+  })
+  it('refuses an icon or colour that is not on the list', () => {
+    expect(locationCreate.safeParse({ name: 'Fridge', icon: 'rocket' }).success).toBe(false)
+    expect(locationCreate.safeParse({ name: 'Fridge', color: '#ff0000' }).success).toBe(false)
+    expect(locationUpdate.safeParse({ icon: '' }).success).toBe(false)
   })
 })

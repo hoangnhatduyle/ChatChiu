@@ -29,7 +29,7 @@ context_and_scope:
     - Supabase Realtime on inventory_items, shopping_list, meal_plans (RLS-filtered)
   shared_schemas:
     - "categories { id bigint, name text, icon text?, color text?, user_id uuid?, is_system bool default false } unique (coalesce(user_id::text,'system'), lower(name)); RLS read: is_system or own; write: own and not is_system"
-    - locations { id bigint, user_id uuid, name text, sub_location text?, created_at }
+    - locations { id bigint, user_id uuid, name text, sub_location text?, icon text? (0021), color text? (0021), created_at }
     - inventory_items { id bigint, user_id uuid, name text, category_id bigint NOT NULL -> categories (no cascade), quantity numeric default 0, unit text, purchase_date date?, expiration_date date NOT NULL, location_id bigint? -> locations on delete set null, price numeric? (PER UNIT), notes text?, notification_enabled bool default true, notification_days_before int default 3, barcode text? (unique per user), initial_quantity numeric?, current_quantity numeric?, usage_notes text?, low_stock_threshold numeric default 20 (PERCENT), last_notified_at timestamptz?, created_at, updated_at (trigger) } + planned low_stock_notified_at timestamptz?
     - usage_history { id bigint, item_id -> inventory_items on delete cascade, user_id, amount_used numeric, remaining_amount numeric, notes text?, recorded_at }
     - shopping_list { id bigint, user_id, name text, quantity text? (free text), notes text?, category_id bigint?, is_purchased bool default false, created_at }

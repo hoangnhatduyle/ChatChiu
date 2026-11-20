@@ -201,6 +201,67 @@ describe('F-SE-01 locations', () => {
     )
   })
 
+  it('F-SE-01: picking an icon and colour sends them with the new location and previews them', async () => {
+    api.post.mockResolvedValue({
+      id: 6,
+      userId: 'u',
+      name: 'Larder',
+      subLocation: null,
+      icon: 'jar',
+      color: 'mint',
+      createdAt: '',
+    })
+    const { user } = renderPage()
+    await within(await loaded()).findByText('Fridge')
+    const add = screen.getByRole('group', { name: 'Add a location' })
+    await user.type(within(add).getByRole('textbox', { name: 'Location name' }), 'Larder')
+    await user.click(within(add).getByRole('radio', { name: 'Jar' }))
+    await user.click(within(add).getByRole('radio', { name: 'Mint' }))
+    const preview = within(add).getByRole('group', { name: 'Preview' })
+    expect(within(preview).getByRole('heading', { name: 'Larder' })).toBeInTheDocument()
+    expect(preview.querySelector('[data-location-color="mint"]')).not.toBeNull()
+    await user.click(within(add).getByRole('button', { name: 'Add location' }))
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith(
+        '/api/locations',
+        { name: 'Larder', subLocation: null, icon: 'jar', color: 'mint' },
+        expect.anything(),
+      ),
+    )
+  })
+
+  it('F-SE-08: a place with no style previews the guess from its name, and Automatic clears a choice', async () => {
+    api.patch.mockImplementation((_route: string, body: Record<string, unknown>) =>
+      Promise.resolve({
+        id: 1,
+        userId: 'u',
+        name: 'Fridge',
+        subLocation: null,
+        createdAt: '',
+        ...body,
+      }),
+    )
+    const { user } = renderPage()
+    await within(await loaded()).findByText('Fridge')
+    await user.click(screen.getByRole('button', { name: 'Edit Fridge' }))
+    const editor = screen.getByRole('group', { name: 'Edit Fridge' })
+    // nothing chosen yet: the Fridge name guesses mint
+    expect(
+      within(editor)
+        .getByRole('group', { name: 'Preview' })
+        .querySelector('[data-location-color="mint"]'),
+    ).not.toBeNull()
+    await user.click(within(editor).getByRole('radio', { name: 'Rose' }))
+    await user.click(within(editor).getByRole('button', { name: 'Save Fridge' }))
+    await waitFor(() =>
+      expect(api.patch).toHaveBeenCalledWith(
+        '/api/locations/1',
+        { name: 'Fridge', subLocation: null, color: 'rose' },
+        expect.anything(),
+      ),
+    )
+  })
+
   it('F-SE-01: a blank name is refused inline and nothing is sent', async () => {
     const { user } = renderPage()
     await loaded()
