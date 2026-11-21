@@ -97,7 +97,10 @@ export interface RecipeStockMatch {
 }
 
 /** Folded tokens of any length: a short Vietnamese word such as "gà" is a whole ingredient, not noise. */
-const tokens = (text: string): string[] => fold(text).split(/[^a-z0-9]+/).filter(Boolean)
+const tokens = (text: string): string[] =>
+  fold(text)
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
 
 /** An item still in the kitchen: some left, and not past its date (today is the last good day). */
 function isInStock(item: MatchableItem, today: string): boolean {
