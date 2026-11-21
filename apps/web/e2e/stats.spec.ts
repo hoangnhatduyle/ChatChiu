@@ -92,16 +92,20 @@ test('F-ST-01 / F-ST-02 / F-ST-03: the log, the Month range and the totals follo
   await seed(account)
   await routeApi(context)
   await page.goto('/stats')
-  const log = page.getByRole('group', { name: 'Waste log' })
+  // The log is a dialog opened from the Waste heading's button.
+  const log = page.getByRole('dialog', { name: 'Waste log' })
+  await page.getByRole('button', { name: 'Waste log' }).click()
   await expect(log.getByText('Old bread')).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(stat(page, 'Items wasted')).toContainText('3')
   await expect(stat(page, 'Value lost')).toContainText('$7.40')
 
   await page.getByRole('radio', { name: 'Month' }).click()
-  await expect(log.getByText('Old bread')).toHaveCount(0)
   await expect(stat(page, 'Items wasted')).toContainText('2')
   await expect(stat(page, 'Value lost')).toContainText('$5.40')
   await expect(page).toHaveURL(/range=month/)
+  await page.getByRole('button', { name: 'Waste log' }).click()
+  await expect(log.getByText('Old bread')).toHaveCount(0)
 
   await page.getByRole('button', { name: /^Delete Eggs, / }).click()
   await expect(log.getByText('Eggs')).toHaveCount(0)
@@ -116,6 +120,7 @@ test('F-ST-01 / F-ST-02 / F-ST-03: the log, the Month range and the totals follo
     })
     .toEqual(['Cheese', 'Old bread'])
   // The totals are the server's: they are read again once the delete has been saved.
+  await page.keyboard.press('Escape')
   await expect(stat(page, 'Items wasted')).toContainText('1')
   await expect(stat(page, 'Value lost')).toContainText('$3.00')
 })

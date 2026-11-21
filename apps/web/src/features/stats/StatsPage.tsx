@@ -1,8 +1,9 @@
-// Waste & Stats (SPEC-ST-001, route /stats): the overview of the kitchen, then the waste figures, charts
-// and log under a time range and category filter held in the URL. Reads and deletes only through the data
+// Waste & Stats (SPEC-ST-001, route /stats): the overview of the kitchen, then the waste figures and charts, with
+// the log in a dialog, under a time range and category filter held in the URL. Reads and deletes only through the data
 // hooks (AR-NO-DIRECT-API); the figures themselves are the API's, so every definition (stock value, low
 // stock, run-out) lives in one place (AR-ONE-DEFINITION).
 import { todayInTimeZone, filterWasteEntries } from '@chatchiu/domain'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useToday } from '../../core/use-today'
 import { useBootstrapQuery } from '../../data/inventory'
@@ -37,6 +38,7 @@ export default function StatsPage() {
   const overview = useStatsOverviewQuery('all')
   const waste = useStatsOverviewQuery(range, categoryId ?? undefined)
   const log = useWasteQuery()
+  const [logOpen, setLogOpen] = useState(false)
 
   const frame = (children: React.ReactNode) => (
     <div className={PAGE_FRAME}>
@@ -111,9 +113,14 @@ export default function StatsPage() {
         />
       </section>
       <section aria-labelledby="waste-heading" className="flex flex-col gap-3">
-        <h2 id="waste-heading" className="text-lg font-extrabold">
-          Waste
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="waste-heading" className="text-lg font-extrabold">
+            Waste
+          </h2>
+          <Button isDisabled={!entries} onPress={() => setLogOpen(true)}>
+            Waste log
+          </Button>
+        </div>
         <WasteFilters
           range={range}
           categoryId={categoryId}
@@ -139,6 +146,8 @@ export default function StatsPage() {
         )}
         {entries && timezone ? (
           <WasteLog
+            isOpen={logOpen}
+            onOpenChange={setLogOpen}
             entries={entries}
             categories={categories ?? []}
             timezone={timezone}
@@ -151,9 +160,7 @@ export default function StatsPage() {
             </p>
             <Button onPress={() => void log.refetch()}>Retry</Button>
           </div>
-        ) : (
-          <Skeleton className="h-24 w-full" />
-        )}
+        ) : null}
       </section>
     </>,
   )

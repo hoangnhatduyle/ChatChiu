@@ -104,7 +104,11 @@ function renderPage(init: Partial<Server> = {}, path = '/stats') {
 const inToasts = (text: string | RegExp) =>
   within(screen.getByRole('region', { name: 'Notifications' })).findByText(text)
 const stat = (label: string) => screen.getByText(label).closest('div')!
-const log = () => screen.getByRole('group', { name: 'Waste log' })
+const log = () => screen.getByRole('dialog', { name: 'Waste log' })
+async function openLog(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: 'Waste log' }))
+  return screen.findByRole('dialog', { name: 'Waste log' })
+}
 
 beforeEach(() => {
   vi.resetAllMocks()
@@ -121,12 +125,10 @@ describe('F-ST-01 the waste log', () => {
   const milk = () => entry('Milk', '2026-11-10T09:00:00Z', { quantity: 6, unit: 'pcs', price: 0.4 })
 
   it('F-ST-01: each entry shows its name, quantity, unit, value and date', async () => {
-    renderPage({
+    const { user } = renderPage({
       waste: [milk(), entry('Cheese', '2026-11-12T09:00:00Z', { quantity: 1, price: 3 })],
     })
-    const row = (
-      await within(await screen.findByRole('group', { name: 'Waste log' })).findByText('Milk')
-    ).closest('li')!
+    const row = (await within(await openLog(user)).findByText('Milk')).closest('li')!
     expect(row).toHaveTextContent('6 pcs')
     expect(row).toHaveTextContent('$2.40')
     expect(row).toHaveTextContent('10 Nov 2026')
@@ -136,7 +138,7 @@ describe('F-ST-01 the waste log', () => {
     api.delete.mockResolvedValue({ deleted: true })
     const m = milk()
     const { user } = renderPage({ waste: [m, entry('Cheese', '2026-11-12T09:00:00Z')] })
-    await within(await screen.findByRole('group', { name: 'Waste log' })).findByText('Milk')
+    await within(await openLog(user)).findByText('Milk')
     await user.click(screen.getByRole('button', { name: /^Delete Milk, / }))
     expect(within(log()).queryByText('Milk')).not.toBeInTheDocument()
     expect(await inToasts('Milk removed')).toBeInTheDocument()
@@ -154,7 +156,7 @@ describe('F-ST-01 the waste log', () => {
     api.delete.mockResolvedValue({ deleted: true })
     const m = milk()
     const { user } = renderPage({ waste: [m] })
-    await within(await screen.findByRole('group', { name: 'Waste log' })).findByText('Milk')
+    await within(await openLog(user)).findByText('Milk')
     await user.click(screen.getByRole('button', { name: /^Delete Milk, / }))
     await waitFor(() => expect(api.delete).toHaveBeenCalledTimes(1), {
       timeout: HOLD_WINDOW_WAIT_MS,
@@ -168,15 +170,41 @@ describe('F-ST-01 the waste log', () => {
     ).not.toBeInTheDocument()
   }, 15_000)
 
+  it('F-ST-01: the log is not on the page until the Waste log button opens it, and it shows one page at a time', async () => {
+    const waste = Array.from({ length: 11 }, (_, i) =>
+      entry(`Item ${String(i + 1).padStart(2, '0')}`, '2026-11-10T09:00:00Z'),
+    )
+    const { user } = renderPage({ waste })
+    const open = await screen.findByRole('button', { name: 'Waste log' })
+    expect(screen.queryByText('Item 01')).not.toBeInTheDocument()
+    await user.click(open)
+    const dialog = await screen.findByRole('dialog', { name: 'Waste log' })
+    expect(within(dialog).getAllByRole('listitem')).toHaveLength(8)
+    expect(within(dialog).getByText('Page 1 of 2')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Previous' })).toBeDisabled()
+    await user.click(within(dialog).getByRole('button', { name: 'Next' }))
+    expect(within(dialog).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(dialog).getByText('Page 2 of 2')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Item 01')).not.toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Next' })).toBeDisabled()
+  })
+
+  it('F-ST-01: a short log has no page controls', async () => {
+    const { user } = renderPage({ waste: [entry('Milk', '2026-11-10T09:00:00Z')] })
+    const dialog = await openLog(user)
+    expect(await within(dialog).findByText('Milk')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Next' })).not.toBeInTheDocument()
+  })
+
   it('NC-ST-NO-UNKNOWN-CATEGORY: an entry shows its real category name, and "No category" when it has none', async () => {
-    renderPage({
+    const { user } = renderPage({
       waste: [
         entry('Milk', '2026-11-10T09:00:00Z', { categoryId: 1, categoryName: undefined }),
         entry('Steak', '2026-11-11T09:00:00Z', { categoryId: 2, categoryName: 'Meat' }),
         entry('Mystery', '2026-11-12T09:00:00Z', { categoryId: null, categoryName: null }),
       ],
     })
-    const list = within(await screen.findByRole('group', { name: 'Waste log' }))
+    const list = within(await openLog(user))
     expect((await list.findByText('Milk')).closest('li')).toHaveTextContent('Dairy')
     expect(list.getByText('Steak').closest('li')).toHaveTextContent('Meat')
     expect(list.getByText('Mystery').closest('li')).toHaveTextContent('No category')
@@ -184,14 +212,14 @@ describe('F-ST-01 the waste log', () => {
   })
 
   it("NC-ST-NO-RAW-PRICE-SUM: an entry's value is price × quantity, never the per-unit price", async () => {
-    renderPage({
+    const { user } = renderPage({
       waste: [
         entry('Eggs', '2026-11-10T09:00:00Z', { quantity: 6, price: 0.4 }),
         entry('Cheese', '2026-11-11T09:00:00Z', { quantity: 1, price: 3 }),
         entry('Gift', '2026-11-12T09:00:00Z', { quantity: 2, price: null }),
       ],
     })
-    const list = within(await screen.findByRole('group', { name: 'Waste log' }))
+    const list = within(await openLog(user))
     expect((await list.findByText('Eggs')).closest('li')).toHaveTextContent('$2.40')
     expect(list.getByText('Eggs').closest('li')).not.toHaveTextContent('$0.40')
     expect(list.getByText('Cheese').closest('li')).toHaveTextContent('$3.00')
@@ -204,7 +232,7 @@ describe('after a delete and on partial failures', () => {
     api.delete.mockResolvedValue({ deleted: true })
     const m = entry('Milk', '2026-11-10T09:00:00Z', { quantity: 1, price: 2 })
     const { user } = renderPage({ waste: [m] })
-    await within(await screen.findByRole('group', { name: 'Waste log' })).findByText('Milk')
+    await within(await openLog(user)).findByText('Milk')
     const before = api.get.mock.calls.filter((c) => c[0] === '/api/stats/overview').length
     await user.click(screen.getByRole('button', { name: /^Delete Milk, / }))
     await waitFor(() => expect(api.delete).toHaveBeenCalled(), { timeout: HOLD_WINDOW_WAIT_MS })
@@ -219,7 +247,7 @@ describe('after a delete and on partial failures', () => {
     const { user } = renderPage({
       waste: [entry('Milk', '2026-11-10T09:00:00Z'), entry('Cheese', '2026-11-09T09:00:00Z')],
     })
-    await within(await screen.findByRole('group', { name: 'Waste log' })).findByText('Milk')
+    await within(await openLog(user)).findByText('Milk')
     await user.click(screen.getByRole('button', { name: /^Delete Milk, / }))
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /^Delete Cheese, / })).toHaveFocus(),
@@ -242,8 +270,8 @@ describe('after a delete and on partial failures', () => {
   })
 
   it('7.0.31a: a failed background refresh of the waste log says so, since the log may be older than the totals', async () => {
-    renderPage({ waste: [entry('Milk', '2026-11-10T09:00:00Z')] }, '/stats')
-    await within(await screen.findByRole('group', { name: 'Waste log' })).findByText('Milk')
+    const { user } = renderPage({ waste: [entry('Milk', '2026-11-10T09:00:00Z')] }, '/stats')
+    await within(await openLog(user)).findByText('Milk')
     api.get.mockImplementation((route: string) => {
       if (route === '/api/waste')
         return Promise.reject(new ApiClientError({ status: 500, code: 'INTERNAL', message: 'no' }))
@@ -277,15 +305,20 @@ describe('F-ST-02 filters', () => {
         entry('Yogurt', '2026-09-01T09:00:00Z'),
       ],
     })
-    const list = within(await screen.findByRole('group', { name: 'Waste log' }))
+    let list = within(await openLog(user))
     expect(await list.findByText('Yogurt')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
     await user.click(screen.getByRole('radio', { name: 'Month' }))
-    await waitFor(() => expect(list.queryByText('Yogurt')).not.toBeInTheDocument())
-    expect(list.getByText('Milk')).toBeInTheDocument()
+    list = within(await openLog(user))
+    expect(await list.findByText('Milk')).toBeInTheDocument()
+    expect(list.queryByText('Yogurt')).not.toBeInTheDocument()
     expect(list.getByText('Steak')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
     await user.click(screen.getByRole('button', { name: /Category/ }))
     await user.click(await screen.findByRole('option', { name: 'Dairy' }))
-    await waitFor(() => expect(list.queryByText('Steak')).not.toBeInTheDocument())
+    list = within(await openLog(user))
+    expect(await list.findByText('Milk')).toBeInTheDocument()
+    expect(list.queryByText('Steak')).not.toBeInTheDocument()
     expect(list.getByText('Milk').closest('li')).toHaveTextContent('Dairy')
     // The totals and charts follow the same filters (the server computes them).
     await waitFor(() =>
@@ -339,7 +372,7 @@ describe('F-ST-04 charts', () => {
 })
 
 describe('F-ST-05 overview', () => {
-  it('F-ST-05: shows the stock value and counts, by category, by location, recently added and waste over 30 days', async () => {
+  it('F-ST-05: shows the stock value and counts, by category, by location and waste over 30 days; there is no recently-added list', async () => {
     renderPage({
       overview: makeOverview({
         recentlyAdded: [
@@ -368,9 +401,7 @@ describe('F-ST-05 overview', () => {
     expect(
       within(screen.getByRole('group', { name: 'Stock by location' })).getByText('Fridge'),
     ).toBeInTheDocument()
-    expect(
-      within(screen.getByRole('group', { name: 'Recently added' })).getByText('Eggs'),
-    ).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Recently added' })).not.toBeInTheDocument()
   })
 })
 
@@ -545,6 +576,41 @@ describe('UI refresh: headline, tiles, ring, next two weeks, places', () => {
     expect(cells[0]).toHaveTextContent('Wed 18 Nov, 2 items, today')
     expect(cells[2]).toHaveTextContent('Fri 20 Nov, 1 item')
     expect(cells[1]).toHaveTextContent('Thu 19 Nov, 0 items')
+  })
+
+  it('F-ST-09: pressing a day lists the items that run out that day; pressing it again closes the list', async () => {
+    const item = (id: number, name: string, expirationDate: string, extra: object = {}) => ({
+      id,
+      name,
+      unit: 'pcs',
+      quantity: 6,
+      currentQuantity: 4,
+      expirationDate,
+      categoryId: 1,
+      locationId: null,
+      ...extra,
+    })
+    const { user } = renderPage({
+      items: [
+        item(1, 'Milk', '2026-11-20'),
+        item(2, 'Yoghurt', '2026-11-20'),
+        item(3, 'Ham', '2026-11-22'),
+      ],
+    })
+    const strip = await screen.findByRole('group', { name: 'The next two weeks' })
+    expect(within(strip).queryByText('Milk')).not.toBeInTheDocument()
+    expect(within(strip).queryByRole('button', { name: /Thu 19 Nov/ })).not.toBeInTheDocument()
+    const day = within(strip).getByRole('button', { name: /Fri 20 Nov, 2 items/ })
+    await user.click(day)
+    expect(day).toHaveAttribute('aria-pressed', 'true')
+    expect(within(strip).getByText('Milk').closest('li')).toHaveTextContent('4 pcs')
+    expect(within(strip).getByText('Yoghurt')).toBeInTheDocument()
+    expect(within(strip).queryByText('Ham')).not.toBeInTheDocument()
+    await user.click(within(strip).getByRole('button', { name: /Sun 22 Nov, 1 item/ }))
+    expect(within(strip).getByText('Ham')).toBeInTheDocument()
+    expect(within(strip).queryByText('Milk')).not.toBeInTheDocument()
+    await user.click(within(strip).getByRole('button', { name: /Sun 22 Nov, 1 item/ }))
+    expect(within(strip).queryByText('Ham')).not.toBeInTheDocument()
   })
 
   it('F-ST-05: items by place carry the place name and count', async () => {
