@@ -90,7 +90,7 @@ function AddCategory() {
       ref={group}
       role="group"
       aria-label="Add a category"
-      className="flex flex-col gap-2 border-t border-line pt-4"
+      className="flex flex-col gap-2 border-t border-line pt-4 lg:sticky lg:top-6 lg:self-start lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6"
     >
       <CategoryFields
         draft={draft}
@@ -145,56 +145,60 @@ export function CategoriesSection() {
           {blocked}
         </p>
       )}
-      {!data ? (
-        <Skeleton className="h-16 w-full" />
-      ) : data.categories.length === 0 ? (
-        <p className="text-md text-muted">No categories yet. Add one below.</p>
-      ) : (
-        <ul role="list">
-          {data.categories.map((category) => (
-            <li key={category.id} className="border-b border-line py-1 last:border-b-0">
-              {editing === category.id ? (
-                <CategoryEditor
-                  category={category}
-                  onDone={() => {
-                    setEditing(null)
-                    focusAfterRender(editButtonId(category.id))
-                  }}
-                />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-control text-lg"
-                    style={category.color ? { backgroundColor: `${category.color}33` } : undefined}
-                  >
-                    {category.icon ?? '🏷️'}
-                  </span>
-                  <p className="min-w-0 flex-1 text-base font-bold text-ink">{category.name}</p>
-                  {category.isSystem ? (
-                    <span className="text-sm font-semibold text-muted">Built in</span>
-                  ) : (
-                    <>
-                      <IconButton
-                        icon="edit"
-                        id={editButtonId(category.id)}
-                        label={`Edit ${category.name}`}
-                        onPress={() => setEditing(category.id)}
-                      />
-                      <IconButton
-                        icon="trash"
-                        label={`Delete ${category.name}`}
-                        onPress={() => remove(category)}
-                      />
-                    </>
-                  )}
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <AddCategory />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        {!data ? (
+          <Skeleton className="h-16 w-full" />
+        ) : data.categories.length === 0 ? (
+          <p className="text-md text-muted">No categories yet. Add one below.</p>
+        ) : (
+          <ul role="list">
+            {data.categories.map((category) => (
+              <li key={category.id} className="border-b border-line py-1 last:border-b-0">
+                {editing === category.id ? (
+                  <CategoryEditor
+                    category={category}
+                    onDone={() => {
+                      setEditing(null)
+                      focusAfterRender(editButtonId(category.id))
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-control text-lg"
+                      style={
+                        category.color ? { backgroundColor: `${category.color}33` } : undefined
+                      }
+                    >
+                      {category.icon ?? '🏷️'}
+                    </span>
+                    <p className="min-w-0 flex-1 text-base font-bold text-ink">{category.name}</p>
+                    {category.isSystem ? (
+                      <span className="text-sm font-semibold text-muted">Built in</span>
+                    ) : (
+                      <>
+                        <IconButton
+                          icon="edit"
+                          id={editButtonId(category.id)}
+                          label={`Edit ${category.name}`}
+                          onPress={() => setEditing(category.id)}
+                        />
+                        <IconButton
+                          icon="trash"
+                          label={`Delete ${category.name}`}
+                          onPress={() => remove(category)}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <AddCategory />
+      </div>
     </SectionCard>
   )
 }

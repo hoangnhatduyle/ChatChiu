@@ -1,7 +1,7 @@
 // The recipe library, a tab of Meals (F-MP-09, F-MP-11): search by name or ingredient, add, edit, delete
 // with Undo. Items that need using up are matched to these recipes by the suggestions above the tabs.
 import type { Recipe } from '@chatchiu/contracts'
-import { parseIngredients, recipeMatchesQuery } from '@chatchiu/domain'
+import { recipeMatchesQuery, recipeStockMatch, type MatchableItem } from '@chatchiu/domain'
 import { useState } from 'react'
 import { SearchField, Input, Label } from 'react-aria-components'
 import { newTempId } from '../../data/resource'
@@ -11,16 +11,19 @@ import { useWrite } from '../../data/write'
 import { Button } from '../../ui/Button'
 import { CONTROL, LABEL } from '../../ui/Field'
 import { EmptyState } from '../../ui/EmptyState'
-import { cx } from '../../ui/cx'
-import { IconButton } from '../../ui/IconButton'
-import { recipeInitial, recipeTone } from './meal-style'
+import { RecipeCard } from './RecipeCard'
 import { RecipeForm } from './RecipeForm'
 
 export function RecipeLibrary({
   recipes,
+  items,
+  today,
   onPlan,
 }: {
   recipes: readonly Recipe[]
+  /** The kitchen, for the in-stock line on each card; undefined until it has loaded. */
+  items: readonly MatchableItem[] | undefined
+  today: string
   onPlan: (recipe: Recipe) => void
 }) {
   const create = useWrite(recipeWrites.create)
@@ -52,74 +55,21 @@ export function RecipeLibrary({
       ) : shown.length === 0 ? (
         <p className="text-md text-muted">No recipe matches “{query}”.</p>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {shown.map((recipe) => {
-            const saving = recipe.id < 0
-            return (
-              <li
-                key={recipe.id}
-                className="flex flex-col gap-2.5 rounded-panel border border-line bg-surface p-3.5 shadow-card"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className={cx(
-                      'flex size-11 shrink-0 items-center justify-center rounded-control font-display text-xl font-extrabold',
-                      recipeTone(recipe.name),
-                    )}
-                  >
-                    {recipeInitial(recipe.name)}
-                  </span>
-                  <p className="min-w-0 flex-1 font-display text-lg leading-tight font-bold text-ink">
-                    {recipe.name}
-                  </p>
-                </div>
-                {!saving && (recipe.servings || recipe.prepTime) && (
-                  <p className="flex flex-wrap gap-1.5">
-                    {recipe.servings ? (
-                      <span className="rounded-pill bg-tint-neutral px-2.5 py-0.5 text-sm font-semibold text-tint-neutral-ink">
-                        Serves {recipe.servings}
-                      </span>
-                    ) : null}
-                    {recipe.prepTime ? (
-                      <span className="rounded-pill bg-tint-neutral px-2.5 py-0.5 text-sm font-semibold text-tint-neutral-ink">
-                        {recipe.prepTime}
-                      </span>
-                    ) : null}
-                  </p>
-                )}
-                <p className="line-clamp-2 min-h-10 text-sm text-muted">
-                  {saving ? 'Saving…' : parseIngredients(recipe.ingredients).join(', ')}
-                </p>
-                <div className="mt-auto flex items-center gap-2">
-                  <Button
-                    isDisabled={saving}
-                    aria-label={`Plan ${recipe.name}`}
-                    onPress={() => onPlan(recipe)}
-                    className="mr-auto"
-                  >
-                    Plan
-                  </Button>
-                  <IconButton
-                    icon="edit"
-                    label={`Edit ${recipe.name}`}
-                    isDisabled={saving}
-                    onPress={() => setForm({ recipe })}
-                  />
-                  <IconButton
-                    icon="trash"
-                    label={`Delete ${recipe.name}`}
-                    isDisabled={saving}
-                    onPress={() => {
-                      // The card she pressed goes away: focus moves to the button that adds a recipe.
-                      if (holdRemove({ id: recipe.id }, `${recipe.name} deleted`))
-                        requestAnimationFrame(() => document.getElementById('add-recipe')?.focus())
-                    }}
-                  />
-                </div>
-              </li>
-            )
-          })}
+        <ul className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {shown.map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              stock={items ? recipeStockMatch(recipe, items, today) : undefined}
+              onPlan={() => onPlan(recipe)}
+              onEdit={() => setForm({ recipe })}
+              onDelete={() => {
+                // The card she pressed goes away: focus moves to the button that adds a recipe.
+                if (holdRemove({ id: recipe.id }, `${recipe.name} deleted`))
+                  requestAnimationFrame(() => document.getElementById('add-recipe')?.focus())
+              }}
+            />
+          ))}
         </ul>
       )}
       {form && (

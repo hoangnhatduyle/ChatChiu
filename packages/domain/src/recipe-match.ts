@@ -87,6 +87,49 @@ export function recipesUsingItem<R extends RecipeLike>(
 const fold = (text: string): string =>
   text.normalize('NFD').replace(/\p{M}/gu, '').replace(/[đĐ]/g, 'd').toLowerCase()
 
+export interface RecipeStockMatch {
+  /** How many ingredients the recipe lists. */
+  total: number
+  /** Ingredients, as written, that an item in stock covers. */
+  have: string[]
+  /** Ingredients, as written, that nothing in stock covers. */
+  missing: string[]
+}
+
+/** Folded tokens of any length: a short Vietnamese word such as "gà" is a whole ingredient, not noise. */
+const tokens = (text: string): string[] => fold(text).split(/[^a-z0-9]+/).filter(Boolean)
+
+/** An item still in the kitchen: some left, and not past its date (today is the last good day). */
+function isInStock(item: MatchableItem, today: string): boolean {
+  return daysLeft(item.expirationDate, today) >= 0 && getRemainingQuantity(item) > 0
+}
+
+/**
+ * Which of a recipe's ingredients the kitchen covers, for the "3 of 5 in stock" chip. An ingredient is covered
+ * when a word of an item in stock equals one of its words (the rule `matchRecipe` uses); an ingredient made only
+ * of short words is covered when the item name holds that same short word.
+ */
+export function recipeStockMatch(
+  recipe: Pick<RecipeLike, 'ingredients'>,
+  items: readonly MatchableItem[],
+  today: string,
+): RecipeStockMatch {
+  const stocked = items.filter((i) => isInStock(i, today))
+  const itemWords = stocked.map((i) => words(i.name))
+  const itemTokens = stocked.map((i) => new Set(tokens(i.name)))
+  const have: string[] = []
+  const missing: string[] = []
+  for (const ingredient of parseIngredients(recipe.ingredients)) {
+    const own = [...words(ingredient)]
+    const covered =
+      own.length > 0
+        ? itemWords.some((set) => own.some((w) => set.has(w)))
+        : itemTokens.some((set) => tokens(ingredient).some((t) => set.has(t)))
+    ;(covered ? have : missing).push(ingredient)
+  }
+  return { total: have.length + missing.length, have, missing }
+}
+
 /** Recipe library search (F-MP-09): the text is in the name or in an ingredient; blank matches all. */
 export function recipeMatchesQuery(recipe: RecipeLike, query: string): boolean {
   const q = fold(query.trim())

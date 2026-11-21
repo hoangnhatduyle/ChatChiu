@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { matchRecipe, parseIngredients, recipesUsingItem, suggestRecipes } from './recipe-match.js'
+import {
+  matchRecipe,
+  parseIngredients,
+  recipeStockMatch,
+  recipesUsingItem,
+  suggestRecipes,
+} from './recipe-match.js'
 
 const today = '2026-11-16'
 const omelette = { id: 1, name: 'Omelette', ingredients: 'eggs, milk, cheese' }
@@ -65,5 +71,38 @@ describe('recipe matching (F-MP-12, AC-API-15)', () => {
 
   it('F-QP-09: recipes that use one item', () => {
     expect(recipesUsingItem([omelette, toast], 'Butter').map((r) => r.name)).toEqual(['Toast'])
+  })
+})
+
+describe('recipe stock match (Meals recipe cards)', () => {
+  const stock = (name: string, expirationDate = '2026-12-31', currentQuantity = 1) =>
+    item(name, expirationDate, currentQuantity)
+
+  it('splits the ingredients into what is in stock and what is missing', () => {
+    const match = recipeStockMatch(omelette, [stock('Eggs'), stock('Milk')], today)
+    expect(match).toEqual({ total: 3, have: ['eggs', 'milk'], missing: ['cheese'] })
+  })
+
+  it('does not count items that are expired or used up', () => {
+    const match = recipeStockMatch(
+      omelette,
+      [stock('Eggs', '2026-11-15'), stock('Milk', '2026-12-31', 0), stock('Cheese', today)],
+      today,
+    )
+    expect(match.have).toEqual(['cheese'])
+    expect(match.missing).toEqual(['eggs', 'milk'])
+  })
+
+  it('matches a short Vietnamese ingredient to the same short item name', () => {
+    const match = recipeStockMatch({ ingredients: 'gà, hành' }, [stock('Gà')], today)
+    expect(match).toEqual({ total: 2, have: ['gà'], missing: ['hành'] })
+  })
+
+  it('has total 0 when the recipe lists no ingredients', () => {
+    expect(recipeStockMatch({ ingredients: ' , ' }, [stock('Eggs')], today)).toEqual({
+      total: 0,
+      have: [],
+      missing: [],
+    })
   })
 })

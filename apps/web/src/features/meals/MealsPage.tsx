@@ -6,6 +6,7 @@ import type { MealPlan, Recipe } from '@chatchiu/contracts'
 import { addDays, shiftMonth, weekStartMonday, type MealSlotType } from '@chatchiu/domain'
 import { Suspense, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { useBootstrapQuery } from '../../data/inventory'
 import { useMealsQuery } from '../../data/meals'
 import { useRecipesQuery, useRecipeSuggestionsQuery } from '../../data/recipes'
 import { PAGE_FRAME } from '../../shell/page-frame'
@@ -51,6 +52,7 @@ export default function MealsPage() {
   const query = useMealsQuery()
   const recipes = useRecipesQuery().data ?? []
   const suggestions = useRecipeSuggestionsQuery().data
+  const items = useBootstrapQuery().data?.items
   const plans = query.data
   const actions = useMealActions(plans ?? [])
   const [dialog, setDialog] = useState<{ target: MealDialogTarget } | { editId: number } | null>(
@@ -186,7 +188,7 @@ export default function MealsPage() {
       {tab === 'recipes' && (
         <>
           <h2 className="sr-only">Recipes</h2>
-          <RecipeLibrary recipes={recipes} onPlan={planRecipe} />
+          <RecipeLibrary recipes={recipes} items={items} today={today} onPlan={planRecipe} />
         </>
       )}
       {tab === 'summary' && (

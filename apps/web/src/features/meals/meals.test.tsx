@@ -58,7 +58,13 @@ const recipe = (id: number, name: string, ingredients: string, extra: Partial<Re
     ...extra,
   }) as Recipe
 
-type Server = { plans: MealPlan[]; recipes: Recipe[]; suggestions: RecipeSuggestion[] }
+type StockRow = { id: number; name: string; expirationDate: string; quantity: number }
+type Server = {
+  plans: MealPlan[]
+  recipes: Recipe[]
+  suggestions: RecipeSuggestion[]
+  items: StockRow[]
+}
 let server: Server
 let client: QueryClient
 
@@ -73,7 +79,7 @@ function mockServer() {
       }
       if (path === '/api/recipes/suggestions') return Promise.resolve(server.suggestions)
       if (path === '/api/recipes') return Promise.resolve(server.recipes)
-      return Promise.resolve({ items: [], locations: [], categories: [], summary: {} })
+      return Promise.resolve({ items: server.items, locations: [], categories: [], summary: {} })
     },
   )
 }
@@ -94,7 +100,7 @@ function wrap(children: ReactNode, path: string) {
   )
 }
 function renderPage(init: Partial<Server> = {}, path = `/meals?date=${WEEK}`) {
-  server = { plans: [], recipes: [], suggestions: [], ...init }
+  server = { plans: [], recipes: [], suggestions: [], items: [], ...init }
   mockServer()
   client = createAppQueryClient()
   client.mount()
@@ -433,7 +439,7 @@ describe('F-MP-07 favourites belong to the meal', () => {
 
 describe('F-MP-08 drop to copy', () => {
   function renderActions(plans: MealPlan[]) {
-    server = { plans, recipes: [], suggestions: [] }
+    server = { plans, recipes: [], suggestions: [], items: [] }
     mockServer()
     client = createAppQueryClient()
     client.mount()
@@ -666,9 +672,55 @@ describe('UI refresh: colours, today and the suggestions rail', () => {
     )
     expect(await screen.findByText('Serves 2')).toBeInTheDocument()
     expect(screen.getByText('10 min')).toBeInTheDocument()
-    expect(screen.getByText('eggs, milk')).toBeInTheDocument()
     expect(screen.getByText('O')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Plan Toast' })).toBeInTheDocument()
+  })
+
+  const stocked = (id: number, name: string, expirationDate = '2026-12-31'): StockRow => ({
+    id,
+    name,
+    expirationDate,
+    quantity: 1,
+  })
+
+  it('F-MP-09: a card says how many ingredients are in stock and names the missing ones', async () => {
+    renderPage(
+      {
+        recipes: [recipe(1, 'Omelette', 'eggs, milk, cheese')],
+        items: [stocked(1, 'Eggs'), stocked(2, 'Milk')],
+      },
+      '/meals?tab=recipes',
+    )
+    expect(await screen.findByText('2 of 3 in stock')).toBeInTheDocument()
+    expect(screen.getByText('Missing: cheese')).toBeInTheDocument()
+  })
+
+  it('F-MP-09: a card with every ingredient in stock says so and lists what it uses', async () => {
+    renderPage(
+      {
+        recipes: [recipe(1, 'Toast', 'bread, butter')],
+        items: [stocked(1, 'Bread'), stocked(2, 'Butter')],
+      },
+      '/meals?tab=recipes',
+    )
+    expect(await screen.findByText('All 2 in stock')).toBeInTheDocument()
+    expect(screen.getByText('Uses bread, butter')).toBeInTheDocument()
+    expect(screen.queryByText(/Missing:/)).not.toBeInTheDocument()
+  })
+
+  it('F-MP-09: an item past its date does not count as in stock', async () => {
+    renderPage(
+      { recipes: [recipe(1, 'Toast', 'bread')], items: [stocked(1, 'Bread', '2026-11-10')] },
+      '/meals?tab=recipes',
+    )
+    expect(await screen.findByText('0 of 1 in stock')).toBeInTheDocument()
+  })
+
+  it('F-MP-09: a recipe with no ingredients shows no stock chip, only a nudge to add them', async () => {
+    const { user } = renderPage({ recipes: [recipe(1, 'Domino', '')] }, '/meals?tab=recipes')
+    await user.click(await screen.findByRole('button', { name: 'Add ingredients to Domino' }))
+    expect(await screen.findByRole('dialog', { name: 'Edit recipe' })).toBeInTheDocument()
+    expect(screen.queryByText(/in stock/)).not.toBeInTheDocument()
   })
 
   it('F-MP-02: a month day shows a dot for each meal type planned', async () => {
