@@ -108,6 +108,9 @@ test('F-ST-01 / F-ST-02 / F-ST-03: the log, the Month range and the totals follo
   await expect(log.getByText('Old bread')).toHaveCount(0)
 
   await page.getByRole('button', { name: /^Delete Eggs, / }).click()
+  // On a phone the Undo toast opens where the Delete button was: a mouse left there holds the toast open (hover
+  // pauses its timer), so the delete would never be sent. Touch is not hover, so only this test needs it.
+  await page.mouse.move(1, 1)
   await expect(log.getByText('Eggs')).toHaveCount(0)
   expect((await serverWaste(account)).map((e) => e.itemName).sort()).toEqual([
     'Cheese',
